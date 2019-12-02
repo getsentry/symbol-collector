@@ -2,12 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ELFSharp.ELF;
-using Google.Protobuf;
-using Grpc.Net.Client;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -15,16 +14,18 @@ namespace SymbolCollector.Core
 {
     public class Client : IDisposable
     {
+        private readonly Uri _serviceUri;
         private readonly ILogger<Client> _logger;
-        private readonly SymbolCollection.SymbolCollectionClient _client;
-        private readonly IDisposable _disposable;
+        private readonly HttpClient _client;
 
-        public Client(Uri serviceUri, ILogger<Client>? logger = null)
+        public Client(
+            Uri serviceUri,
+            HttpMessageHandler? handler = null,
+            ILogger<Client>? logger = null)
         {
+            _serviceUri = serviceUri;
             _logger = logger ?? NullLogger<Client>.Instance;
-            var channel = GrpcChannel.ForAddress(serviceUri);
-            _disposable = channel;
-            _client = new SymbolCollection.SymbolCollectionClient(channel);
+            _client = new HttpClient(handler ?? new HttpClientHandler());
         }
 
         public async Task UploadAllPathsAsync(IEnumerable<string> paths, CancellationToken cancellationToken)
@@ -35,7 +36,7 @@ namespace SymbolCollector.Core
                 if (Directory.Exists(path))
                 {
                     tasks.Add(UploadFilesAsync(path, cancellationToken));
-                    _logger.LogInformation("Uploading files from: {0}", path);
+                    _logger.LogInformation("Uploading files from: {path}", path);
                 }
                 else
                 {
@@ -61,7 +62,7 @@ namespace SymbolCollector.Core
             }
         }
 
-        public async Task UploadFilesAsync(string path, CancellationToken cancellationToken)
+        private async Task UploadFilesAsync(string path, CancellationToken cancellationToken)
         {
             var files = Directory.GetFiles(path);
             _logger.LogInformation("Path {path} has {length} files to process", path, files.Length);
@@ -74,20 +75,33 @@ namespace SymbolCollector.Core
 
         private async Task UploadAsync(string debugId, string file, CancellationToken cancellationToken)
         {
-            using var call = _client.Uploads(cancellationToken: cancellationToken);
-            for (var i = 0; i < 3; i++)
+            // Better would be if `ELF` class would expose its buffer so we don't need to read the file twice.
+            // Ideally ELF would read headers as a stream which we could reset to 0 after reading heads
+            // and ensuring it's what we need.
+            using var fileStream = File.OpenRead(file);
+            var postResult = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Post, _serviceUri)
             {
-                await using Stream stream = File.OpenRead(file);
-                await call.RequestStream.WriteAsync(new SymbolUploadRequest
+                Headers = {{"debug-id", debugId}},
+                Content = new MultipartFormDataContent(
+                    // TODO: add a proper boundary
+                    $"Upload----WebKitFormBoundary7MA4YWxkTrZu0gW--")
                 {
-                    DebugId = debugId,
-                    File = await ByteString.FromStreamAsync(stream, cancellationToken)
-                });
+                    {new StreamContent(fileStream), file}
+                }
+            }, cancellationToken);
+
+            if (!postResult.IsSuccessStatusCode)
+            {
+                _logger.LogError("{statusCode} for file {file}", postResult.StatusCode, file);
+                if (postResult.Headers.TryGetValues("X-Error-Code", out var code))
+                {
+                    _logger.LogError("Code: {code}", code);
+                }
             }
-
-            await call.RequestStream.CompleteAsync();
-
-            _ = await call;
+            else
+            {
+                _logger.LogInformation("Sent file: {file}", file);
+            }
         }
 
         // TODO: IAsyncEnumerable when ELF library supports it
@@ -151,6 +165,6 @@ namespace SymbolCollector.Core
             }
         }
 
-        public void Dispose() => _disposable.Dispose();
+        public void Dispose() => _client.Dispose();
     }
 }

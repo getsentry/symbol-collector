@@ -26,15 +26,20 @@ namespace SymbolCollector.Android
 
         private Task StartUpload()
         {
-           return Task.Run(async () =>
-            {
-                // For local testing on macOS: https://docs.microsoft.com/en-US/aspnet/core/grpc/troubleshoot?view=aspnetcore-3.0#unable-to-start-aspnet-core-grpc-app-on-macos
-                // 'HTTP/2 over TLS is not supported on macOS due to missing ALPN support.'.
-                AppContext.SetSwitch(
-                    "System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
+#if DEBUG
+            // For local testing on macOS: https://docs.microsoft.com/en-US/aspnet/core/grpc/troubleshoot?view=aspnetcore-3.0#unable-to-start-aspnet-core-grpc-app-on-macos
+            // 'HTTP/2 over TLS is not supported on macOS due to missing ALPN support.'.
+            AppContext.SetSwitch(
+                "System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
+#endif
+            var bundle = PackageManager.GetApplicationInfo(PackageName, global::Android.Content.PM.PackageInfoFlags.MetaData).MetaData;
+            var url = bundle.GetString("io.sentry.symbol-collector");
+            Log.Info(Tag, "Using Symbol Collector endpoint: " + url);
 
+            return Task.Run(async () =>
+            {
                 var paths = new[] {"/system/lib", "/system/lib64", "/system/"};
-                var client = new Client(new Uri("http://localhost:5000"), new LoggerAdapter<Client>());
+                var client = new Client(new Uri(url), logger: new LoggerAdapter<Client>());
                 try
                 {
                     await client.UploadAllPathsAsync(paths, CancellationToken.None);

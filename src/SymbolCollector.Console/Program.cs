@@ -29,7 +29,7 @@ namespace SymbolCollector.Console
             WriteLine("Press any key to exit...");
 
             var logger = new LoggerAdapter<Client>();
-            var client = new Client(new Uri("http://localhost:5000"), logger);
+            var client = new Client(new Uri("http://localhost:5000"), logger: logger);
 
             await client.UploadAllPathsAsync(paths, cancellation.Token);
         }

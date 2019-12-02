@@ -5,11 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Grpc.AspNetCore" Version="2.23.1"/>
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\SymbolCollector.Core\SymbolCollector.Core.csproj"/>
+    <ProjectReference Include="..\SymbolCollector.Core\SymbolCollector.Core.csproj" />
   </ItemGroup>
 
 </Project>

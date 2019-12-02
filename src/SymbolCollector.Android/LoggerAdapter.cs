@@ -11,7 +11,7 @@ namespace SymbolCollector.Android
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
         {
-            if (IsEnabled(logLevel))
+            if (!IsEnabled(logLevel))
             {
                 return;
             }
@@ -49,7 +49,7 @@ namespace SymbolCollector.Android
                 case LogLevel.Critical: return LogPriority.Error;
                 case LogLevel.None: return (LogPriority)(-1);
                 default: return (LogPriority)level;
-            };
+            }
         }
     }
 }
