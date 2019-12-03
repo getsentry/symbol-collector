@@ -5,7 +5,7 @@ env:
 dotnet: 3.0.100
 mono: 6.0.0
 jdk:
-  - oraclejdk8
+  - openjdk8
 matrix:
   include:
     - os: osx
