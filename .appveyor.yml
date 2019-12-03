@@ -1,15 +1,16 @@
 version: "{build}"
-image: Visual Studio 2019
+image: macOS
 environment:
   global:
     DOTNET_CLI_TELEMETRY_OPTOUT: "1"
-    DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
 test: off
 build_script:
   - sh: .\build.sh
 artifacts:
   - path: '**\*.apk'
 install:
+  - export PATH="$PATH:/Users/appveyor/.dotnet/tools"
   - dotnet tool install --global boots
-  - boots https://aka.ms/xamarin-android-commercial-d16-2-windows
+  - boots https://download.mono-project.com/archive/6.0.0/macos-10-universal/MonoFramework-MDK-6.0.0.313.macos10.xamarin.universal.pkg
+  - boots https://aka.ms/xamarin-android-commercial-d16-2-macos
 
