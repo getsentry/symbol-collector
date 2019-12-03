@@ -4,13 +4,12 @@ env:
     - DOTNET_CLI_TELEMETRY_OPTOUT=1
 dotnet: 3.0.100
 mono: 6.0.0
-jdk:
-  - openjdk8
 matrix:
   include:
     - os: osx
       osx_image: xcode11.2
 script:
+  - jdk_switcher use openjdk8
   - dotnet tool install --global boots
   - boots https://aka.ms/xamarin-android-commercial-d16-2-macos
   - ./build.sh
