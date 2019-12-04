@@ -7,9 +7,10 @@ mono: 6.0.0
 matrix:
   include:
     - os: osx
-      osx_image: xcode11.2
+      osx_image: xcode9.4
 script:
-  - jdk_switcher use openjdk8
+  - brew cask install homebrew/cask-versions/java8
+  - export JAVA_HOME=$(/usr/libexec/java_home -v 1.8)
   - dotnet tool install --global boots
   - boots https://aka.ms/xamarin-android-commercial-d16-2-macos
   - ./build.sh
