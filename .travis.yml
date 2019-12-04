@@ -9,10 +9,11 @@ matrix:
     - os: osx
       osx_image: xcode9.4
 script:
-  - brew cask install homebrew/cask-versions/java8
-  - export JAVA_HOME=$(/usr/libexec/java_home -v 1.8)
   - dotnet tool install --global boots
   - boots https://aka.ms/xamarin-android-commercial-d16-2-macos
+  - brew update
+  - brew cask install homebrew/cask-versions/java8
+  - export JAVA_HOME=$(/usr/libexec/java_home -v 1.8)
   - ./build.sh
 after_success:
   - curl -s https://codecov.io/bash > codecov
