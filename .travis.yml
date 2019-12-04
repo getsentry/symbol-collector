@@ -9,6 +9,10 @@ matrix:
     - os: osx
       osx_image: xcode11.2
 script:
+  - brew cask install android-sdk
+  - export ANDROID_HOME=/usr/local/share/android-sdk
+  - mkdir -p "$ANDROID_HOME/licenses"
+  - echo -e "\nd56f5187479451eabf01fb78af6dfcb131a6481e" > "$ANDROID_HOME/licenses/android-sdk-license"
   - dotnet tool install --global boots
   - boots https://aka.ms/xamarin-android-commercial-d16-2-macos
   - brew update
