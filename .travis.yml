@@ -12,7 +12,7 @@ script:
   - dotnet tool install --global boots
   - boots https://aka.ms/xamarin-android-commercial-d16-2-macos
   - brew update
-  - brew cask install homebrew/cask-versions/java8
+  - brew cask install adoptopenjdk8
   - export JAVA_HOME=$(/usr/libexec/java_home -v 1.8)
   - ./build.sh
 after_success:
