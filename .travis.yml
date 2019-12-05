@@ -16,6 +16,9 @@ matrix:
     - os: osx
       osx_image: xcode11.2
 script:
+  - brew update
+  - brew cask install adoptopenjdk/openjdk/adoptopenjdk8
+  - export JAVA_HOME=$(/usr/libexec/java_home -v 1.8)
   - brew cask install android-sdk
   - export ANDROID_HOME=/usr/local/share/android-sdk
   - export ANDROID_SDK_ROOT=$ANDROID_HOME
@@ -30,9 +33,6 @@ script:
   - ls -lah $ANDROID_HOME/
   - sdkmanager "platforms;android-29" "build-tools;29.0.2"
 #  - yes | sdkmanager --licenses >> yes | sdkmanager --update
-  - brew update
-  - brew cask install adoptopenjdk/openjdk/adoptopenjdk8
-  - export JAVA_HOME=$(/usr/libexec/java_home -v 1.8)
   - dotnet tool install --global boots
   - boots https://aka.ms/xamarin-android-commercial-d16-2-macos
   - ./build.sh
