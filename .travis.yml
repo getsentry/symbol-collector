@@ -26,13 +26,12 @@ script:
   - echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd" > "$ANDROID_HOME/licenses/android-sdk-preview-license"
   - cat $ANDROID_HOME/licenses/android-sdk-license
   - ls -lah $ANDROID_HOME/
-  - echo y | $ANDROID_HOME/tools/bin/sdkmanager "platform-tools" > /dev/null
-  - echo y | $ANDROID_HOME/tools/bin/sdkmanager "build-tools;$AAPT_VERSION" > /dev/null
-  - echo y | $ANDROID_HOME/tools/bin/sdkmanager "platforms;android-23" > /dev/null
+  - yes | sdkmanager "platform-tools" > /dev/null
+  - yes | sdkmanager "platforms;android-26" > /dev/null
+  - yes | sdkmanager --licenses >> yes | sdkmanager --update
   - brew update
   - brew cask install adoptopenjdk/openjdk/adoptopenjdk8
   - export JAVA_HOME=$(/usr/libexec/java_home -v 1.8)
-  - yes | sdkmanager --licenses >> yes | sdkmanager --update
   - dotnet tool install --global boots
   - boots https://aka.ms/xamarin-android-commercial-d16-2-macos
   - ./build.sh
