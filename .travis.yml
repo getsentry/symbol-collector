@@ -1,7 +1,7 @@
 language: csharp
 android:
   components:
-    - android-26
+    - android-29
     - build-tools-29.0.0
   licenses:
     - 'android-sdk-preview-.+'
@@ -28,23 +28,11 @@ script:
   - cat $ANDROID_HOME/licenses/android-sdk-license
   - ls -lah $ANDROID_HOME/tools
   - ls -lah $ANDROID_HOME/
-  - yes | sdkmanager --licenses >> yes | sdkmanager --update
+  - sdkmanager "platforms;android-29" "build-tools;29.0.2"
+#  - yes | sdkmanager --licenses >> yes | sdkmanager --update
   - brew update
   - brew cask install adoptopenjdk/openjdk/adoptopenjdk8
   - export JAVA_HOME=$(/usr/libexec/java_home -v 1.8)
-  - echo $PATH
-  - echo $JAVA_HOME
-  - echo $ANDROID_SDK_ROOT
-  - echo $ANDROID_HOME
-  - /usr/libexec/java_home
-  - java -version
-  - which java
-  - javac -version
-  - which javac
-  - jenv versions
-  - ls -l /System/Library/Java/JavaVirtualMachines || true
-  - ls -l /Library/Java/JavaVirtualMachines || true
-  - for f in /Library/Java/JavaVirtualMachines/*.jdk; do jenv add $f; done
   - dotnet tool install --global boots
   - boots https://aka.ms/xamarin-android-commercial-d16-2-macos
   - ./build.sh
