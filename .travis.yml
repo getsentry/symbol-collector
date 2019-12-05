@@ -1,11 +1,14 @@
+sudo: true
 language: csharp
 android:
   components:
     - android-29
-    - build-tools-29.0.0
+    - build-tools-29.0.2
+    - platform-tools
   licenses:
-    - 'android-sdk-preview-.+'
+    - 'android-sdk-preview-license-.+'
     - 'android-sdk-license-.+'
+    - 'google-gdk-license-.+'
 env:
   global:
     - DOTNET_CLI_TELEMETRY_OPTOUT=1
@@ -25,21 +28,21 @@ script:
   - export ANDROID_HOME=/usr/local/share/android-sdk
   - export ANDROID_SDK_ROOT=$ANDROID_HOME
 #  - export AndroidSdkDirectory=$ANDROID_HOME
-  - mkdir -p "$ANDROID_HOME/licenses"
-  - echo -e "\n24333f8a63b6825ea9c5514f83c2829b004d1fee" >> "$ANDROID_HOME/licenses/android-sdk-license"
-  - echo -e "\n8933bad161af4178b1185d1a37fbf41ea5269c55" >> "$ANDROID_HOME/licenses/android-sdk-license"
-  - echo -e "\n859f317696f67ef3d7f30a50a5560e7834b43903" >> "$ANDROID_HOME/licenses/android-sdk-arm-dbt-license"
-  - echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd" >> "$ANDROID_HOME/licenses/android-sdk-preview-license"
-  - echo -e "\n601085b94cd77f0b54ff86406957099ebe79c4d6" >> "$ANDROID_HOME/licenses/android-googletv-license"
-  - echo -e "\n33b6a2b64607f11b759f320ef9dff4ae5c47d97a" >> "$ANDROID_HOME/licenses/google-gdk-license"
-  - echo -e "\nd975f751698a77b662f1254ddbeed3901e976f5a" >> "$ANDROID_HOME/licenses/intel-android-extra-license"
-  - echo -e "\n859f317696f67ef3d7f30a50a5560e7834b43903" >> "$ANDROID_HOME/licenses/android-sdk-arm-dbt-license"
-  - echo -e "\ne9acab5b5fbb560a72cfaecce8946896ff6aab9d" >> "$ANDROID_HOME/licenses/mips-android-sysimage-license"
+#  - mkdir -p "$ANDROID_HOME/licenses"
+#  - echo -e "\n24333f8a63b6825ea9c5514f83c2829b004d1fee" >> "$ANDROID_HOME/licenses/android-sdk-license"
+#  - echo -e "\n8933bad161af4178b1185d1a37fbf41ea5269c55" >> "$ANDROID_HOME/licenses/android-sdk-license"
+#  - echo -e "\n859f317696f67ef3d7f30a50a5560e7834b43903" >> "$ANDROID_HOME/licenses/android-sdk-arm-dbt-license"
+#  - echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd" >> "$ANDROID_HOME/licenses/android-sdk-preview-license"
+#  - echo -e "\n601085b94cd77f0b54ff86406957099ebe79c4d6" >> "$ANDROID_HOME/licenses/android-googletv-license"
+#  - echo -e "\n33b6a2b64607f11b759f320ef9dff4ae5c47d97a" >> "$ANDROID_HOME/licenses/google-gdk-license"
+#  - echo -e "\nd975f751698a77b662f1254ddbeed3901e976f5a" >> "$ANDROID_HOME/licenses/intel-android-extra-license"
+#  - echo -e "\n859f317696f67ef3d7f30a50a5560e7834b43903" >> "$ANDROID_HOME/licenses/android-sdk-arm-dbt-license"
+#  - echo -e "\ne9acab5b5fbb560a72cfaecce8946896ff6aab9d" >> "$ANDROID_HOME/licenses/mips-android-sysimage-license"
 #  - cat $ANDROID_HOME/licenses/android-sdk-license
   - yes | sdkmanager --update > nul
-#  - yes | sdkmanager --licenses
+  - yes | sdkmanager --licenses > nul
   - sdkmanager "platforms;android-29" > nul
-  - sdkmanager "build-tools;29.0.2"
+  - sdkmanager "build-tools;29.0.2" > nul
 #  - yes | sdkmanager --licenses >> yes | sdkmanager --update
   - dotnet tool install --global boots > nul
   - boots https://aka.ms/xamarin-android-commercial-d16-2-macos > nul
