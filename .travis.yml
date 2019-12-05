@@ -26,7 +26,8 @@ script:
   - mkdir -p "$ANDROID_HOME/licenses"
   - echo -e "24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$ANDROID_HOME/licenses/android-sdk-license"
   - cat $ANDROID_HOME/licenses/android-sdk-license
-  - sdkmanager "platforms;android-29" "build-tools;29.0.2" > nul
+  - sdkmanager "platforms;android-29" "build-tools;29.0.2"
+  - sdkmanager --list
 #  - yes | sdkmanager --licenses >> yes | sdkmanager --update
   - dotnet tool install --global boots
   - boots https://aka.ms/xamarin-android-commercial-d16-2-macos
