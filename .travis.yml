@@ -18,8 +18,7 @@ matrix:
 script:
   - brew cask install android-sdk
   - export ANDROID_HOME=/usr/local/share/android-sdk
-  - export AndroidSdkDirectory=ANDROID_HOME
-  - export ANDROID_SDK_ROOT=$ANDROID_HOME
+  - export AndroidSdkDirectory=$ANDROID_HOME
   - mkdir -p "$ANDROID_HOME/licenses"
   - echo -e "\n8933bad161af4178b1185d1a37fbf41ea5269c55" > "$ANDROID_HOME/licenses/android-sdk-license"
   - echo -e "\nd56f5187479451eabf01fb78af6dfcb131a6481e" >> "$ANDROID_HOME/licenses/android-sdk-license"
@@ -30,15 +29,13 @@ script:
   - echo y | $ANDROID_HOME/tools/bin/sdkmanager "platform-tools" > /dev/null
   - echo y | $ANDROID_HOME/tools/bin/sdkmanager "build-tools;$AAPT_VERSION" > /dev/null
   - echo y | $ANDROID_HOME/tools/bin/sdkmanager "platforms;android-23" > /dev/null
-
-
-#  - brew update
-#  - brew cask install adoptopenjdk/openjdk/adoptopenjdk8
-#  - export JAVA_HOME=$(/usr/libexec/java_home -v 1.8)
-#  - yes | sdkmanager --licenses >> yes | sdkmanager --update
-#  - dotnet tool install --global boots
-#  - boots https://aka.ms/xamarin-android-commercial-d16-2-macos
-#  - ./build.sh
+  - brew update
+  - brew cask install adoptopenjdk/openjdk/adoptopenjdk8
+  - export JAVA_HOME=$(/usr/libexec/java_home -v 1.8)
+  - yes | sdkmanager --licenses >> yes | sdkmanager --update
+  - dotnet tool install --global boots
+  - boots https://aka.ms/xamarin-android-commercial-d16-2-macos
+  - ./build.sh
 after_success:
   - curl -s https://codecov.io/bash > codecov
   - chmod +x codecov
