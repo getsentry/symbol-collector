@@ -11,6 +11,7 @@ matrix:
 script:
   - brew cask install android-sdk
   - export ANDROID_HOME=/usr/local/share/android-sdk
+  - export ANDROID_SDK_ROOT="/usr/local/share/android-sdk"
   - mkdir -p "$ANDROID_HOME/licenses"
   - echo -e "\nd56f5187479451eabf01fb78af6dfcb131a6481e" > "$ANDROID_HOME/licenses/android-sdk-license"
   - dotnet tool install --global boots
