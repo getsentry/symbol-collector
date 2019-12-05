@@ -26,9 +26,7 @@ script:
   - echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd" > "$ANDROID_HOME/licenses/android-sdk-preview-license"
   - cat $ANDROID_HOME/licenses/android-sdk-license
   - ls -lah $ANDROID_HOME/
-  - yes | sdkmanager "platform-tools" > /dev/null
-  - yes | sdkmanager "platforms;android-26" > /dev/null
-  - yes | sdkmanager --licenses >> yes | sdkmanager --update
+  - yes | $ANDROID_HOME/tools/bin/sdkmanager --licenses >> yes | sdkmanager --update
   - brew update
   - brew cask install adoptopenjdk/openjdk/adoptopenjdk8
   - export JAVA_HOME=$(/usr/libexec/java_home -v 1.8)
