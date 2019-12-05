@@ -19,8 +19,8 @@ script:
   - brew update > nul
   - brew cask install adoptopenjdk/openjdk/adoptopenjdk8 > nul
   - export JAVA_HOME=$(/usr/libexec/java_home -v 1.8)
-  - mkdir -p ~/.android
-  - touch ~/.android/repositories.cfg
+  - mkdir -p ~/.android > nul
+  - touch ~/.android/repositories.cfg > nul
   - brew cask install android-sdk > nul
   - export ANDROID_HOME=/usr/local/share/android-sdk
   - export ANDROID_SDK_ROOT=$ANDROID_HOME
@@ -36,13 +36,13 @@ script:
   - echo -e "\n859f317696f67ef3d7f30a50a5560e7834b43903" >> "$ANDROID_HOME/licenses/android-sdk-arm-dbt-license"
   - echo -e "\ne9acab5b5fbb560a72cfaecce8946896ff6aab9d" >> "$ANDROID_HOME/licenses/mips-android-sysimage-license"
 #  - cat $ANDROID_HOME/licenses/android-sdk-license
-  - yes | sdkmanager --update
+  - yes | sdkmanager --update > nul
 #  - yes | sdkmanager --licenses
-  - sdkmanager "platforms;android-29"
+  - sdkmanager "platforms;android-29" > nul
   - sdkmanager "build-tools;29.0.2"
 #  - yes | sdkmanager --licenses >> yes | sdkmanager --update
-  - dotnet tool install --global boots
-  - boots https://aka.ms/xamarin-android-commercial-d16-2-macos
+  - dotnet tool install --global boots > nul
+  - boots https://aka.ms/xamarin-android-commercial-d16-2-macos > nul
   - ./build.sh
 after_success:
   - curl -s https://codecov.io/bash > codecov
