@@ -19,6 +19,7 @@ script:
   - brew update > nul
   - brew cask install adoptopenjdk/openjdk/adoptopenjdk8 > nul
   - export JAVA_HOME=$(/usr/libexec/java_home -v 1.8)
+  - mkdir -p ~/.android
   - touch ~/.android/repositories.cfg
   - brew cask install android-sdk > nul
   - export ANDROID_HOME=/usr/local/share/android-sdk
