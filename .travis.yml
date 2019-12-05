@@ -26,8 +26,10 @@ script:
   - export ANDROID_SDK_ROOT=$ANDROID_HOME
 #  - export AndroidSdkDirectory=$ANDROID_HOME
   - mkdir -p "$ANDROID_HOME/licenses"
-#  - echo -e "24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$ANDROID_HOME/licenses/android-sdk-license"
-  - cat $ANDROID_HOME/licenses/android-sdk-license
+  - echo -e "24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$ANDROID_HOME/licenses/android-sdk-license"
+#  - cat $ANDROID_HOME/licenses/android-sdk-license
+  - yes | sdkmanager --update
+  - yes | sdkmanager --licenses
   - sdkmanager "platforms;android-29"
   - sdkmanager "build-tools;29.0.2"
   - sdkmanager --list
