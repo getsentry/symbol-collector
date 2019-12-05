@@ -18,6 +18,7 @@ matrix:
 script:
   - brew cask install android-sdk
   - export ANDROID_HOME=/usr/local/share/android-sdk
+  - export ANDROID_SDK_ROOT=$ANDROID_HOME
   - export AndroidSdkDirectory=$ANDROID_HOME
   - mkdir -p "$ANDROID_HOME/licenses"
   - echo -e "\n8933bad161af4178b1185d1a37fbf41ea5269c55" > "$ANDROID_HOME/licenses/android-sdk-license"
@@ -25,8 +26,9 @@ script:
   - echo -e "\n24333f8a63b6825ea9c5514f83c2829b004d1fee" >> "$ANDROID_HOME/licenses/android-sdk-license"
   - echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd" > "$ANDROID_HOME/licenses/android-sdk-preview-license"
   - cat $ANDROID_HOME/licenses/android-sdk-license
+  - ls -lah $ANDROID_HOME/tools
   - ls -lah $ANDROID_HOME/
-  - yes | $ANDROID_HOME/tools/bin/sdkmanager --licenses >> yes | sdkmanager --update
+  - yes | sdkmanager --licenses >> yes | sdkmanager --update
   - brew update
   - brew cask install adoptopenjdk/openjdk/adoptopenjdk8
   - export JAVA_HOME=$(/usr/libexec/java_home -v 1.8)
