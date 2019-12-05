@@ -19,14 +19,16 @@ script:
   - brew update > nul
   - brew cask install adoptopenjdk/openjdk/adoptopenjdk8 > nul
   - export JAVA_HOME=$(/usr/libexec/java_home -v 1.8)
+  - touch ~/.android/repositories.cfg
   - brew cask install android-sdk > nul
   - export ANDROID_HOME=/usr/local/share/android-sdk
   - export ANDROID_SDK_ROOT=$ANDROID_HOME
-  - export AndroidSdkDirectory=$ANDROID_HOME
+#  - export AndroidSdkDirectory=$ANDROID_HOME
   - mkdir -p "$ANDROID_HOME/licenses"
-  - echo -e "24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$ANDROID_HOME/licenses/android-sdk-license"
+#  - echo -e "24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$ANDROID_HOME/licenses/android-sdk-license"
   - cat $ANDROID_HOME/licenses/android-sdk-license
-  - sdkmanager "platforms;android-29" "build-tools;29.0.2"
+  - sdkmanager "platforms;android-29"
+  - sdkmanager "build-tools;29.0.2"
   - sdkmanager --list
 #  - yes | sdkmanager --licenses >> yes | sdkmanager --update
   - dotnet tool install --global boots
