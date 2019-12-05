@@ -37,7 +37,7 @@ script:
   - echo -e "\ne9acab5b5fbb560a72cfaecce8946896ff6aab9d" >> "$ANDROID_HOME/licenses/mips-android-sysimage-license"
 #  - cat $ANDROID_HOME/licenses/android-sdk-license
   - yes | sdkmanager --update
-  - yes | sdkmanager --licenses
+#  - yes | sdkmanager --licenses
   - sdkmanager "platforms;android-29"
   - sdkmanager "build-tools;29.0.2"
 #  - yes | sdkmanager --licenses >> yes | sdkmanager --update
