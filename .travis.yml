@@ -27,6 +27,7 @@ script:
   - brew cask install android-sdk > nul
   - export ANDROID_HOME=/usr/local/share/android-sdk
   - export ANDROID_SDK_ROOT=$ANDROID_HOME
+  - export AndroidSdkDirectory=$ANDROID_HOME
 #  - export AndroidSdkDirectory=$ANDROID_HOME
 #  - mkdir -p "$ANDROID_HOME/licenses"
 #  - echo -e "\n24333f8a63b6825ea9c5514f83c2829b004d1fee" >> "$ANDROID_HOME/licenses/android-sdk-license"
