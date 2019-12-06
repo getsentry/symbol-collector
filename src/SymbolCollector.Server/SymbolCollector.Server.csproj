@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SymbolCollector.Core\SymbolCollector.Core.csproj" />
+    <PackageReference Include="Google.Cloud.Storage.V1" Version="2.3.0" />
   </ItemGroup>
 
 </Project>
