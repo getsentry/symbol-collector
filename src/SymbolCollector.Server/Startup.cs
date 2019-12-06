@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.IO;
 using System.Net;
 using System.Threading;
@@ -60,6 +59,8 @@ namespace SymbolCollector.Server
             {
                 if (context.Request.Path == "/image")
                 {
+                    context.Request.EnableBuffering();
+
                     if (context.Request.Headers.TryGetValue("debug-id", out var debugId))
                     {
                         log.LogInformation("Incoming image with debug Id:{debugId}", debugId);
