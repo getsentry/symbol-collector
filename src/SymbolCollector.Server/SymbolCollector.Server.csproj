@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Sentry.AspNetCore" Version="2.0.0-beta6" />
     <ProjectReference Include="..\SymbolCollector.Core\SymbolCollector.Core.csproj" />
     <PackageReference Include="Google.Cloud.Storage.V1" Version="2.3.0" />
   </ItemGroup>
