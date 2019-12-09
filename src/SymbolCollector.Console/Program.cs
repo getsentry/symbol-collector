@@ -1,22 +1,21 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Sentry;
 using SymbolCollector.Core;
 using static System.Console;
 
 namespace SymbolCollector.Console
 {
-    class Program
+    internal class Program
     {
-        static async Task Main(string[] args)
-        {
-            // TODO: Get the paths via parameter or confi file
-            var paths = new[] {"/lib/", "/usr/lib/", "/usr/local/lib/"};
+        private const string Dsn = "https://02619ad38bcb40d0be5167e1fb335954@sentry.io/1847454";
+        private const string SymbolCollectorServiceUrl = "http://localhost:5000";
 
-            // For local testing on macOS: https://docs.microsoft.com/en-US/aspnet/core/grpc/troubleshoot?view=aspnetcore-3.0#unable-to-start-aspnet-core-grpc-app-on-macos
-            // 'HTTP/2 over TLS is not supported on macOS due to missing ALPN support.'.
-            AppContext.SetSwitch(
-                "System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
+        private static async Task UploadSymbols()
+        {
+            // TODO: Get the paths via parameter or confi file/env var?
+            var paths = new[] {"/lib/", "/usr/lib/", "/usr/local/lib/"};
 
             var cancellation = new CancellationTokenSource();
             CancelKeyPress += (s, ev) =>
@@ -29,9 +28,31 @@ namespace SymbolCollector.Console
             WriteLine("Press any key to exit...");
 
             var logger = new LoggerAdapter<Client>();
-            var client = new Client(new Uri("http://localhost:5000"), logger: logger);
-
+            var client = new Client(new Uri(SymbolCollectorServiceUrl), logger: logger);
             await client.UploadAllPathsAsync(paths, cancellation.Token);
+        }
+
+        private static async Task Main(string[] args)
+        {
+            SentrySdk.Init(o =>
+            {
+#if DEBUG
+                o.Debug = true;
+#endif
+                o.AttachStacktrace = true;
+                o.Dsn = new Dsn(Dsn);
+            });
+            SentrySdk.ConfigureScope(s => s.SetTag("app", typeof(Program).Assembly.GetName().Name));
+            try
+            {
+                await UploadSymbols();
+            }
+            catch (Exception e)
+            {
+                SentrySdk.CaptureException(e);
+            }
+
+            await SentrySdk.FlushAsync(TimeSpan.FromSeconds(2));
         }
     }
 }
