@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Sentry;
@@ -15,7 +17,12 @@ namespace SymbolCollector.Console
         private static async Task UploadSymbols()
         {
             // TODO: Get the paths via parameter or confi file/env var?
-            var paths = new[] {"/lib/", "/usr/lib/", "/usr/local/lib/"};
+            var paths = new List<string> {"/lib/", "/usr/lib/", "/usr/local/lib/"};
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                // TODO: Add per OS paths
+//                paths.Add("");
+            }
 
             var cancellation = new CancellationTokenSource();
             CancelKeyPress += (s, ev) =>
@@ -42,7 +49,11 @@ namespace SymbolCollector.Console
                 o.AttachStacktrace = true;
                 o.Dsn = new Dsn(Dsn);
             });
-            SentrySdk.ConfigureScope(s => s.SetTag("app", typeof(Program).Assembly.GetName().Name));
+            SentrySdk.ConfigureScope(s =>
+            {
+                s.SetTag("app", typeof(Program).Assembly.GetName().Name);
+                s.SetTag("server-endpoint", SymbolCollectorServiceUrl);
+            });
             try
             {
                 await UploadSymbols();

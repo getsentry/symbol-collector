@@ -3,12 +3,16 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ELFSharp.ELF;
+using ELFSharp.MachO;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using FileType = ELFSharp.MachO.FileType;
 
 namespace SymbolCollector.Core
 {
@@ -107,62 +111,118 @@ namespace SymbolCollector.Core
         // TODO: IAsyncEnumerable when ELF library supports it
         private IEnumerable<(string debugId, string file)> GetFiles(IEnumerable<string> files)
         {
+            Func<string, string?> getBuildId;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                // TODO: Take this as a strategy class-wide to check for platform only once.
+                getBuildId = GetMachOBuildId;
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                getBuildId = GetElfBuildId;
+            }
+            else
+            {
+                // TODO: This needs to be check at the start of the program though
+                throw new NotSupportedException($"OS {RuntimeInformation.OSDescription} is not supported.");
+            }
+
             foreach (var file in files)
             {
                 _logger.LogInformation("Processing file: {file}.", file);
-                IELF? elf = null;
-                string? buildIdHex;
-                try
+
+                var buildId = getBuildId(file);
+                if (buildId is null) continue;
+
+                yield return (buildId, file);
+            }
+        }
+
+        private string? GetMachOBuildId(string file)
+        {
+            try
+            {
+                // TODO: find an async API if this is used by the server
+                if (MachOReader.TryLoad(file, out _) == MachOResult.OK)
                 {
-                    // TODO: find an async API
-                    if (!ELFReader.TryLoad(file, out elf))
+                    using var algorithm = SHA256.Create();
+                    var hash = algorithm.ComputeHash(File.ReadAllBytes(file));
+                    var builder = new StringBuilder();
+                    foreach (var b in hash)
                     {
-                        _logger.LogWarning("Couldn't load': {file} with ELF reader.", file);
-                        continue;
+                        builder.Append(b.ToString("x2"));
                     }
 
+                    return builder.ToString();
+                }
+
+                _logger.LogWarning("Couldn't load': {file} with mach-O reader.", file);
+            }
+            catch (Exception e)
+            {
+                // You would expect TryLoad doesn't throw but that's not the case
+                _logger.LogError(e, "Failed processing file {file}.", file);
+            }
+
+            return null;
+        }
+
+        private string? GetElfBuildId(string file)
+        {
+            IELF? elf = null;
+            try
+            {
+                // TODO: find an async API if this is used by the server
+                if (ELFReader.TryLoad(file, out elf))
+                {
                     var hasBuildId = elf.TryGetSection(".note.gnu.build-id", out var buildId);
-                    if (!hasBuildId)
+                    if (hasBuildId)
+                    {
+                        var hasUnwindingInfo = elf.TryGetSection(".eh_frame", out _);
+                        var hasDwarfDebugInfo = elf.TryGetSection(".debug_frame", out _);
+
+                        if (hasUnwindingInfo || hasDwarfDebugInfo)
+                        {
+                            _logger.LogInformation("Contains unwinding info: {hasUnwindingInfo}", hasUnwindingInfo);
+                            _logger.LogInformation("Contains DWARF debug info: {hasDwarfDebugInfo}", hasDwarfDebugInfo);
+
+                            var builder = new StringBuilder();
+                            var bytes = buildId.GetContents().Skip(16);
+
+                            foreach (var @byte in bytes)
+                            {
+                                builder.Append(@byte.ToString("x2"));
+                            }
+
+                            return builder.ToString();
+                        }
+                        else
+                        {
+                            _logger.LogWarning("No unwind nor DWARF debug info in {file}", file);
+                            return null;
+                        }
+                    }
+                    else
                     {
                         _logger.LogWarning("No Debug Id in {file}", file);
-                        continue;
                     }
-
-                    var hasUnwindingInfo = elf.TryGetSection(".eh_frame", out _);
-                    var hasDwarfDebugInfo = elf.TryGetSection(".debug_frame", out _);
-
-                    if (!hasUnwindingInfo && !hasDwarfDebugInfo)
-                    {
-                        _logger.LogWarning("No unwind nor DWARF debug info in {file}", file);
-                        continue;
-                    }
-
-                    _logger.LogInformation("Contains unwinding info: {hasUnwindingInfo}", hasUnwindingInfo);
-                    _logger.LogInformation("Contains DWARF debug info: {hasDwarfDebugInfo}", hasDwarfDebugInfo);
-
-                    var builder = new StringBuilder();
-                    var bytes = buildId.GetContents().Skip(16);
-
-                    foreach (var @byte in bytes)
-                    {
-                        builder.Append(@byte.ToString("x2"));
-                    }
-
-                    buildIdHex = builder.ToString();
                 }
-                catch (Exception e)
+                else
                 {
-                    // You would expect TryLoad doesn't throw but that's not the case
-                    _logger.LogError(e, "Failed processing file {file}.", file);
-                    continue;
+                    _logger.LogWarning("Couldn't load': {file} with ELF reader.", file);
                 }
-                finally
-                {
-                    elf?.Dispose();
-                }
-
-                yield return (buildIdHex, file);
             }
+            catch (Exception e)
+            {
+                // You would expect TryLoad doesn't throw but that's not the case
+                _logger.LogError(e, "Failed processing file {file}.", file);
+            }
+            finally
+            {
+                elf?.Dispose();
+            }
+
+            return null;
         }
 
         public void Dispose() => _client.Dispose();
