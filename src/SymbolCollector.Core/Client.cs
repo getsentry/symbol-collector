@@ -27,7 +27,8 @@ namespace SymbolCollector.Core
             HttpMessageHandler? handler = null,
             ILogger<Client>? logger = null)
         {
-            _serviceUri = serviceUri;
+            // We only hit /image here
+            _serviceUri = new Uri(serviceUri, "image");
             _logger = logger ?? NullLogger<Client>.Instance;
             _client = new HttpClient(handler ?? new HttpClientHandler());
         }
