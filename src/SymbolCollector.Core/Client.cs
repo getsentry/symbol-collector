@@ -17,15 +17,18 @@ namespace SymbolCollector.Core
 {
     public class Client : IDisposable
     {
+        private readonly FatBinaryReader _fatBinaryReader;
         private readonly Uri _serviceUri;
         private readonly ILogger<Client> _logger;
         private readonly HttpClient _client;
 
         public Client(
             Uri serviceUri,
+            FatBinaryReader fatBinaryReader,
             HttpMessageHandler? handler = null,
             ILogger<Client>? logger = null)
         {
+            _fatBinaryReader = fatBinaryReader ?? throw new ArgumentNullException(nameof(fatBinaryReader));
             // We only hit /image here
             _serviceUri = new Uri(serviceUri, "image");
             _logger = logger ?? NullLogger<Client>.Instance;
@@ -137,8 +140,11 @@ namespace SymbolCollector.Core
                     if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                     {
                         // Check if it's a Fat Mach-O
-                        if (FatBinaryReader.TryLoad(file, out var test) && test is { } fatMachO)
+                        if (_fatBinaryReader.TryLoad(file, out var test) && test is { } fatMachO)
                         {
+                            _logger.LogInformation("Fat binary file with {count} Mach-O files: {file}.", fatMachO.Header.FatArchCount, file);
+
+                            using (_logger.BeginScope(new {FatMachO = file}))
                             using (fatMachO)
                             {
                                 foreach (var buildIdFile in GetFiles(fatMachO.MachOFiles))

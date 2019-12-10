@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using ELFSharp.MachO;
+using Microsoft.Extensions.Logging;
 
 namespace SymbolCollector.Core
 {
@@ -15,11 +15,13 @@ namespace SymbolCollector.Core
         public FatHeader Header { get; set; }
         public IEnumerable<string> MachOFiles { get; set; } = Enumerable.Empty<string>();
 
+        internal IEnumerable<string> FilesToDelete = Enumerable.Empty<string>();
+
         public void Dispose()
         {
             if (_deleteFilesOnDispose)
             {
-                foreach (var file in MachOFiles)
+                foreach (var file in FilesToDelete)
                 {
                     File.Delete(file);
                 }
@@ -28,16 +30,28 @@ namespace SymbolCollector.Core
     }
 
     // AKA multi-arch file/universal binary
-    public static class FatBinaryReader
+    public class FatBinaryReader
     {
+        private readonly ILogger<FatBinaryReader> _logger;
         public const uint FatObjectMagic = 0x_cafe_babe;
         private const int FatArchSize = 20;
         private const int HeaderSize = 8;
 
-        public static bool TryLoad(string path, out FatMachO? fatMachO)
+        public FatBinaryReader(ILogger<FatBinaryReader> logger) => _logger = logger;
+
+        public bool TryLoad(string path, out FatMachO? fatMachO)
         {
-            var file = File.ReadAllBytes(path);
-            return TryLoad(file, out fatMachO);
+            try
+            {
+                var file = File.ReadAllBytes(path);
+                return TryLoad(file, out fatMachO);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Couldn't open file.");
+                fatMachO = null;
+                return false;
+            }
         }
 
         public static bool TryLoad(byte[] bytes, out FatMachO? fatMachO)
@@ -49,9 +63,11 @@ namespace SymbolCollector.Core
                 return false;
             }
 
+            var filesToDelete = new List<string>();
             fatMachO = new FatMachO(true)
             {
                 Header = header.Value,
+                FilesToDelete = filesToDelete,
                 MachOFiles = GetFatArches(bytes, (int) header.Value.FatArchCount)
                     .Select(arch =>
                     {
@@ -64,6 +80,7 @@ namespace SymbolCollector.Core
 
                         // blocking I/O
                         var file = Path.GetTempFileName();
+                        filesToDelete.Add(file);
                         File.WriteAllBytes(file, buffer);
                         return file;
                     })

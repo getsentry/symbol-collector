@@ -34,8 +34,10 @@ namespace SymbolCollector.Console
 
             WriteLine("Press any key to exit...");
 
-            var logger = new LoggerAdapter<Client>();
-            var client = new Client(new Uri(SymbolCollectorServiceUrl), logger: logger);
+            // TODO: M.E.DependencyInjection/Configuration
+            var loggerClient = new LoggerAdapter<Client>();
+            var loggerFatBinaryReader = new LoggerAdapter<FatBinaryReader>();
+            var client = new Client(new Uri(SymbolCollectorServiceUrl), new FatBinaryReader(loggerFatBinaryReader), logger: loggerClient);
             await client.UploadAllPathsAsync(paths, cancellation.Token);
         }
 
