@@ -16,8 +16,6 @@ namespace SymbolCollector.Console
 
         private static async Task UploadSymbols()
         {
-            // https://github.com/Tyrrrz/CliFx
-
             // TODO: Get the paths via parameter or confi file/env var?
             var paths = new List<string> {"/lib/", "/usr/lib/", "/usr/local/lib/"};
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))

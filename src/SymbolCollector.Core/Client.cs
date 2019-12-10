@@ -12,7 +12,6 @@ using ELFSharp.ELF;
 using ELFSharp.MachO;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using FileType = ELFSharp.MachO.FileType;
 
 namespace SymbolCollector.Core
 {
@@ -133,7 +132,24 @@ namespace SymbolCollector.Core
                 _logger.LogInformation("Processing file: {file}.", file);
 
                 var buildId = getBuildId(file);
-                if (buildId is null) continue;
+                if (buildId is null)
+                {
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                    {
+                        // Check if it's a Fat Mach-O
+                        if (FatBinaryReader.TryLoad(file, out var test) && test is { } fatMachO)
+                        {
+                            using (fatMachO)
+                            {
+                                foreach (var buildIdFile in GetFiles(fatMachO.MachOFiles))
+                                {
+                                    yield return buildIdFile;
+                                }
+                            }
+                        }
+                    }
+                    continue;
+                }
 
                 yield return (buildId, file);
             }
