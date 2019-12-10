@@ -148,13 +148,7 @@ namespace SymbolCollector.Core
                 return false;
             }
             var magic = new byte[4];
-            Buffer.BlockCopy(bytes, 0, magic, 0, 4);
-            // Fat files are BigEndian
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(magic);
-            }
-            return BitConverter.ToUInt32(magic, 0) == FatObjectMagic;
+            return GetFatBinaryUint32(bytes, 0, magic, 0) == FatObjectMagic;
         }
     }
 
