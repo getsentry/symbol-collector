@@ -143,7 +143,8 @@ namespace SymbolCollector.Core
                         FatMachO? load = null;
                         if (_fatBinaryReader?.TryLoad(file, out load) == true && load is { } fatMachO)
                         {
-                            _logger.LogInformation("Fat binary file with {count} Mach-O files: {file}.", fatMachO.Header.FatArchCount, file);
+                            _logger.LogInformation("Fat binary file with {count} Mach-O files: {file}.",
+                                fatMachO.Header.FatArchCount, file);
 
                             using (_logger.BeginScope(new {FatMachO = file}))
                             using (fatMachO)
@@ -155,40 +156,16 @@ namespace SymbolCollector.Core
                             }
                         }
                     }
+
                     continue;
                 }
 
+                // TODO: Store in the metadata/send in the header
+                var hash = GetHash(file);
+                _logger.LogInformation("File hash: {hash}.", hash);
+
                 yield return (buildId, file);
             }
-        }
-
-        private string? GetMachOBuildId(string file)
-        {
-            try
-            {
-                // TODO: find an async API if this is used by the server
-                if (MachOReader.TryLoad(file, out _) == MachOResult.OK)
-                {
-                    using var algorithm = SHA256.Create();
-                    var hash = algorithm.ComputeHash(File.ReadAllBytes(file));
-                    var builder = new StringBuilder();
-                    foreach (var b in hash)
-                    {
-                        builder.Append(b.ToString("x2"));
-                    }
-
-                    return builder.ToString();
-                }
-
-                _logger.LogWarning("Couldn't load': {file} with mach-O reader.", file);
-            }
-            catch (Exception e)
-            {
-                // You would expect TryLoad doesn't throw but that's not the case
-                _logger.LogError(e, "Failed processing file {file}.", file);
-            }
-
-            return null;
         }
 
         private string? GetElfBuildId(string file)
@@ -247,6 +224,106 @@ namespace SymbolCollector.Core
             }
 
             return null;
+        }
+
+        private string? GetMachOBuildId(string file)
+        {
+            try
+            {
+                // TODO: find an async API if this is used by the server
+                if (MachOReader.TryLoad(file, out var mach0) == MachOResult.OK)
+                {
+                    _logger.LogDebug("Mach-O found {file}", file);
+                    LogTrace(mach0);
+
+                    string? buildId = null;
+                    var uuid = mach0.GetCommandsOfType<Uuid?>().FirstOrDefault();
+                    if (!(uuid is null))
+                    {
+                        // TODO: Verify this is coming out correctly. Endianess not verified!!!
+                        buildId = uuid.Id.ToString();
+                    }
+
+                    return buildId;
+                }
+
+                _logger.LogWarning("Couldn't load': {file} with mach-O reader.", file);
+            }
+            catch (Exception e)
+            {
+                // You would expect TryLoad doesn't throw but that's not the case
+                _logger.LogError(e, "Failed processing file {file}.", file);
+            }
+
+            return null;
+        }
+
+        private object GetHash(string file)
+        {
+            using var algorithm = SHA256.Create();
+            var hashingAlgo = algorithm.ComputeHash(File.ReadAllBytes(file));
+            var builder = new StringBuilder();
+            foreach (var b in hashingAlgo)
+            {
+                builder.Append(b.ToString("x2"));
+            }
+            var hash =  builder.ToString();
+            return hash;
+        }
+
+        private void LogTrace(MachO mach0)
+        {
+            if (!_logger.IsEnabled(LogLevel.Trace))
+            {
+                return;
+            }
+
+            foreach (var o in mach0.GetCommandsOfType<Command>())
+            {
+                switch (o)
+                {
+                    case Uuid uuid:
+                        _logger.LogTrace("Uuid: {Uuid}", uuid.Id);
+                        break;
+                    case MacOsMinVersion macOsMinVersion:
+                        _logger.LogTrace("MacOsMinVersion Sdk: {sdk}", macOsMinVersion.Sdk);
+                        _logger.LogTrace("MacOsMinVersion Version: {version}", macOsMinVersion.Version);
+                        break;
+                    case IPhoneOsMinVersion iPhoneOsMinVersion:
+                        _logger.LogTrace("IPhoneOsMinVersion Sdk: {sdk}", iPhoneOsMinVersion.Sdk);
+                        _logger.LogTrace("IPhoneOsMinVersion Version: {version}", iPhoneOsMinVersion.Version);
+                        break;
+                    case Segment segment:
+                        _logger.LogTrace("Segment Name: {name}", segment.Name);
+                        _logger.LogTrace("Segment Address: {address}", segment.Address);
+                        _logger.LogTrace("Segment Size: {size}", segment.Size);
+                        _logger.LogTrace("Segment InitialProtection: {initialProtection}",
+                            segment.InitialProtection);
+                        _logger.LogTrace("Segment MaximalProtection: {maximalProtection}",
+                            segment.MaximalProtection);
+                        foreach (var section in segment.Sections)
+                        {
+                            _logger.LogTrace("Section Name: {name}", section.Name);
+                            _logger.LogTrace("Section Address: {address}", section.Address);
+                            _logger.LogTrace("Section Size: {size}", section.Size);
+                            _logger.LogTrace("Section AlignExponent: {alignExponent}",
+                                section.AlignExponent);
+                        }
+                        break;
+                    case EntryPoint entryPoint:
+                        _logger.LogTrace("EntryPoint Value: {entryPoint}", entryPoint.Value);
+                        _logger.LogTrace("StackSize Value: {stackSize}", entryPoint.StackSize);
+                        break;
+                    case SymbolTable symbolTable:
+                        _logger.LogTrace("Symbol table:");
+                        foreach (var symbol in symbolTable.Symbols)
+                        {
+                            _logger.LogTrace("Symbol Name: {name}", symbol.Name);
+                            _logger.LogTrace("Symbol Value: {value}", symbol.Value);
+                        }
+                        break;
+                }
+            }
         }
 
         public void Dispose() => _client.Dispose();

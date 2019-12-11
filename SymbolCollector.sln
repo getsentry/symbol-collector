@@ -14,6 +14,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SymbolCollector.Server.Test
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SymbolCollector.Core.Tests", "test\SymbolCollector.Core.Tests\SymbolCollector.Core.Tests.csproj", "{7F808549-0A33-4858-B01C-D278ABEFECAA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ELFSharp", "src\ELFSharp\ELFSharp.csproj", "{2B98ED62-A2B8-436D-8D4C-F805DDEA712A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -99,5 +101,17 @@ Global
 		{7F808549-0A33-4858-B01C-D278ABEFECAA}.Release|x64.Build.0 = Release|Any CPU
 		{7F808549-0A33-4858-B01C-D278ABEFECAA}.Release|x86.ActiveCfg = Release|Any CPU
 		{7F808549-0A33-4858-B01C-D278ABEFECAA}.Release|x86.Build.0 = Release|Any CPU
+		{2B98ED62-A2B8-436D-8D4C-F805DDEA712A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2B98ED62-A2B8-436D-8D4C-F805DDEA712A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2B98ED62-A2B8-436D-8D4C-F805DDEA712A}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2B98ED62-A2B8-436D-8D4C-F805DDEA712A}.Debug|x64.Build.0 = Debug|Any CPU
+		{2B98ED62-A2B8-436D-8D4C-F805DDEA712A}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2B98ED62-A2B8-436D-8D4C-F805DDEA712A}.Debug|x86.Build.0 = Debug|Any CPU
+		{2B98ED62-A2B8-436D-8D4C-F805DDEA712A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2B98ED62-A2B8-436D-8D4C-F805DDEA712A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2B98ED62-A2B8-436D-8D4C-F805DDEA712A}.Release|x64.ActiveCfg = Release|Any CPU
+		{2B98ED62-A2B8-436D-8D4C-F805DDEA712A}.Release|x64.Build.0 = Release|Any CPU
+		{2B98ED62-A2B8-436D-8D4C-F805DDEA712A}.Release|x86.ActiveCfg = Release|Any CPU
+		{2B98ED62-A2B8-436D-8D4C-F805DDEA712A}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
