@@ -1,4 +1,5 @@
 .idea/
+.user
 .vs/
 .DS_Store
 bin/
