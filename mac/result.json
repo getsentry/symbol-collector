@@ -1,0 +1,830 @@
+[
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-1851.20050712.Cmb2C/MacOSXUpdateCombo10.4.2.dmg",
+  "title": "Mac OS X Update 10.4.2 Combo"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-1852.20050712.RSr2x/MacOSXSrvrUpdCombo10.4.2.dmg",
+  "title": "Mac OS X Server 10.4.2 Combo"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-1937.20051031.SRVR43/MacOSXServerUpdate10.4.3.dmg",
+  "title": "Mac OS X Server 10.4.3"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-1935.20051031.Cln43D/MacOSXUpdate10.4.3.dmg",
+  "title": "Mac OS X Update 10.4.3"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-1936.20051031.cb43CL/MacOSXUpdateCombo10.4.3.dmg",
+  "title": "Mac OS X Update 10.4.3 Combo"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-1938.20051031.rVS43C/MacOSXSrvrUpdCombo10.4.3.dmg",
+  "title": "Mac OS X Server 10.4.3 Combo"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-1872.20050602.SCRT6/SecUpd2005-006Pan.dmg",
+  "title": "Security Update 2005-006 (Mac OS X 10.3.9)"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-1884.20051020.RtPR3/ProRuntime.dmg",
+  "title": "Pro Application Support 3.1 (Mac OS X 10.3.9)"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-2313.20060214.CM45X/MacOSXUpdCombo10.4.5PPC.dmg",
+  "title": "Mac OS X Update 10.4.5 Combo"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-2348.20060403.Rvdr46/MacOSXUpdCombo10.4.6PPC.dmg",
+  "title": "Mac OS X 10.4.6 Combo for PPC"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-2283.20060301.gtrxpr/SecUpd2006-001Ti.dmg",
+  "title": "Security Update 2006-001 Mac OS X 10.4.5 (PPC)"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-1594.20050209.SNWCB/MacOSXUpdateCombo10.3.8.dmg",
+  "title": "Mac OS X Update 10.3.8 (Combo)"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-2212.20051114.pmg539/PMG5FirmwareUpdate10.3.dmg",
+  "title": "Power Mac G5 (Late 2004) System Firmware Update for Mac OS X 10.3.9"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-2359.20060403.SR6Hu/MacOSXSrvrUpdCombo10.4.6.dmg",
+  "title": "Mac OS X Server 10.4.6 Combo"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-1596.20050209.SVrCB/MacOSXSrvrUpdCombo10.3.8.dmg",
+  "title": "Mac OS X Server Update 10.3.8 (Combo)"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-98162-20191017-55ad0d5f-57f5-40d7-aec1-05152ff7e0ff/MacOSXUpdCombo10.6.5.dmg",
+  "title": "Mac OS X v10.6.5 Update (Combo)"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-85226-20191017-60e87e02-8197-4c21-b958-4ad6e0153ccc/MacOSXUpdCombo10.6.2.dmg",
+  "title": "Mac OS X v10.6.2 Update (Combo)"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-1866.20050519.Rvsdr/MacOSXSvrUpdate10.4.1.dmg",
+  "title": "Mac OS X Server 10.4.1"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-98141-20191017-4da6dfa7-3c9c-4c0a-9233-9bd227327013/MacOSXServerUpdCombo10.6.4.dmg",
+  "title": "Mac OS X Server v10.6.4 Update v.1.1 (Combo)"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-85219-20191017-0df105ab-018c-43f0-9f44-c18fd7f4fe26/MacOSXServerUpd10.6.2.dmg",
+  "title": "Mac OS X Server v10.6.2 Update"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-1570.20050415.39CbC/MacOSXUpdateCombo10.3.9.dmg",
+  "title": "Mac OS X Combined Update 10.3.9"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-4181.20080211.wbjC5/WebObjects541for10.5.dmg",
+  "title": "WebObjects Update 5.4.1 for Mac OS X 10.5"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-6418.20090512.Vg0LK/MacOSXUpd10.5.7.dmg",
+  "title": "Mac OS X 10.5.7 Update"
+ },
+ {
+  "url": "http://appldnld.apple.com.edgesuite.net/content.info.apple.com/iPod/SBML/osx/061-2222.20051128.pdmcx/iPodUpdater2005-11-17.dmg",
+  "title": "iPod Updater 2005-11-17"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-0898.20031104.bHY32/2Z/SecurityUpd2003-11-04.dmg",
+  "title": "Security Update 2003-11-04 1.0"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88387-20191011-83d84969-80a2-4256-83b7-432b7a379f35/RAWCameraUpdate5.dmg",
+  "title": "Digital Camera RAW Compatibility Update 5.04"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-1565.20050415.MC39D/MacOSXUpdate10.3.9.dmg",
+  "title": "Mac OS X Update 10.3.9"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-90765-20191011-837e856d-b522-4865-b64c-641048ed77c4/macOSUpdCombo10.12.6.dmg",
+  "title": "Download macOS Sierra 10.12.6 Combo Update"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-90644-20191011-ffbaec3e-a5ed-4376-8855-5db548ac0517/macOSUpd10.12.6.dmg",
+  "title": "Download macOS Sierra 10.12.6 Update"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-1558.20041202.PNsrv/SecUpdSrvr2004-12-02Pan.dmg",
+  "title": "Security Update 2004-12-02 (Mac OS X 10.3.6 Server)"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-0983.20031219.vfr2q/2Z/SecurityUpd2003-12-19.dmg",
+  "title": "Security Update 2003-12-19 (Panther) 1.0"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-0985.20031219.cplk8/2Z/SecurityUpd2003-12-19Jag.dmg",
+  "title": "Security Update 2003-12-19 (Jaguar) 1.0"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-0970.20031205.Z2w34/2Z/SecurityUpd2003-12-05.dmg",
+  "title": "Security Update 2003-12-05 for Panther 1.0"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-0935.20031205.cft4r/2Z/SecurityUpd2003-12-05Jag.dmg",
+  "title": "Security Update 2003-12-05 for Jaguar 1.0"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-98147-20191017-77db1d92-73f5-465e-96b6-c9f63ad6221e/MacOSXServerUpdCombo10.6.7.dmg",
+  "title": "Mac OS X Server v10.6.7 Update Combo"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-87802-20191017-dd2fc6fd-177b-402d-a9c0-0559286015ac/MacOSXServerUpd10.6.7.dmg",
+  "title": "Mac OS X Server v10.6.7 Update"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-91759-20191011-01650bca-c2ef-42de-b8a8-63c3fd7d55bc/macOSUpdCombo10.13.6.dmg",
+  "title": "Download macOS High Sierra 10.13.6 Combo Update"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-90501-20191011-37f6fda1-2122-4396-9c64-4c2d2da9182e/macOSUpd10.13.2.dmg",
+  "title": "Download macOS High Sierra 10.13.2"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-91745-20191011-4c999ea6-d705-46b2-aa24-6cea428443c9/macOSUpd10.13.6.dmg",
+  "title": "Download macOS High Sierra 10.13.6 Update"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-87847-20191017-ff31c3ee-06e3-4155-9d89-91d4ec8bfc82/MacOSXUpd10.6.7Supp.dmg",
+  "title": "Mac OS X v10.6.7 Supplemental Update for 13\" MacBook Air (Late 2010)"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-84871-20191017-0b29a86f-aafb-492a-87b2-eb44e8d680a6/MacBookProlate2013Upd1.0.dmg",
+  "title": "MacBook Pro (Retina, 13-inch, Late 2013) Software Update 1.0"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-87908-20191017-6015ede6-bd8d-4f3c-80ac-ee74c4ce34e4/MacBookProEFIUpdate.dmg",
+  "title": "MacBook Pro (13-inch, Mid 2010) EFI Firmware Update 2.5"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-89068-20191011-c112bdf9-442f-42b2-860e-b6a343bd8996/MacBookProUpdate.dmg",
+  "title": "Download MacBook Pro (13-inch, 2017) with Touch Bar Update 1.0"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-8320.200100525.fgby7/BootCamp_3.1.3_32-bit.exe",
+  "title": "Boot Camp Update for MacBook Pro (13-inch, Mid 2010) (Windows 32 bit)"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-8321.20100525.bplY7u/BootCamp_3.1.3_64-bit.exe",
+  "title": "Boot Camp Update for MacBook Pro (13-inch, Mid 2010) (Windows 64 bit)"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-87850-20191017-e39128cc-e887-48ab-a4d7-ab4ad7529c6d/MacOSXUpd10.6.7foriMacEarly2011.dmg",
+  "title": "Mac OS X 10.6.7 Update for iMac (early 2011) 1.0"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-94858-20191017-3e6dc392-d258-4e9f-b826-7b5c671cc173/MacOSXUpd10.5.8.dmg",
+  "title": "Mac OS X 10.5.8 Update"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-98178-20191017-3cd2ecc2-7e0e-452f-bae9-7ae748384697/MacOSXServerUpdCombo10.7.3.dmg",
+  "title": "OS X Lion Update 10.7.3 (Server) Combo"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/061-41412-20191024-da84aefe-51e5-4548-99fb-b1f7e0a6455f/macOSUpdCombo10.14.6.dmg",
+  "title": "Download macOS Mojave 10.14.6 Combo Update"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/061-41423-20191024-3b2d1639-dbcf-449d-b0cb-0f922f1bda8b/macOSUpd10.14.6.dmg",
+  "title": "Download macOS Mojave 10.14.6 Update"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-0722.20030814.kvie3/2Z/SecurityUpd2003-08-14.dmg",
+  "title": "Security Update 2003-08-14 (Client) 1.0"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-0687.20030714.j2dj4/2Z/SecurityUpd2003-07-14.dmg",
+  "title": "Security Update 2003-07-14 1.0"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-2677.20060809.Suin4/SecUpd2006-004.dmg",
+  "title": "Security Update 2006-004 for Mac Pro and Mac OS X Server v10.4.7 (Universal)"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-1520.20041105.VX63m/MacOSXUpdate10.3.6.dmg",
+  "title": "Mac OS X Update 10.3.6"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/macos/041-83633-20191029-733f5df7-e13c-4218-9876-7e962c32c5bb/macOSUpd10.15.1.dmg",
+  "title": "Download macOS Catalina 10.15.1 Update"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-5795.20081204.TgBIM/MacBookProSMCUpdate.dmg",
+  "title": "MacBook Pro 15-inch SMC Firmware Update 1.2"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-2368.20060314.btUpgA/BatteryUpdate11.dmg",
+  "title": "Aluminum PowerBook (15 inch) Battery Update v1.1"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-2506.20060516.smcMcBPr/MacBookProSMCUpdate.dmg",
+  "title": "MacBook Pro 15-inch SMC Firmware Update v1.0"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-84845-20191010-2bbc14ed-c048-43aa-bfb5-c88a8f27fb61/BashUpdateLion.dmg",
+  "title": "OS X bash Update 1.0 - OS X Lion & OS X Lion Server"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88079-20191011-67311a02-498a-450e-a4ea-129577ec3dd6/NTPUpdateYosemite.dmg",
+  "title": "OS X NTP Security Update:OS X Yosemite"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88081-20191011-b75e200e-e2d0-4985-bfeb-07beacc85f65/NTPUpdateMavericks.dmg",
+  "title": "OS X NTP Security Update:OS X Mavericks"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-84860-20191010-89b660ba-cd2c-4c64-aa81-3f00e9c9226c/BashUpdateMountainLion.dmg",
+  "title": "OS X bash Update 1.0 \\u2013 OS X Mountain Lion"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-84854-20191010-480f410f-4b32-4204-b26c-653323074008/BashUpdateMavericks.dmg",
+  "title": "OS X bash Update 1.0 \\u2013 OS X Mavericks"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88080-20191011-7e91529b-ae93-44aa-9c19-68a57adf5477/NTPUpdateMountainLion.dmg",
+  "title": "OS X NTP Security Update:OS X Mountain Lion"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-87778-20191017-622d65b9-1db2-4d13-bc46-4ab0d7c3240f/JavaForMacOSX10.5Update10.dmg",
+  "title": "Java for Mac OS X 10.5 Update 10"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88180-20191011-f69b4226-db28-443a-a0c8-cacce65cb24f/OSXUpd10.9.1.dmg",
+  "title": "OS X Mavericks 10.9.1 Update for MacBook Pro with Retina Display (Late 2013)"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-84730-20191010-207d9ad9-1ce5-4b62-aa9c-11e101d5e9ea/OSXUpdCombo10.9.3.dmg",
+  "title": "OS X Mavericks 10.9.3 Update (Combo)"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-87870-20191017-28334506-ef5b-47dc-925e-7fce54cb3033/MacBookProVideoUpdate1.0.dmg",
+  "title": "MacBook Pro Video Update 1.0 (OS X Lion)"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-2000.20050810.G4PBGu/PBG4GraphicsUpdate.dmg",
+  "title": "PowerBook G4 Graphics Update 1.0"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-89058-20191011-c9f90017-e82d-49ac-a294-7aeb2493671a/CanonLaserPrinterDrivers.dmg",
+  "title": "Canon Laser Printer Drivers 3.2 for OS X"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/061-10042-20191011-d7c0712e-f0ac-415c-87dd-b01046e4a7e0/EPSONPrinterDrivers.dmg",
+  "title": "Epson Printer Drivers v3.3 for OS X"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88742-20191011-c679d07b-a355-4dfa-bae5-70d692b3d0b2/BrotherPrinterDrivers.dmg",
+  "title": "Brother Printer Drivers 4.1.1 for OS X"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-90786-20191011-9b690b22-563e-458b-ab2a-51354465efef/SecUpd2017-004ElCapitan.dmg",
+  "title": "Security Update 2017-004 OS X v10.11.6 El Capitan"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-84846-20191010-cf9f8abb-69d1-4836-af86-81b856d3ed7d/RicohPrinterDrivers.dmg",
+  "title": "Ricoh Printer Drivers v3.0 for OS X"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-84872-20191010-cb84b121-2dab-4d24-a928-5f863c8ae345/InfotecPrinterDrivers.dmg",
+  "title": "Infotec Printer Drivers v3.0 for OS X"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-84825-20191010-6382a75b-cfeb-4248-b3ee-c69637c259ef/GestetnerPrinterDrivers.dmg",
+  "title": "Gestetner Printer Drivers v3.0 for OS X"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88440-20191011-db98aaac-806f-4899-bbbe-e8c1e9dfc8ac/OSXUpd10.11.6.dmg",
+  "title": "Download OS X El Capitan 10.11.6 Update"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88470-20191023-EAD0C77A-7215-45E1-8CE3-8EF6EE00516E/iTunes.dmg",
+  "title": "Download iTunes 12.4.3 for OS X"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88441-20191011-b2ed2656-15e9-4a68-900b-66d2cd89dfcb/OSXUpdCombo10.11.5.dmg",
+  "title": "Download OS X El Capitan 10.11.5 Combo Update"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-84828-20191010-097d8b90-9225-464f-ade9-f5274b0e957c/LanierPrinterDrivers.dmg",
+  "title": "Lanier Printer Drivers v3.0 for OS X"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-84831-20191010-0f73c56f-f1d2-495a-a592-9ecba03e25e8/SavinPrinterDrivers.dmg",
+  "title": "Savin Printer Drivers v3.0 for OS X"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-84863-20191010-da1461b9-ce10-415a-8bb9-39a1191569e1/NRGPrinterDrivers.dmg",
+  "title": "NRG Printer Drivers v3.0 for OS X"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88466-20191011-108826ee-31d5-405c-b8b0-ff0a234c9deb/BrotherPrinterDrivers.dmg",
+  "title": "Brother Printer Drivers 4.1 for OS X"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-98166-20191011-f31ae7b2-10ac-471f-87c1-c63c4f5a1998/EPSONPrinterDrivers.dmg",
+  "title": "Epson Printer Drivers v3.2 for OS X"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88390-20191011-02f2e224-5c82-4da1-9b77-2f7ccd30ada0/CanonLaserPrinterDrivers.dmg",
+  "title": "Canon Laser Printer Drivers 3.1 for OS X"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88763-20191011-6e70f498-9d39-420c-b11b-b252b17233e2/HewlettPackardPrinterDrivers.dmg",
+  "title": "HP Printer Drivers v5.1 for OS X"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-84856-20191014-5728f156-6b6d-47dc-abcf-c77675cd34c0/FujiXeroxPrinterDrivers.dmg",
+  "title": "FujiXerox Printer Drivers v3.1 for OS X"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88431-20191011-e7ee7d98-2878-4cd9-bc0a-d98b3a1e24b1/OSXUpd10.11.5.dmg",
+  "title": "Download OS X El Capitan 10.11.5 Update"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-89040-20191011-7a9fdf5e-3b1b-471c-aef1-8db665def6fb/CanonPrinterDrivers.dmg",
+  "title": "Canon Printer Drivers v3.4 for OS X"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-98182-20191011-d3a19fdd-4e3c-4c17-acd7-0670ee1f5042/OSXUpd10.11.4.dmg",
+  "title": "Download OS X El Capitan 10.11.4 Update"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-98160-20191011-5c389106-bb2b-420b-88d3-07517749bda6/OSXUpdCombo10.11.4.dmg",
+  "title": "Download OS X El Capitan 10.11.4 Combo Update"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-98158-20191011-ca34cc8e-dbb5-49fa-b628-a53889f38372/OSXUpdCombo10.11.3.dmg",
+  "title": "Download OS X El Capitan 10.11.3 Combo Update"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-94874-20191011-1e0364f2-aefc-4f1e-a2b7-e9d455c5a989/OSXUpd10.11.3.dmg",
+  "title": "Download OS X El Capitan 10.11.3 Update"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88415-20191011-445749fd-9a34-43f1-b99b-92ab414c915b/MacAppStoreUpdate.dmg",
+  "title": "Mac App Store Update for OS X Snow Leopard"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88497-20191011-7c5dfb9c-fb81-4d22-afe6-230cd077c850/OSXUpdCombo10.11.6.dmg",
+  "title": "Download OS X El Capitan 10.11.6 Combo Update"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-98131-20191011-4a0623d4-b919-4dc5-aa20-dd04df5762cd/OSXUpdCombo10.11.2.dmg",
+  "title": "Download OS X El Capitan 10.11.2 Combo Update"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-98120-20191011-bf73f72a-c957-4a1e-b7eb-cd789200e7c3/OSXUpd10.11.2.dmg",
+  "title": "Download OS X El Capitan 10.11.2 Update"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88185-20191011-8ee0ac2b-8dcf-416e-93e5-c30d35ec761a/OSXUpd10.9.1.dmg",
+  "title": "OS X Mavericks 10.9.1 Update"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-98148-20191011-5fd4947e-75bb-4bd2-94f3-81a404125d1f/OSXUpd10.11.1.dmg",
+  "title": "Download OS X El Capitan 10.11.1 Update"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-84835-20191023-72BD791C-1BAC-4A65-B0F8-FC5971493E8A/iTunes.dmg",
+  "title": "iTunes 11.4 for OS X 10.6"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88152-20191011-5477f628-8b00-44b1-a331-6c467f33c7ce/OSXUpdCombo10.10.3.dmg",
+  "title": "OS X Yosemite 10.10.3 Combo Update"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-94877-20191011-d6a22cf2-c120-4e6c-8ef3-48db66a2144c/OSXUpd10.10.3.dmg",
+  "title": "OS X Yosemite 10.10.3 Update"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88151-20191011-f3816c86-2ef7-4f02-81f1-818149e4d0b9/OSXUpd10.10.3Supp.dmg",
+  "title": "OS X Yosemite 10.10.3 Supplemental Update 1.0"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88111-20191011-170d6bf3-06bb-46fe-b908-626e72f4cc55/BrotherPrinterDrivers.dmg",
+  "title": "Brother Printer Drivers 3.0 for OS X"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88418-20191011-e568dcec-ac9e-48a1-b043-982adf9c21e6/XeroxPrinterDrivers.dmg",
+  "title": "Xerox Printer Drivers v4.1 OS X"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88035-20191011-3d3b3a86-a5be-49b8-8443-7f7e1eec3fc5/MacOSXUpd10.7.5Supp.dmg",
+  "title": "OS X Lion 10.7.5 Supplemental Update"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88150-20191011-aa130be7-0109-4703-a51f-548ad9619d4d/AppleEventsServerUpdateSnow.dmg",
+  "title": "Apple Events Server Update OS X Snow Leopard"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88376-20191011-8b241f41-65f8-4ed0-8c4a-648dbadbe235/OSXUpd10.10.5.dmg",
+  "title": "OS X Yosemite 10.10.5 Update"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88380-20191011-c5bbb3ec-7f37-4b44-8cb4-753810df3edc/OSXUpdCombo10.10.5.dmg",
+  "title": "Download OS X Yosemite 10.10.5 Combo Update"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88140-20191011-250758ef-d633-428d-afa8-7334f518e125/OSXUpd10.9.1.dmg",
+  "title": "OS X Mavericks 10.9.1 Update for Mac Pro (Late 2013)"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88197-20191011-4cd4f442-54e4-47cd-bae8-106d4470e603/OSXUpdCombo10.10.4.dmg",
+  "title": "OS X Yosemite 10.10.4 Combo Update"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88193-20191011-af7ceb05-14db-4da4-8782-b74b8921993f/OSXUpd10.10.4.dmg",
+  "title": "OS X Yosemite 10.10.4 Update"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-84826-20191010-9ab7b256-e497-422f-9afd-93b8ca25d396/OSXUpd10.9.5.dmg",
+  "title": "OS X Mavericks 10.9.5 Update"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-84788-20191010-8c56f3ff-bf89-4e99-9061-be0223d07173/OSXUpdCombo10.9.4.dmg",
+  "title": "OS X Mavericks 10.9.4 Update (Combo)"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-84776-20191010-f076fbfd-68be-425b-93be-76b0f53a8929/OSXUpd10.9.4.dmg",
+  "title": "OS X Mavericks 10.9.4 Update"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-84742-20191010-a2b00374-0869-4f14-8724-245c39020398/OSXUpd10.9.3.dmg",
+  "title": "OS X Mavericks 10.9.3 Update"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-3461.20071114.8Uy45/MacOSXUpdCombo10.4.11PPC.dmg",
+  "title": "Mac OS X 10.4.11 Combo Update (PPC)"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-1572.20050415.39SVc/MacOSXSrvrUpdCombo10.3.9.dmg",
+  "title": "Mac OS X Server Update 10.3.9 (Combo)"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-1848.20050712.Srv42X/MacOSXServerUpdate10.4.2.dmg",
+  "title": "Mac OS X Server 10.4.2"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-3468.20071114.hnT6r/MacOSXSrvrCombo10.4.11Univ.dmg",
+  "title": "Mac OS X Server 10.4.11 Combo Update (Universal)"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88383-20191011-7ab13ab2-23e4-4c39-baa1-50ab8d290339/OSXUpdCombo10.9.2.dmg",
+  "title": "OS X Mavericks 10.9.2 Update (Combo)"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88382-20191011-ab4b48e4-af0d-4301-bfd4-6ebd555c7aa2/OSXUpd10.9.2.dmg",
+  "title": "OS X Mavericks 10.9.2 Update"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-3547.20070702.Wen6y/MacOSXUpd10.4.10Intel.dmg",
+  "title": "Mac OS X 10.4.10 Update v1.1 (Intel)"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-4762.20080528.Nhyp7/MacOSXUpd10.5.3.dmg",
+  "title": "Mac OS X 10.5.3 Update"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88154-20191011-61c86a49-2100-4319-8942-20429aab0581/AppleEventsServerUpdateLion.dmg",
+  "title": "Apple Events Server Update OS X Lion"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-90837-20191011-8ef8cf9e-1335-453e-a54e-877935115be4/LionMigrationAssistant.dmg",
+  "title": "Migration Assistant Update for Mac OS X Lion v1.0"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-84848-20191010-b62bee77-dbcd-4969-94d9-b11f4e2196ff/OSXUpd10.10.1.dmg",
+  "title": "OS X Yosemite 10.10.1 Update"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88016-20191017-665a47eb-6511-431d-9660-7c41be081852/FIPS.dmg",
+  "title": "Mountain Lion: Apple FIPS OS X Cryptographic Modules v3.0"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-8473.20100727.BgtP7/MacOSXUpd10.6.4foriMacMid2010.dmg",
+  "title": "Mac OS X v10.6.4 Update iMac (Mid 2010)"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-87887-20191017-ab52285c-f1be-479a-98fc-d699d183832c/FCPContent.dmg",
+  "title": "Final Cut Pro X Content v1.0"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-8319.20100615.MnMce/MacOSXSrvUp10.6.4MacminiMid2010.dmg",
+  "title": "Mac OS X Server v10.6.4 Update Mac mini (Mid 2010)"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-84792-20191010-46d33aee-e55b-4d6f-84c5-1cec67b6492e/OSXUpd10.8.5Supp.dmg",
+  "title": "OS X Mountain Lion 10.8.5 Supplemental Update"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-87855-20191017-e9f288dc-eec9-49e5-998e-f828214d633d/MacOSXUpd10.6.8.dmg",
+  "title": "Download Mac OS X 10.6.8 Update v.1.1"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-84806-20191010-aab40a67-797f-4139-978b-5b61ca22c1d7/HewlettPackardPrinterDrivers.dmg",
+  "title": "HP Printer Drivers v2.16.1 for Mac OS X v10.6 Snow Leopard"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-1020.20040315.Xse32/2Z/MacOSXUpdateCombo10.3.3.dmg",
+  "title": "Mac OS X (10.3.3) Combined Update 10.3.3"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-2241.20060110.DTrvs44/MacOSXServerUpdate10.4.4.dmg",
+  "title": "Mac OS X Server 10.4.4"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-2347.20060403.Gvfr46/MacOSXUpd10.4.6PPC.dmg",
+  "title": "Mac OS X 10.4.6 for PPC"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-3169.20070313.iKwq2/MacOSXUpdCombo10.4.9PPC.dmg",
+  "title": "Mac OS X 10.4.9 Combo Update (PPC)"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-3342.20070620.m2Yh7/MacOSXSrvrCombo10.4.10Univ.dmg",
+  "title": "Mac OS X Server 10.4.10 Combo Update (Universal)"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-3372.20070620.vBhy7/MacOSXServerUpd10.4.10PPC.dmg",
+  "title": "Mac OS X Server 10.4.10 Update (PPC)"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-4068.20071114.7Y5re/MacOSXUpd10.5.1.dmg",
+  "title": "Mac OS X 10.5.1 Update"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-84842-20191010-6cd58113-6c02-49ec-8f4b-9557ecd838c2/OSXUpdCombo10.9.5.dmg",
+  "title": "Download OS X Mavericks 10.9.5 Update (Combo)"
+ },
+ {
+  "url": "http://appldnld.apple.com.edgesuite.net/content.info.apple.com/iPod/SBML/osx/061-2289.20060110.PDPDt/iPodUpdater2006-01-10.dmg",
+  "title": "iPod Updater 2006-01-10"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-87804-20191017-80ece64a-58da-466b-8050-ddcaacebea22/MacOSXUpd10.6.7forMacBookProEarly2011.dmg",
+  "title": "Mac OS X v10.6.7 Update for early 2011 MacBook Pro"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-87877-20191017-4d1dc81e-29e5-403c-8bb9-f72e08626a38/MacOSXUpd10.6.8Supp.dmg",
+  "title": "Mac OS X 10.6.8 Supplemental Update"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88070-20191011-590add06-d0bc-403f-b789-632bab4a36ba/OSXUpdCombo10.8.4.dmg",
+  "title": "OS X Mountain Lion Update v10.8.4 (Combo)"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/061-05551-20191017-134a04a0-026b-4ee4-861a-8744d9575690/MacOSXUpdCombo10.7.3.dmg",
+  "title": "OS X Lion Update 10.7.3 (Client Combo)"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-92739-20191011-7a4bd255-d999-4ce9-b6a3-2677ce8db8f1/CanonLaserPrinterDrivers.dmg",
+  "title": "Canon Laser Printer Drivers v2.11 for OS X"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-2356.20060403.frhuy/MacOSXUpdCombo10.4.6Intel.dmg",
+  "title": "Mac OS X 10.4.6 Combo for Intel"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-2607.20060627.47cmbppc/MacOSXUpdCombo10.4.7PPC.dmg",
+  "title": "Mac OS X Update 10.4.7 Combo PPC"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-2611.20060626.Tel47cmb/MacOSXUpdCombo10.4.7Intel.dmg",
+  "title": "Mac OS X Update 10.4.7 Combo Intel"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-2661.20060929.MsInu/MacOSXServerUpd10.4.8Univ.dmg",
+  "title": "Mac OS X Server 10.4.8 Update (Universal)"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-3160.20070313.Sut4n/MacOSXSrvrCombo10.4.9Univ.dmg",
+  "title": "Mac OS X Server 10.4.9 Combo Update (Universal)"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-94864-20191011-81b1da55-bf6d-4fcb-8990-78afa2ac405b/OSXUpdCombo10.8.3.dmg",
+  "title": "OS X Mountain Lion Update v10.8.3 (Combo)"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-1126.20040526.McS34/2Z/MacOSXUpdateCombo10.3.4.dmg",
+  "title": "Mac OS X Combined Update 10.3.4"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-87763-20191015-3ff7fbee-a9b6-4336-b71e-5d5d1238d2ba/XeroxPrinterDrivers.dmg",
+  "title": "Xerox Printer Drivers v2.3 for OS X"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88032-20191011-a717bd6c-775a-472e-b054-2be13d62ddea/OSXUpd10.8.2Supp.dmg",
+  "title": "OS X Mountain Lion 10.8.2 Supplemental Update 1.0"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-2354.20060403.bnhyt/MacOSXUpd10.4.6Intel.dmg",
+  "title": "Mac OS X 10.4.6 for Intel"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-3466.20071114.9erVf/MacOSXServerUpd10.4.11Univ.dmg",
+  "title": "Mac OS X Server 10.4.11 Update (Universal)"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-87773-20191017-2ed6a301-7623-4733-8e22-1b967e449a5d/MacOSXUpd10.7.1.dmg",
+  "title": "OS X Lion 10.7.1 Update for MacBook Air and Mac mini 2011 (Client)"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88105-20191011-415b6037-5a4a-4f12-a48b-bdd769ea96ea/OSXUpdCombo10.10.2.dmg",
+  "title": "OS X Yosemite 10.10.2 Combo Update"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88033-20191011-7f4b9fd8-8cbc-4f7d-a5ee-069b9dfd935a/OSXUpdCombo10.8.2.dmg",
+  "title": "OS X Mountain Lion Update v10.8.2 (Combo)"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88030-20191011-6b2086d8-d9fa-4830-9e46-14e4055bc643/OSXUpd10.8.2.dmg",
+  "title": "OS X Mountain Lion Update v10.8.2"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-98140-20191011-e9101876-7452-43c2-a8e1-b3c5c9a68b5b/MacOSXUpd10.7.5.dmg",
+  "title": "OS X Lion Update 10.7.5 (Client)"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-98159-20191017-3c8e5351-e2b9-4684-855c-88c762dd68dc/MacOSXUpdCombo10.7.5.dmg",
+  "title": "Download OS X Lion Update 10.7.5 (Client Combo)"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-90842-20191011-6b957acf-52a9-45df-9d71-d3b0b67e378b/SnowLeoMigrationAssistant.dmg",
+  "title": "Migration Assistant Update for Mac OS X Snow Leopard v1.1"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-90813-20191011-3137b1ba-3379-40e8-8d46-ce9032952939/JavaForMacOSX10.6.dmg",
+  "title": "Java for Mac OS X 10.6 Update 17"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-98144-20191017-66c04441-8881-4665-9bd2-bdc76eb06e35/MacOSXUpdCombo10.6.7.dmg",
+  "title": "Mac OS X v10.6.7 Update Combo"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-98139-20191017-430719ac-1021-4f86-932d-1bfc87d7c4e8/MacOSXServerUpdCombo10.6.6.dmg",
+  "title": "Mac OS X Server v10.6.6 Update Combo"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-87822-20191017-cd5679f6-c6b0-47a8-b08d-660e6f90b46b/MacOSXServerUpd10.6.6.dmg",
+  "title": "Mac OS X Server v10.6.6 Update"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-87825-20191017-33f500c0-9288-4385-b67d-621380ba08cf/SnowLeoMigrationAssistant.dmg",
+  "title": "Migration Assistant Update for Mac OS X Snow Leopard v1.0"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-0076.20020715/2z/MacOSXUpdateCombo10.1.5.dmg.bin",
+  "title": "Mac OS X Combo Update 10.1.5"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-1716.20050429.Xgdr/Xgrid.dmg",
+  "title": "Xgrid Agent for Mac OS X 10.3"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-2315.20060214.Srv45d/MacOSXSvrBaseUpd10.4.5.dmg",
+  "title": "Mac OS X Server 10.4.5"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-2323.20060214.ntlMax/MacOSXUpd10.4.5Intel.dmg",
+  "title": "Mac OS X Update 10.4.5 for Intel"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-2617.20060627.RveSDt/MacOSXServerUpdate10.4.7.dmg",
+  "title": "Mac OS X Server Update 10.4.7"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-2616.20060627.Srv7CB/MacOSXSrvrUpdCombo10.4.7.dmg",
+  "title": "Mac OS X Server Update 10.4.7 Combo"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-8284.20100615.mcmn2/MacOSXUpd10.6.4MacminiMid2010.dmg",
+  "title": "Mac OS X v10.6.4 Update Mac mini (Mid 2010)"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88836-20191011-73a473cb-fbb5-4e57-bc2f-14ccd60ea682/SamsungPrinterDrivers.dmg",
+  "title": "Samsung Printer Drivers v2.6 for OS X"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-84815-20191010-a851ed7a-bd5a-4c3a-b34d-3f47d363683c/NRGPrinterDrivers.dmg",
+  "title": "NRG Printer Drivers v2.5 for OS X"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-2240.20060110.cbsrv44/MacOSXSrvrUpdCombo10.4.4.dmg",
+  "title": "Mac OS X Server 10.4.4 Combo"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-1775.20050421.JvOS39/JavaUpdateMacOSXv10.3.9.dmg",
+  "title": "Java Update for Mac OS X 10.3.9"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-2659.20060929.MIsuC/MacOSXUpdCombo10.4.8Intel.dmg",
+  "title": "Mac OS X 10.4.8 Combo Update (Intel)"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-3163.20070313.5tr6B/MacOSXUpd10.4.9Intel.dmg",
+  "title": "Mac OS X 10.4.9 Update (Intel)"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-3370.20070620.3RtR4/MacOSXSrvrCombo10.4.10PPC.dmg",
+  "title": "Mac OS X Server 10.4.10 Combo Update (PPC)"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-3346.20070620.4uYn7/MacOSXUpdCombo10.4.10PPC.dmg",
+  "title": "Mac OS X 10.4.10 Combo Update (PPC)"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-3344.20070602.b1vC4/MacOSXUpd10.4.10PPC.dmg",
+  "title": "Mac OS X 10.4.10 Update (PPC)"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-4070.20071114.7YhgT/MacOSXServerUpd10.5.1.dmg",
+  "title": "Mac OS X Server 10.5.1 Update"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-84780-20191010-abd1d3ae-04c9-4f78-b594-f823547f344b/OSXUpd10.8.5.dmg",
+  "title": "OS X Mountain Lion Update v10.8.5"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-84796-20191010-91ff67da-0340-4efd-b300-9e10cd10379c/OSXUpdCombo10.8.5.dmg",
+  "title": "Download OS X Mountain Lion Update v10.8.5 (Combo)"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-87766-20191017-6878eb5b-4c43-4127-b3ca-43c32f17cc35/MacOSXUpdCombo10.6.4.dmg",
+  "title": "Mac OS X v10.6.4 Update (Combo)"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-87974-20191017-878555eb-4b63-47ab-ab13-048b726497b6/X11Update.dmg",
+  "title": "X11 Update for Mac OS X 10.7.5"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88001-20191017-f66e3a73-46a8-4d91-ac24-58bbc39896f0/OSXUpd10.8.2.dmg",
+  "title": "OS X Mountain Lion 10.8.2 Update for 13\" Macbook Pro with Retina Display, 21.5\" iMac (Late 2012), Mac mini (Late 2012)"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-84867-20191010-f40f1c8a-91c7-43b4-bb49-c9050f77ce00/HewlettPackardPrinterDrivers.dmg",
+  "title": "HP Printer Drivers v3.1 for OS X"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-98137-20191017-bfbe5c40-a466-43cb-aacc-097c81136a14/MacOSXServerUpd10.7.5.dmg",
+  "title": "OS X Lion Update 10.7.5 Server"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88071-20191011-a4baf640-4985-454d-a598-1eb3b6b1ee95/OSXUpd10.8.4.dmg",
+  "title": "OS X Mountain Lion Update v10.8.4"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/041-4851.20100412.KpH67/MacOSXUpdCombo10.6.3v1.1.dmg",
+  "title": "Mac OS X v10.6.3 v1.1 Update (Combo)"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-87902-20191017-ef0de414-93c4-46fe-aa44-961a95e00223/MacOSXUpd10.7.2.dmg",
+  "title": "OS X Lion Update 10.7.2 (Client)"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-87918-20191017-754b1975-e452-4ea2-8040-437781a8dd72/MacOSXServerUpd10.7.4.dmg",
+  "title": "OS X Lion Update 10.7.4 Server"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-87777-20191017-c9ec6bbb-5866-4081-917c-64371e8ac468/MacOSXServerUpd10.7.1.dmg",
+  "title": "OS X Lion 10.7.1 Update for Mac mini 2011 (Server)"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-87783-20191017-699bf78d-4f2f-4086-a1e4-c045bacc5d70/MacOSXServerUpd10.7.1.dmg",
+  "title": "OS X Lion Update 10.7.1 (Server)"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/041-2001.20110808.QFC1d/RecoveryDiskAssistant.dmg",
+  "title": "OS X Recovery Disk Assistant v1.0"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-2648.20060929.sUmpD/MacOSXUpd10.4.8PPC.dmg",
+  "title": "Mac OS X 10.4.8 Update (PPC)"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-3175.20070313.gUnq1/MacOSXServerUpd10.4.9PPC.dmg",
+  "title": "Mac OS X Server 10.4.9 Update (PPC)"
+ },
+ {
+  "url": "https://updates.cdn-apple.com/2019/cert/041-88050-20191011-f8397037-5601-488b-8185-02a346070036/OSXUpd10.8.3.dmg",
+  "title": "OS X Mountain Lion Update v10.8.3"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-5171.20080915.vg0o8/MacOSXServerUpdCombo10.5.5.dmg",
+  "title": "Mac OS X Server Combo 10.5.5"
+ },
+ {
+  "url": "https://download.info.apple.com/Mac_OS_X/061-1529.20041214.srv37/MacOSXServerUpdate10.3.7.dmg",
+  "title": "Mac OS X Server Update 10.3.7"
+ }
+]
