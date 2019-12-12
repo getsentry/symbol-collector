@@ -7,15 +7,16 @@ steps:
   ]
 - name: 'gcr.io/cloud-builders/docker'
   args: [
-            'build',
-            '--pull',
-            '--target', 'application',
-            '-t', 'us.gcr.io/$PROJECT_ID/$REPO_NAME:latest',
-            '-t', 'us.gcr.io/$PROJECT_ID/$REPO_NAME:$COMMIT_SHA',
-            '--cache-from', 'us.gcr.io/$PROJECT_ID/$REPO_NAME:latest',
-            '.'
-        ]
-images: [
-  'us.gcr.io/$PROJECT_ID/$REPO_NAME:latest',
-  'us.gcr.io/$PROJECT_ID/$REPO_NAME:$COMMIT_SHA',
+    'build',
+    '-t', 'us.gcr.io/$PROJECT_ID/$REPO_NAME:latest',
+    '-t', 'us.gcr.io/$PROJECT_ID/$REPO_NAME:$COMMIT_SHA',
+    '--cache-from', 'us.gcr.io/$PROJECT_ID/$REPO_NAME:latest',
+    '.'
+  ]
+# Only tag "latest" when on master
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args: [
+    '-c',
+    '[[ "$BRANCH_NAME" == "master" ]] && docker push us.gcr.io/$PROJECT_ID/$REPO_NAME:latest || true',
   ]
