@@ -9,6 +9,7 @@ build_script:
 artifacts:
   - path: '**\*.apk'
 install:
-  - export PATH="$PATH:/Users/appveyor/.dotnet/tools"
+  - ps: build/ci/appveyor/installDotnetCore3.1.ps1
+  - set PATH="$PATH:/Users/appveyor/.dotnet/tools"
   - dotnet tool install --global boots
   - boots https://aka.ms/xamarin-android-commercial-d16-4-macos
