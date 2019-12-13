@@ -4,7 +4,7 @@ env:
     - DOTNET_CLI_TELEMETRY_OPTOUT=1
     - AndroidSdkDirectory=../../android-sdk/android-sdk-macosx
 dotnet: 3.1.100
-mono: 6.6.0
+mono: 6.4.0
 matrix:
   include:
     - os: osx
