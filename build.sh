@@ -18,6 +18,10 @@ pushd test/SymbolCollector.Server.Tests/
 dotnet test -c Release
 popd
 
+pushd test/SymbolCollector.Core.Tests/
+dotnet test -c Release
+popd
+
 pushd src/SymbolCollector.Console/
 dotnet build -c Release
 popd

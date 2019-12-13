@@ -6,7 +6,11 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.0.0" />
-    <PackageReference Include="ELFSharp" Version="2.2.0" />
+<!--    <PackageReference Include="ELFSharp" Version="2.2.0" />-->
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ELFSharp\ELFSharp.csproj" />
   </ItemGroup>
 
 </Project>
