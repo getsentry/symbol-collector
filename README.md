@@ -5,7 +5,9 @@
   <br />
 </p>
 
-# Symbol Collector [![Discord Chat](https://img.shields.io/discord/621778831602221064.svg)](https://discord.gg/Ww9hbqr)  
+# Symbol Collector 
+[![Travis](https://travis-ci.org/getsentry/sentry-dotnet.svg?branch=master)](https://travis-ci.org/getsentry/sentry-dotnet)
+[![Discord Chat](https://img.shields.io/discord/621778831602221064.svg)](https://discord.gg/Ww9hbqr)  
 
 This is a work in progress to collect system symbols from different devices like Android, macOS, Linux, etc.
 It involves a server that writes the symbols to Google cloud storage and a set of clients.
