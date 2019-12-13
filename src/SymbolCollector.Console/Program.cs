@@ -12,7 +12,7 @@ namespace SymbolCollector.Console
     internal class Program
     {
         private const string Dsn = "https://02619ad38bcb40d0be5167e1fb335954@sentry.io/1847454";
-        private const string SymbolCollectorServiceUrl = "http://34.70.114.11";
+        private const string SymbolCollectorServiceUrl = "http://localhost:5000";
 
         private static async Task UploadSymbols()
         {
