@@ -2,9 +2,6 @@
   "profiles": {
     "SymbolCollector.Server": {
       "commandName": "Project",
-      "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      },
       "applicationUrl": "http://localhost:5000/"
     }
   }

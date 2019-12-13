@@ -3,10 +3,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ELFSharp.ELF;
+using ELFSharp.MachO;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -14,16 +17,20 @@ namespace SymbolCollector.Core
 {
     public class Client : IDisposable
     {
+        private readonly FatBinaryReader? _fatBinaryReader;
         private readonly Uri _serviceUri;
         private readonly ILogger<Client> _logger;
         private readonly HttpClient _client;
 
         public Client(
             Uri serviceUri,
+            FatBinaryReader? fatBinaryReader = null,
             HttpMessageHandler? handler = null,
             ILogger<Client>? logger = null)
         {
-            _serviceUri = serviceUri;
+            _fatBinaryReader = fatBinaryReader;
+            // We only hit /image here
+            _serviceUri = new Uri(serviceUri, "image");
             _logger = logger ?? NullLogger<Client>.Instance;
             _client = new HttpClient(handler ?? new HttpClientHandler());
         }
@@ -107,61 +114,215 @@ namespace SymbolCollector.Core
         // TODO: IAsyncEnumerable when ELF library supports it
         private IEnumerable<(string debugId, string file)> GetFiles(IEnumerable<string> files)
         {
+            Func<string, string?> getBuildId;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                // TODO: Take this as a strategy class-wide to check for platform only once.
+                getBuildId = GetMachOBuildId;
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                getBuildId = GetElfBuildId;
+            }
+            else
+            {
+                // TODO: This needs to be check at the start of the program though
+                throw new NotSupportedException($"OS {RuntimeInformation.OSDescription} is not supported.");
+            }
+
             foreach (var file in files)
             {
                 _logger.LogInformation("Processing file: {file}.", file);
-                IELF? elf = null;
-                string? buildIdHex;
-                try
+
+                var buildId = getBuildId(file);
+                if (buildId is null)
                 {
-                    // TODO: find an async API
-                    if (!ELFReader.TryLoad(file, out elf))
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                     {
-                        _logger.LogWarning("Couldn't load': {file} with ELF reader.", file);
-                        continue;
+                        // Check if it's a Fat Mach-O
+                        FatMachO? load = null;
+                        if (_fatBinaryReader?.TryLoad(file, out load) == true && load is { } fatMachO)
+                        {
+                            _logger.LogInformation("Fat binary file with {count} Mach-O files: {file}.",
+                                fatMachO.Header.FatArchCount, file);
+
+                            using (_logger.BeginScope(new {FatMachO = file}))
+                            using (fatMachO)
+                            {
+                                foreach (var buildIdFile in GetFiles(fatMachO.MachOFiles))
+                                {
+                                    yield return buildIdFile;
+                                }
+                            }
+                        }
                     }
 
-                    var hasBuildId = elf.TryGetSection(".note.gnu.build-id", out var buildId);
-                    if (!hasBuildId)
-                    {
-                        _logger.LogWarning("No Debug Id in {file}", file);
-                        continue;
-                    }
-
-                    var hasUnwindingInfo = elf.TryGetSection(".eh_frame", out _);
-                    var hasDwarfDebugInfo = elf.TryGetSection(".debug_frame", out _);
-
-                    if (!hasUnwindingInfo && !hasDwarfDebugInfo)
-                    {
-                        _logger.LogWarning("No unwind nor DWARF debug info in {file}", file);
-                        continue;
-                    }
-
-                    _logger.LogInformation("Contains unwinding info: {hasUnwindingInfo}", hasUnwindingInfo);
-                    _logger.LogInformation("Contains DWARF debug info: {hasDwarfDebugInfo}", hasDwarfDebugInfo);
-
-                    var builder = new StringBuilder();
-                    var bytes = buildId.GetContents().Skip(16);
-
-                    foreach (var @byte in bytes)
-                    {
-                        builder.Append(@byte.ToString("x2"));
-                    }
-
-                    buildIdHex = builder.ToString();
-                }
-                catch (Exception e)
-                {
-                    // You would expect TryLoad doesn't throw but that's not the case
-                    _logger.LogError(e, "Failed processing file {file}.", file);
                     continue;
                 }
-                finally
+
+                // TODO: Store in the metadata/send in the header
+                var hash = GetHash(file);
+                _logger.LogInformation("File hash: {hash}.", hash);
+
+                yield return (buildId, file);
+            }
+        }
+
+        private string? GetElfBuildId(string file)
+        {
+            IELF? elf = null;
+            try
+            {
+                // TODO: find an async API if this is used by the server
+                if (ELFReader.TryLoad(file, out elf))
                 {
-                    elf?.Dispose();
+                    var hasBuildId = elf.TryGetSection(".note.gnu.build-id", out var buildId);
+                    if (hasBuildId)
+                    {
+                        var hasUnwindingInfo = elf.TryGetSection(".eh_frame", out _);
+                        var hasDwarfDebugInfo = elf.TryGetSection(".debug_frame", out _);
+
+                        if (hasUnwindingInfo || hasDwarfDebugInfo)
+                        {
+                            _logger.LogInformation("Contains unwinding info: {hasUnwindingInfo}", hasUnwindingInfo);
+                            _logger.LogInformation("Contains DWARF debug info: {hasDwarfDebugInfo}", hasDwarfDebugInfo);
+
+                            var builder = new StringBuilder();
+                            var bytes = buildId.GetContents().Skip(16);
+
+                            foreach (var @byte in bytes)
+                            {
+                                builder.Append(@byte.ToString("x2"));
+                            }
+
+                            return builder.ToString();
+                        }
+                        else
+                        {
+                            _logger.LogWarning("No unwind nor DWARF debug info in {file}", file);
+                            return null;
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogWarning("No Debug Id in {file}", file);
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning("Couldn't load': {file} with ELF reader.", file);
+                }
+            }
+            catch (Exception e)
+            {
+                // You would expect TryLoad doesn't throw but that's not the case
+                _logger.LogError(e, "Failed processing file {file}.", file);
+            }
+            finally
+            {
+                elf?.Dispose();
+            }
+
+            return null;
+        }
+
+        private string? GetMachOBuildId(string file)
+        {
+            try
+            {
+                // TODO: find an async API if this is used by the server
+                if (MachOReader.TryLoad(file, out var mach0) == MachOResult.OK)
+                {
+                    _logger.LogDebug("Mach-O found {file}", file);
+                    LogTrace(mach0);
+
+                    string? buildId = null;
+                    var uuid = mach0.GetCommandsOfType<Uuid?>().FirstOrDefault();
+                    if (!(uuid is null))
+                    {
+                        // TODO: Verify this is coming out correctly. Endianess not verified!!!
+                        buildId = uuid.Id.ToString();
+                    }
+
+                    return buildId;
                 }
 
-                yield return (buildIdHex, file);
+                _logger.LogWarning("Couldn't load': {file} with mach-O reader.", file);
+            }
+            catch (Exception e)
+            {
+                // You would expect TryLoad doesn't throw but that's not the case
+                _logger.LogError(e, "Failed processing file {file}.", file);
+            }
+
+            return null;
+        }
+
+        private object GetHash(string file)
+        {
+            using var algorithm = SHA256.Create();
+            var hashingAlgo = algorithm.ComputeHash(File.ReadAllBytes(file));
+            var builder = new StringBuilder();
+            foreach (var b in hashingAlgo)
+            {
+                builder.Append(b.ToString("x2"));
+            }
+            var hash =  builder.ToString();
+            return hash;
+        }
+
+        private void LogTrace(MachO mach0)
+        {
+            if (!_logger.IsEnabled(LogLevel.Trace))
+            {
+                return;
+            }
+
+            foreach (var o in mach0.GetCommandsOfType<Command>())
+            {
+                switch (o)
+                {
+                    case Uuid uuid:
+                        _logger.LogTrace("Uuid: {Uuid}", uuid.Id);
+                        break;
+                    case MacOsMinVersion macOsMinVersion:
+                        _logger.LogTrace("MacOsMinVersion Sdk: {sdk}", macOsMinVersion.Sdk);
+                        _logger.LogTrace("MacOsMinVersion Version: {version}", macOsMinVersion.Version);
+                        break;
+                    case IPhoneOsMinVersion iPhoneOsMinVersion:
+                        _logger.LogTrace("IPhoneOsMinVersion Sdk: {sdk}", iPhoneOsMinVersion.Sdk);
+                        _logger.LogTrace("IPhoneOsMinVersion Version: {version}", iPhoneOsMinVersion.Version);
+                        break;
+                    case Segment segment:
+                        _logger.LogTrace("Segment Name: {name}", segment.Name);
+                        _logger.LogTrace("Segment Address: {address}", segment.Address);
+                        _logger.LogTrace("Segment Size: {size}", segment.Size);
+                        _logger.LogTrace("Segment InitialProtection: {initialProtection}",
+                            segment.InitialProtection);
+                        _logger.LogTrace("Segment MaximalProtection: {maximalProtection}",
+                            segment.MaximalProtection);
+                        foreach (var section in segment.Sections)
+                        {
+                            _logger.LogTrace("Section Name: {name}", section.Name);
+                            _logger.LogTrace("Section Address: {address}", section.Address);
+                            _logger.LogTrace("Section Size: {size}", section.Size);
+                            _logger.LogTrace("Section AlignExponent: {alignExponent}",
+                                section.AlignExponent);
+                        }
+                        break;
+                    case EntryPoint entryPoint:
+                        _logger.LogTrace("EntryPoint Value: {entryPoint}", entryPoint.Value);
+                        _logger.LogTrace("StackSize Value: {stackSize}", entryPoint.StackSize);
+                        break;
+                    case SymbolTable symbolTable:
+                        _logger.LogTrace("Symbol table:");
+                        foreach (var symbol in symbolTable.Symbols)
+                        {
+                            _logger.LogTrace("Symbol Name: {name}", symbol.Name);
+                            _logger.LogTrace("Symbol Value: {value}", symbol.Value);
+                        }
+                        break;
+                }
             }
         }
 

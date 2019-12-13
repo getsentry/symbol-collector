@@ -5,6 +5,10 @@ namespace SymbolCollector.Console
 {
     public class LoggerAdapter<T> : ILogger<T>
     {
+        private readonly LogLevel _minLogLevel;
+
+        public LoggerAdapter(LogLevel minLogLevel = LogLevel.Trace) => _minLogLevel = minLogLevel;
+
         public void Log<TState>(
             LogLevel logLevel,
             EventId eventId,
@@ -30,7 +34,7 @@ namespace SymbolCollector.Console
             }
         }
 
-        public bool IsEnabled(LogLevel logLevel) => true;
+        public bool IsEnabled(LogLevel logLevel) => logLevel >= _minLogLevel;
 
         public IDisposable BeginScope<TState>(TState state) => NoOpDisposable.Instance;
 
