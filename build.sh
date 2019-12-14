@@ -7,7 +7,7 @@ set -e
 pushd src/SymbolCollector.Android/
 msbuild /p:Configuration=Release \
     /p:AndroidBuildApplicationPackage=true \
-    /t:Clean\;Build\;SignAndroidPackage
+    /t:Clean\;Restore\;Build\;SignAndroidPackage
 popd
 
 pushd src/SymbolCollector.Server/
@@ -15,6 +15,10 @@ dotnet build -c Release
 popd
 
 pushd test/SymbolCollector.Server.Tests/
+dotnet test -c Release
+popd
+
+pushd test/SymbolCollector.Core.Tests/
 dotnet test -c Release
 popd
 
