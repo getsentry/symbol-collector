@@ -39,6 +39,8 @@ namespace SymbolCollector.Server
                 var credentials = GoogleCredential.FromJson(json);
                 return new GoogleCloudStorageOptions(credentials);
             });
+
+            services.AddControllers();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -49,54 +51,60 @@ namespace SymbolCollector.Server
             }
 
             app.UseRouting();
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllerRoute(
+                    name: "default",
+                    pattern: "{controller=Home}/{action=Index}/{id?}");
+            });
 
             var store = new ConcurrentDictionary<string, byte>();
             var log = app.ApplicationServices.GetService<ILoggerFactory>()
                 .CreateLogger<Startup>();
 
-            var writer = app.ApplicationServices.GetRequiredService<ISymbolGcsWriter>();
-            app.Use(async (context, next) =>
-            {
-                if (context.Request.Path == "/image")
-                {
-                    context.Request.EnableBuffering();
-
-                    if (context.Request.Headers.TryGetValue("debug-id", out var debugId))
-                    {
-                        log.LogInformation("Incoming image with debug Id:{debugId}", debugId);
-
-                        if (store.ContainsKey(debugId))
-                        {
-                            log.LogDebug($"Debug Id:{debugId} already exists.");
-                            context.Response.StatusCode = (int)HttpStatusCode.Conflict;
-                        }
-                        else
-                        {
-                            switch (context.Request.Method)
-                            {
-                                case "HEAD":
-                                    context.Response.StatusCode = (int)HttpStatusCode.OK;
-                                    break;
-                                case "POST":
-                                {
-                                    await Add(log, debugId, context, writer, store);
-                                }
-                                    context.Response.StatusCode = (int)HttpStatusCode.NoContent;
-                                    break;
-                                default:
-                                    context.Response.StatusCode = (int)HttpStatusCode.MethodNotAllowed;
-                                    break;
-                            }
-                        }
-                    }
-                    else if (context.Request.Method == "GET")
-                    {
-                        context.Response.ContentType = "text/plain";
-                        await context.Response.WriteAsync($@"Total images {store.Count}");
-                    }
-                    await context.Response.CompleteAsync();
-                }
-            });
+//            var writer = app.ApplicationServices.GetRequiredService<ISymbolGcsWriter>();
+//            app.Use(async (context, next) =>
+//            {
+//                if (context.Request.Path == "/image")
+//                {
+//                    context.Request.EnableBuffering();
+//
+//                    if (context.Request.Headers.TryGetValue("debug-id", out var debugId))
+//                    {
+//                        log.LogInformation("Incoming image with debug Id:{debugId}", debugId);
+//
+//                        if (store.ContainsKey(debugId))
+//                        {
+//                            log.LogDebug($"Debug Id:{debugId} already exists.");
+//                            context.Response.StatusCode = (int)HttpStatusCode.Conflict;
+//                        }
+//                        else
+//                        {
+//                            switch (context.Request.Method)
+//                            {
+//                                case "HEAD":
+//                                    context.Response.StatusCode = (int)HttpStatusCode.OK;
+//                                    break;
+//                                case "POST":
+//                                {
+//                                    await Add(log, debugId, context, writer, store);
+//                                }
+//                                    context.Response.StatusCode = (int)HttpStatusCode.NoContent;
+//                                    break;
+//                                default:
+//                                    context.Response.StatusCode = (int)HttpStatusCode.MethodNotAllowed;
+//                                    break;
+//                            }
+//                        }
+//                    }
+//                    else if (context.Request.Method == "GET")
+//                    {
+//                        context.Response.ContentType = "text/plain";
+//                        await context.Response.WriteAsync($@"Total images {store.Count}");
+//                    }
+//                    await context.Response.CompleteAsync();
+//                }
+//            });
         }
 
         private static async Task Add(ILogger<Startup> log, StringValues debugId, HttpContext context,
