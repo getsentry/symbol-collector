@@ -34,6 +34,7 @@ namespace SymbolCollector.Core
     {
         private readonly ILogger<FatBinaryReader> _logger;
         public const uint FatObjectMagic = 0x_cafe_babe;
+        public const uint FatObjectCigam = 0x_beba_feca;
         private const int FatArchSize = 20;
         private const int HeaderSize = 8;
 
@@ -127,28 +128,29 @@ namespace SymbolCollector.Core
 
         internal static FatHeader? ParseHeader(byte[] bytes)
         {
-            if (bytes == null || bytes.Length < HeaderSize || !IsFatBinary(bytes))
+            if (bytes == null || bytes.Length < HeaderSize || !IsFatBinary(bytes, out var magic))
             {
                 return null;
             }
 
             var fatArchCount = new byte[4];
-
             return new FatHeader
             {
-                Magic = FatObjectMagic, // Checked by IsFatBinary
+                Magic = magic,
                 FatArchCount = GetFatBinaryUint32(bytes, 4, fatArchCount, 0)
             };
         }
 
-        public static bool IsFatBinary(byte[] bytes)
+        public static bool IsFatBinary(byte[] bytes, out uint magic)
         {
             if (bytes.Length < 4)
             {
+                magic = 0;
                 return false;
             }
-            var magic = new byte[4];
-            return GetFatBinaryUint32(bytes, 0, magic, 0) == FatObjectMagic;
+            var buffer = new byte[4];
+            magic = GetFatBinaryUint32(bytes, 0, buffer, 0);
+            return magic == FatObjectMagic || magic == FatObjectCigam;
         }
     }
 
@@ -166,7 +168,7 @@ namespace SymbolCollector.Core
 
     public struct FatHeader
     {
-        public uint Magic { get; set; } // cafebabe
+        public uint Magic { get; set; } // cafebabe or beba_feca
         public uint FatArchCount { get; set; }
     }
 }

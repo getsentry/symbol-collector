@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Xunit;
 
@@ -13,13 +14,29 @@ namespace SymbolCollector.Core.Tests
         };
 
         [Fact]
-        public void IsFatBinary_ValidFatMachO_True() => Assert.True(FatBinaryReader.IsFatBinary(_fatMachO));
+        public void IsFatBinary_ValidFatMachO_True()
+        {
+            Assert.True(FatBinaryReader.IsFatBinary(_fatMachO, out var magic));
+            Assert.Equal(0x_cafe_babe, magic);
+        }
 
         [Fact]
-        public void IsFatBinary_BufferTooShort_False() => Assert.False(FatBinaryReader.IsFatBinary(new byte[] { 0xca, 0xfe, 0xba }));
+        public void IsFatBinary_ReverseMagicFatMachO_True()
+        {
+            Array.Reverse(_fatMachO, 0, 4);
+            Assert.True(FatBinaryReader.IsFatBinary(_fatMachO, out var magic));
+            Assert.Equal(0x_beba_feca, magic);
+        }
 
         [Fact]
-        public void IsFatBinary_NotFatMachO_False() => Assert.False(FatBinaryReader.IsFatBinary(new byte[] { 0xca, 0xfe, 0xba, 0x0c }));
+        public void IsFatBinary_BufferTooShort_False()
+        {
+            Assert.False(FatBinaryReader.IsFatBinary(new byte[] {0xca, 0xfe, 0xba}, out var magic));
+            Assert.Equal(0u, magic);
+        }
+
+        [Fact]
+        public void IsFatBinary_NotFatMachO_False() => Assert.False(FatBinaryReader.IsFatBinary(new byte[] { 0xca, 0xfe, 0xba, 0x0c }, out _));
 
         [Fact]
         public void ParseHeader_ValidFatBinary_True()
@@ -29,6 +46,19 @@ namespace SymbolCollector.Core.Tests
             Assert.True(header.HasValue);
 #nullable disable
             Assert.Equal(FatBinaryReader.FatObjectMagic, header.Value.Magic);
+#nullable enable
+            Assert.Equal(2u, header.Value.FatArchCount);
+        }
+
+        [Fact]
+        public void ParseHeader_ReversedFatBinary_True()
+        {
+            Array.Reverse(_fatMachO, 0, 4);
+            var header = FatBinaryReader.ParseHeader(_fatMachO);
+
+            Assert.True(header.HasValue);
+#nullable disable
+            Assert.Equal(FatBinaryReader.FatObjectCigam, header.Value.Magic);
 #nullable enable
             Assert.Equal(2u, header.Value.FatArchCount);
         }
