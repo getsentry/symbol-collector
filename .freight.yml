@@ -1,0 +1,8 @@
+steps:
+  - kind: KubernetesDeployment
+    selector:
+      label_selector: service=symbol-collector
+      namespace: default
+    containers:
+      - image: us.gcr.io/sentryio/symbol-collector:{sha}
+        name: symbol-collector
