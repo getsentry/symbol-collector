@@ -5,6 +5,8 @@ environment:
     DOTNET_CLI_TELEMETRY_OPTOUT: "1"
 test: off
 build_script:
+  - cmd: dotnet tool install --global boots
+  - cmd: boots https://aka.ms/xamarin-android-commercial-d16-4-windows
   - cmd: build.cmd
 artifacts:
   - path: '**\*.apk'
