@@ -2,9 +2,7 @@ FROM mcr.microsoft.com/dotnet/core/sdk:3.0 AS build
 WORKDIR /app
 
 # Target and its dependencies
-COPY *.props ./server/
-COPY src/SymbolCollector.Server/. ./server/SymbolCollector.Server/
-COPY src/SymbolCollector.Core/. ./server/SymbolCollector.Core/
+COPY * ./server/
 
 # Build target
 WORKDIR /app/server/SymbolCollector.Server/
