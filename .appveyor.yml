@@ -14,4 +14,3 @@ artifacts:
   - path: 'src\SymbolCollector.Console\linux-x64\'
   - path: 'src\SymbolCollector.Console\linux-musl-x64\'
   - path: 'src\SymbolCollector.Console\linux-arm\'
-#  - path: '**\publish\*'
