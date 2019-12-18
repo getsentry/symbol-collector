@@ -5,7 +5,7 @@ msbuild /restore /p:Configuration=Release ^
 popd
 
 pushd src\SymbolCollector.Server\
-dotnet build -c Release
+dotnet publish -c release /p:PublishSingleFile=true --self-contained -o server
 popd
 
 pushd test\SymbolCollector.Server.Tests\
