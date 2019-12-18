@@ -7,6 +7,8 @@
 
 # Symbol Collector 
 [![Travis](https://travis-ci.org/getsentry/sentry-dotnet.svg?branch=master)](https://travis-ci.org/getsentry/sentry-dotnet)
+[![AppVeyor](https://ci.appveyor.com/api/projects/status/gldfulfd5kk2stst/branch/master?svg=true)](https://ci.appveyor.com/project/sentry/symbol-collector/branch/master)
+[![Tests](https://img.shields.io/appveyor/tests/sentry/symbol-collector/master?compact_message)](https://ci.appveyor.com/project/sentry/symbol-collector/branch/master/tests)
 [![Discord Chat](https://img.shields.io/discord/621778831602221064.svg)](https://discord.gg/Ww9hbqr)  
 
 This is a work in progress to collect system symbols from different devices like Android, macOS, Linux, etc.

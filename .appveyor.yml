@@ -10,4 +10,4 @@ build_script:
   - cmd: build.cmd
 artifacts:
   - path: '**\*.apk'
-  - path: 'src/SymbolCollector.Console/bin/release/**/publish/'
+  - path: 'src\SymbolCollector.Console\bin\release\**\publish\'
