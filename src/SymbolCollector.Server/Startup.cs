@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.IO;
 using System.Net;
 using System.Threading;
@@ -58,7 +57,12 @@ namespace SymbolCollector.Server
             var writer = app.ApplicationServices.GetRequiredService<ISymbolGcsWriter>();
             app.Use(async (context, next) =>
             {
-                if (context.Request.Path == "/image")
+                if (context.Request.Path == "/health")
+                {
+                    // TODO: Proper health check
+                    context.Response.StatusCode = (int)HttpStatusCode.OK;
+                }
+                else if (context.Request.Path == "/image")
                 {
                     if (context.Request.Headers.TryGetValue("debug-id", out var debugId))
                     {
@@ -94,6 +98,10 @@ namespace SymbolCollector.Server
                         await context.Response.WriteAsync($@"Total images {store.Count}");
                     }
                     await context.Response.CompleteAsync();
+                }
+                else
+                {
+                    context.Response.StatusCode = (int)HttpStatusCode.NotFound;
                 }
             });
         }
