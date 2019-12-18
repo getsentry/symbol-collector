@@ -6,9 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Sentry" Version="2.0.0-beta6" />
+    <PackageReference Include="Sentry" Version="2.0.0-beta7" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.0.0" />
-    <ProjectReference Include="..\..\..\sentry-dotnet\src\Sentry\Sentry.csproj" />
     <ProjectReference Include="..\SymbolCollector.Core\SymbolCollector.Core.csproj" />
   </ItemGroup>
 

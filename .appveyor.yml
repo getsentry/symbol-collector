@@ -1,15 +1,11 @@
 version: "{build}"
-image: macOS
+image: Visual Studio 2019
 environment:
   global:
     DOTNET_CLI_TELEMETRY_OPTOUT: "1"
 test: off
 build_script:
-  - sh: .\build.sh
+  - sh: ./build.sh
 artifacts:
   - path: '**\*.apk'
-install:
-  - ps: build/install-net-core-3.1.ps1
-  - set PATH="$PATH:/Users/appveyor/.dotnet/tools"
-  - dotnet tool install --global boots
-  - boots https://aka.ms/xamarin-android-commercial-d16-4-macos
+  - path: 'src/SymbolCollector.Console/bin/release/**/**/publish/'
