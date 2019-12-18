@@ -4,22 +4,22 @@ msbuild /restore /p:Configuration=Release ^
     /t:Clean;Build;SignAndroidPackage
 popd
 
-pushd src\SymbolCollector.Server\
-dotnet publish -c release -o server
-popd
-
-pushd test\SymbolCollector.Server.Tests\
-dotnet test -c Release
-popd
-
-pushd test\SymbolCollector.Core.Tests\
-dotnet test -c Release
-popd
-
-pushd src\SymbolCollector.Console\
-:Artifacts are picked up by appveyor (see .appveyor.yml)
-dotnet publish -c release /p:PublishSingleFile=true --self-contained -r osx-x64 -o osx-x64
-dotnet publish -c release /p:PublishSingleFile=true --self-contained -r linux-x64 -o linux-x64
-dotnet publish -c release /p:PublishSingleFile=true --self-contained -r linux-musl-x64 -o linux-musl-x64
-dotnet publish -c release /p:PublishSingleFile=true --self-contained -r linux-arm -o linux-arm
-popd
+REM pushd src\SymbolCollector.Server\
+REM dotnet publish -c release -o server
+REM popd
+REM
+REM pushd test\SymbolCollector.Server.Tests\
+REM dotnet test -c Release
+REM popd
+REM
+REM pushd test\SymbolCollector.Core.Tests\
+REM dotnet test -c Release
+REM popd
+REM
+REM pushd src\SymbolCollector.Console\
+REM :Artifacts are picked up by appveyor (see .appveyor.yml)
+REM dotnet publish -c release /p:PublishSingleFile=true --self-contained -r osx-x64 -o osx-x64
+REM dotnet publish -c release /p:PublishSingleFile=true --self-contained -r linux-x64 -o linux-x64
+REM dotnet publish -c release /p:PublishSingleFile=true --self-contained -r linux-musl-x64 -o linux-musl-x64
+REM dotnet publish -c release /p:PublishSingleFile=true --self-contained -r linux-arm -o linux-arm
+REM popd
