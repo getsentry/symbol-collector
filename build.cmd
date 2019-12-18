@@ -5,7 +5,7 @@ msbuild /restore /p:Configuration=Release ^
 popd
 
 pushd src\SymbolCollector.Server\
-dotnet publish -c release /p:PublishSingleFile=true --self-contained -o server
+dotnet publish -c release /p:PublishSingleFile=true -o server
 popd
 
 pushd test\SymbolCollector.Server.Tests\
@@ -17,6 +17,7 @@ dotnet test -c Release
 popd
 
 pushd src\SymbolCollector.Console\
+:Artifacts are picked up by appveyor (see .appveyor.yml)
 dotnet publish -c release /p:PublishSingleFile=true --self-contained -r osx-x64 -o osx-x64
 dotnet publish -c release /p:PublishSingleFile=true --self-contained -r linux-x64 -o linux-x64
 dotnet publish -c release /p:PublishSingleFile=true --self-contained -r linux-musl-x64 -o linux-musl-x64
