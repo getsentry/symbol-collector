@@ -39,7 +39,7 @@ To build the Server, Libraries and the Console app (aka: everything except the A
 
 ### Android app
 To build the Android project you need:
-* Java 1.8
+* JDK 1.8 (OpenJDK is OK)
 * Android SDK 29
 * Xamarin 10 (installed with the IDEs, or via `boots`, both approaches described below)
 
