@@ -13,6 +13,8 @@ matrix:
   include:
     - os: osx
       osx_image: xcode11.2
+    - os: linux
+      dist: bionic
 script:
   - curl -L https://raw.github.com/embarkmobile/android-sdk-installer/version-2/android-sdk-installer -o android-sdk-installer
   - curl -L https://raw.github.com/embarkmobile/android-sdk-installer/version-2/accept-licenses -o accept-licenses
