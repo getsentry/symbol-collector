@@ -17,7 +17,7 @@ REM dotnet test -c Release
 REM popd
 
 pushd src\SymbolCollector.Console\
-dotnet publish -c release /p:PublishSingleFile=true --self-contained -r osx-x64
+dotnet publish -c release /p:PublishSingleFile=true --self-contained -r osx-x64 -o osx-x64
 REM dotnet publish -c release /p:PublishSingleFile=true --self-contained -r linux-x64
 REM dotnet publish -c release /p:PublishSingleFile=true --self-contained -r linux-musl-x64
 REM dotnet publish -c release /p:PublishSingleFile=true --self-contained -r linux-arm
