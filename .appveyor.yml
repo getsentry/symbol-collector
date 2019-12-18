@@ -11,3 +11,7 @@ build_script:
 artifacts:
   - path: '**\*.apk'
   - path: 'src\SymbolCollector.Console\bin\release\**\publish\'
+  - path: 'src\SymbolCollector.Console\bin\release\**\publish'
+  - path: 'src\SymbolCollector.Console\bin\release\netcoreapp3.0\osx-x64\publish\'
+  - path: 'src\SymbolCollector.Console\bin\release\netcoreapp3.0\**\publish\'
+  - path: '**\publish\'
