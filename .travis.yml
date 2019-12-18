@@ -9,6 +9,10 @@ branches:
   only:
     - master
     - /^release\/.*$/
+android:
+  components:
+    - build-tools-29.0.2
+    - android-29
 jobs:
   include:
     - os: osx
@@ -24,9 +28,6 @@ jobs:
       - export JAVA_HOME=$(/usr/libexec/java_home -v 1.8)
     - os: android
       dist: trusty
-      components:
-        - build-tools-29.0.2
-        - android-29
 script:
   - dotnet tool install --global boots > nul
   - boots https://aka.ms/xamarin-android-commercial-d16-4-macos
