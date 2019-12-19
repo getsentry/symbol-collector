@@ -17,7 +17,7 @@ REM popd
 
 pushd test\SymbolCollector.Core.Tests\
 dotnet test -c Release
-if not errorlevel 0 exit /b %errorlevel%
+REM if not errorlevel 0 exit /b %errorlevel%
 popd
 REM
 REM pushd src\SymbolCollector.Console\

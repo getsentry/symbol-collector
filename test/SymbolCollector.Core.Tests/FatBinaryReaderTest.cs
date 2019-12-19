@@ -13,7 +13,7 @@ namespace SymbolCollector.Core.Tests
         };
 
         [Fact]
-        public void IsFatBinary_ValidFatMachO_True() => Assert.False(FatBinaryReader.IsFatBinary(_fatMachO));
+        public void IsFatBinary_ValidFatMachO_True() => Assert.True(FatBinaryReader.IsFatBinary(_fatMachO));
 
         [Fact]
         public void IsFatBinary_BufferTooShort_False() => Assert.False(FatBinaryReader.IsFatBinary(new byte[] { 0xca, 0xfe, 0xba }));
