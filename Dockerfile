@@ -11,6 +11,7 @@ WORKDIR /app/server/SymbolCollector.Server/
 RUN dotnet publish -c Release -o ../out
 
 FROM mcr.microsoft.com/dotnet/core/aspnet:3.1 AS runtime
+# GCB changes the path to /workspace. If changing the path here, accuont for GCB
 WORKDIR /app
 COPY --from=builder /app/server/out ./
 ENTRYPOINT ["dotnet", "SymbolCollector.Server.dll"]
