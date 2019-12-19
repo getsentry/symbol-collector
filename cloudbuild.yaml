@@ -5,6 +5,7 @@ steps:
     '-c',
     'docker pull us.gcr.io/$PROJECT_ID/symbol-collector:latest || true',
   ]
+
 - name: 'gcr.io/cloud-builders/docker'
   args: [
     'build',
@@ -14,6 +15,7 @@ steps:
     '--target', 'runtime',
     '.'
   ]
+
 # Only tag "latest" when on master
 - name: 'gcr.io/cloud-builders/docker'
   entrypoint: 'bash'
@@ -21,6 +23,7 @@ steps:
     '-c',
     '[[ "$BRANCH_NAME" == "master" ]] && docker push us.gcr.io/$PROJECT_ID/symbol-collector:latest || true',
   ]
+
 - name: "us.gcr.io/$PROJECT_ID/symbol-collector:$COMMIT_SHA"
   # We have to do this because Cloud Build by default sets it to /workspace where it mounts the checked out code
   dir: "/app"
