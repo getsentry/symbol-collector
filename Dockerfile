@@ -1,6 +1,6 @@
 # This Dockerfile builds the Server component of Symbol Collector.
 
-FROM mcr.microsoft.com/dotnet/core/sdk:3.1 AS build
+FROM mcr.microsoft.com/dotnet/core/sdk:3.1 AS builder
 WORKDIR /app
 
 # Copy the whole solution into the first stage
@@ -12,5 +12,5 @@ RUN dotnet publish -c Release -o ../out
 
 FROM mcr.microsoft.com/dotnet/core/aspnet:3.1 AS runtime
 WORKDIR /app
-COPY --from=build /app/server/out ./
+COPY --from=builder /app/server/out ./
 ENTRYPOINT ["dotnet", "SymbolCollector.Server.dll"]
