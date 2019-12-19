@@ -21,8 +21,16 @@ steps:
     '[[ "$BRANCH_NAME" == "master" ]] && docker push us.gcr.io/$PROJECT_ID/symbol-collector:latest || true',
   ]
 - name: "us.gcr.io/$PROJECT_ID/symbol-collector:$COMMIT_SHA"
-  args: ['--smoke-test']
+  entrypoint: 'bash'
+  args: [
+    '-c',
+    'ls -lah; pwd; dotnet --info; dotnet SymbolCollector.Server --smoke-test'
+  ]
   id: "smoke test"
+
+#- name: "us.gcr.io/$PROJECT_ID/symbol-collector:$COMMIT_SHA"
+#  args: ['--smoke-test']
+#  id: "smoke test"
 
 images: [
   'us.gcr.io/$PROJECT_ID/symbol-collector:$COMMIT_SHA',
