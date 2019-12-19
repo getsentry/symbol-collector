@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -11,6 +12,7 @@ using NSubstitute;
 using Xunit;
 using static NSubstitute.Substitute;
 using static System.Threading.CancellationToken;
+using Object = Google.Apis.Storage.v1.Data.Object;
 
 namespace SymbolCollector.Server.Tests
 {
@@ -31,7 +33,7 @@ namespace SymbolCollector.Server.Tests
         {
             var target = _fixture.GetSut();
 
-            await target.WriteAsync( "name", new MemoryStream(), None);
+            await target.WriteAsync("name", new MemoryStream(), None);
 
             await _fixture.StorageClientFactory.Received().Create();
         }
@@ -39,67 +41,81 @@ namespace SymbolCollector.Server.Tests
         [Fact]
         public async Task Write_ConcurrentCalls_FollowUpCallsDisposeClient()
         {
-            var evt = new ManualResetEventSlim();
-            int callCount = 0;
-            var concurrentCalls = 5;
-            var mocks = new ConcurrentBag<StorageClient>();
-
-            _fixture.StorageClientFactory.Create().Returns(_ =>
-            {
-                var mock = For<StorageClient>();
-                mocks.Add(mock);
-                if (++callCount < concurrentCalls)
-                {
-                    evt.Wait();
-                }
-                else
-                {
-                    evt.Set();
-                }
-
-                return Task.FromResult(mock);
-            });
+            const int concurrentCalls = 10;
+            var sync = new ManualResetEventSlim(false);
+            var clientFactory = new StubStorageClientFactory(sync, concurrentCalls);
+            _fixture.StorageClientFactory = clientFactory;
 
             var target = _fixture.GetSut();
 
             var tasks = Enumerable.Range(0, concurrentCalls)
-                .Select(i => Task.Run(async () => await target.WriteAsync(i.ToString(), new MemoryStream(), None)));
+                .Select(i => Task.Run(async () => await target.WriteAsync(i.ToString(), new MemoryStream(), None))).ToList();
 
             await Task.WhenAll(tasks);
+            sync.Wait();
 
-            await _fixture.StorageClientFactory.Received(concurrentCalls).Create();
+            Assert.Equal(concurrentCalls, clientFactory.CallCount);
             // All but 1 got disposed
-            Assert.Equal(concurrentCalls - 1, mocks.Count(m => DidReceiveCall(() => m.Received(1).Dispose())));
+            Assert.Equal(concurrentCalls - 1, clientFactory.Clients.Count(m => m.DisposedCalled));
+            Assert.Equal(1, clientFactory.Clients.Count(m => m.UploadObjectAsyncCalled));
+        }
 
-            foreach (var mock in mocks)
+        private class StubStorageClientFactory : IStorageClientFactory
+        {
+            private readonly ManualResetEventSlim _sync;
+            private readonly int _unblockAt;
+            private int _callCounter;
+            private readonly ConcurrentBag<SubClient> _clients = new ConcurrentBag<SubClient>();
+
+            public int CallCount => _callCounter;
+            public IEnumerable<SubClient> Clients => _clients;
+
+            public StubStorageClientFactory(ManualResetEventSlim sync, int unblockAt)
             {
-                var timesCalled = concurrentCalls;
-                if (DidReceiveCall(() => mock.Received(1).Dispose()))
-                {
-                    timesCalled = 0;
-                }
-
-                await mock.Received(timesCalled).UploadObjectAsync(
-                    Arg.Any<string>(),
-                    Arg.Any<string>(),
-                    Arg.Any<string>(),
-                    Arg.Any<Stream>(),
-                    Arg.Any<UploadObjectOptions>(),
-                    Arg.Any<CancellationToken>(),
-                    Arg.Any<IProgress<IUploadProgress>>());
+                _sync = sync;
+                _unblockAt = unblockAt;
             }
 
-            bool DidReceiveCall(Action call)
+            public Task<StorageClient> Create()
             {
-                try
+                var mock = new SubClient();
+                _clients.Add(mock);
+                if (Interlocked.Increment(ref _callCounter) == _unblockAt)
                 {
-                    call();
-                    return true;
+                    _sync.Set();
                 }
-                catch
+                else
                 {
-                    return false;
+                    // Block all calls until the last one arrives.
+                    _sync.Wait();
                 }
+
+                return Task.FromResult((StorageClient) mock);
+            }
+        }
+
+        private class SubClient : StorageClient
+        {
+            public bool UploadObjectAsyncCalled { get; set; }
+            public bool DisposedCalled { get; set; }
+
+            public override Task<Object> UploadObjectAsync(
+                string bucket,
+                string objectName,
+                string contentType,
+                Stream source,
+                UploadObjectOptions? options = null,
+                CancellationToken cancellationToken = default,
+                IProgress<IUploadProgress>? progress = null)
+            {
+                UploadObjectAsyncCalled = true;
+                return Task.FromResult(new Object());
+            }
+
+            public override void Dispose()
+            {
+                DisposedCalled = true;
+                base.Dispose();
             }
         }
     }
