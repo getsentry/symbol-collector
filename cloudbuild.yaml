@@ -11,7 +11,7 @@ steps:
     '-t', 'us.gcr.io/$PROJECT_ID/symbol-collector:latest',
     '-t', 'us.gcr.io/$PROJECT_ID/symbol-collector:$COMMIT_SHA',
     '--cache-from', 'us.gcr.io/$PROJECT_ID/symbol-collector:latest',
-    '--target runtime',
+    '--target', 'runtime',
     '.'
   ]
 # Only tag "latest" when on master
