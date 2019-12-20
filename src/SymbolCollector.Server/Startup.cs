@@ -69,6 +69,7 @@ namespace SymbolCollector.Server
                 }
                 else if (context.Request.Path == "/image")
                 {
+                    log.LogDebug("/image endpoint called from {user-agent}", context.Request.Headers["User-Agent"]);
                     if (context.Request.Headers.TryGetValue("debug-id", out var debugId))
                     {
                         log.LogInformation("Incoming image with debug Id:{debugId}", debugId);
