@@ -16,6 +16,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json;
+using SymbolCollector.Server.Properties;
 
 namespace SymbolCollector.Server
 {
@@ -35,6 +36,10 @@ namespace SymbolCollector.Server
             {
                 // Massive hack because the Google SDK config system doesn't play well with ASP.NET Core's
                 var jsonCredentials = c.GetRequiredService<IOptions<JsonCredentialParameters>>().Value;
+                if (jsonCredentials.PrivateKey == "smoke-test")
+                {
+                    jsonCredentials.PrivateKey = SmokeTest.SamplePrivateKey;
+                }
                 var json = JsonConvert.SerializeObject(jsonCredentials, Formatting.Indented);
                 var credentials = GoogleCredential.FromJson(json);
                 return new GoogleCloudStorageOptions(credentials);
