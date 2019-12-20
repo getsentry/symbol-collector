@@ -39,7 +39,7 @@ namespace SymbolCollector.Android
             return Task.Run(async () =>
             {
                 var paths = new[] {"/system/lib", "/system/lib64", "/system/"};
-                var client = new Client(new Uri(url), logger: new LoggerAdapter<Client>());
+                var client = new Client(new Uri(url), assemblyName: GetType().Assembly.GetName(), logger: new LoggerAdapter<Client>());
                 try
                 {
                     await client.UploadAllPathsAsync(paths, CancellationToken.None);

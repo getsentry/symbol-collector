@@ -28,6 +28,7 @@ namespace SymbolCollector.Core
             Uri serviceUri,
             FatBinaryReader? fatBinaryReader = null,
             HttpMessageHandler? handler = null,
+            AssemblyName? assemblyName = null,
             ILogger<Client>? logger = null)
         {
             _fatBinaryReader = fatBinaryReader;
@@ -35,7 +36,7 @@ namespace SymbolCollector.Core
             _serviceUri = new Uri(serviceUri, "image");
             _logger = logger ?? NullLogger<Client>.Instance;
             _client = new HttpClient(handler ?? new HttpClientHandler());
-            var assemblyName = Assembly.GetEntryAssembly()?.GetName();
+            assemblyName ??= Assembly.GetEntryAssembly()?.GetName();
             _userAgent = $"{assemblyName?.Name ?? "SymbolCollector"}/{assemblyName?.Version.ToString() ?? "?.?.?"}";
         }
 
