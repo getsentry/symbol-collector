@@ -33,7 +33,7 @@ steps:
     'GoogleCloud__JsonCredentialParameters__ClientEmail=smoke@test',
     'GoogleCloud__JsonCredentialParameters__ClientId=123',
     'GoogleCloud__JsonCredentialParameters__ProjectId=smoke-test',
-    'GoogleCloud__JsonCredentialParameters__PrivateKey=-smoke-test',
+    'GoogleCloud__JsonCredentialParameters__PrivateKey=smoke-test',
   ]
   id: "smoke test"
 
