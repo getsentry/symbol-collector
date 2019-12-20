@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.IO;
 using System.Net;
 using System.Threading;
@@ -17,6 +16,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json;
+using SymbolCollector.Server.Properties;
 
 namespace SymbolCollector.Server
 {
@@ -36,6 +36,10 @@ namespace SymbolCollector.Server
             {
                 // Massive hack because the Google SDK config system doesn't play well with ASP.NET Core's
                 var jsonCredentials = c.GetRequiredService<IOptions<JsonCredentialParameters>>().Value;
+                if (jsonCredentials.PrivateKey == "smoke-test")
+                {
+                    jsonCredentials.PrivateKey = SmokeTest.SamplePrivateKey;
+                }
                 var json = JsonConvert.SerializeObject(jsonCredentials, Formatting.Indented);
                 var credentials = GoogleCredential.FromJson(json);
                 return new GoogleCloudStorageOptions(credentials);
@@ -58,7 +62,12 @@ namespace SymbolCollector.Server
             var writer = app.ApplicationServices.GetRequiredService<ISymbolGcsWriter>();
             app.Use(async (context, next) =>
             {
-                if (context.Request.Path == "/image")
+                if (context.Request.Path == "/health")
+                {
+                    // TODO: Proper health check
+                    context.Response.StatusCode = (int)HttpStatusCode.OK;
+                }
+                else if (context.Request.Path == "/image")
                 {
                     if (context.Request.Headers.TryGetValue("debug-id", out var debugId))
                     {
@@ -94,6 +103,10 @@ namespace SymbolCollector.Server
                         await context.Response.WriteAsync($@"Total images {store.Count}");
                     }
                     await context.Response.CompleteAsync();
+                }
+                else
+                {
+                    context.Response.StatusCode = (int)HttpStatusCode.NotFound;
                 }
             });
         }
