@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -6,30 +7,74 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Sentry;
+using Serilog;
+using SystemEnvironment = System.Environment;
 
 namespace SymbolCollector.Server
 {
     public class Program
     {
-        public static async Task Main(string[] args)
-        {
-            using var host = CreateHostBuilder(args).Build();
+        private static readonly string Environment
+            = SystemEnvironment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
 
-            if (!(args.Length == 1 && args[0] == "--smoke-test"))
+        public static IConfiguration Configuration { get; private set; } = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .AddJsonFile($"appsettings.{Environment}.json", optional: true)
+            .AddEnvironmentVariables()
+            .Build();
+
+        public static async Task<int> Main(string[] args)
+        {
+            if (Environment != "Production")
             {
-                host.Run();
+                Serilog.Debugging.SelfLog.Enable(Console.Error);
             }
-            else
+
+            Log.Logger = new LoggerConfiguration()
+                .ReadFrom.Configuration(Configuration)
+                .CreateLogger();
+
+            try
             {
-                await HealthCheck(host);
+                Log.Information("Starting.");
+
+                using var host = CreateHostBuilder(args).Build();
+
+                if (!(args.Length == 1 && args[0] == "--smoke-test"))
+                {
+                    host.Run();
+                }
+                else
+                {
+                    await HealthCheck(host);
+                }
+
+                return 0;
             }
+            catch (Exception ex)
+            {
+                Log.Fatal(ex, "Host terminated unexpectedly");
+                return 1;
+            }
+            finally
+            {
+                Log.CloseAndFlush();
+            }
+
         }
 
         private static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
-                    webBuilder.UseSentry();
+                    webBuilder.UseSentry(o =>
+                    {
+                        o.AddInAppExclude("Serilog");
+                        o.AddInAppExclude("Google");
+                    });
+                    webBuilder.UseSerilog();
                     webBuilder.UseStartup<Startup>();
                 });
 
