@@ -1,0 +1,27 @@
+language: csharp
+env:
+  global:
+    - DOTNET_CLI_TELEMETRY_OPTOUT=1
+    - AndroidSdkDirectory=../../android-sdk/android-sdk-macosx
+dotnet: 3.1.100
+mono: 6.6.0
+branches:
+  only:
+    - master
+    - /^release\/.*$/
+matrix:
+  include:
+    - os: osx
+      osx_image: xcode11.2
+script:
+  - curl -L https://raw.github.com/embarkmobile/android-sdk-installer/version-2/android-sdk-installer -o android-sdk-installer
+  - curl -L https://raw.github.com/embarkmobile/android-sdk-installer/version-2/accept-licenses -o accept-licenses
+  - chmod u+x android-sdk-installer
+  - chmod u+x accept-licenses
+  - ./android-sdk-installer --dir=./android-sdk --install=build-tools-29.0.0,android-29,platform-tools-29.0.0 --accept="android-sdk-license-e6a904e8|android-sdk-license-e6a904e8|android-sdk-license-e6a904e8"
+  - brew update
+  - brew cask install adoptopenjdk/openjdk/adoptopenjdk8
+  - export JAVA_HOME=$(/usr/libexec/java_home -v 1.8)
+  - dotnet tool install --global boots > nul
+  - boots https://aka.ms/xamarin-android-commercial-d16-4-macos
+  - ./build.sh

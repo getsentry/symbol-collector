@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -21,11 +22,13 @@ namespace SymbolCollector.Core
         private readonly Uri _serviceUri;
         private readonly ILogger<Client> _logger;
         private readonly HttpClient _client;
+        private readonly string _userAgent;
 
         public Client(
             Uri serviceUri,
             FatBinaryReader? fatBinaryReader = null,
             HttpMessageHandler? handler = null,
+            AssemblyName? assemblyName = null,
             ILogger<Client>? logger = null)
         {
             _fatBinaryReader = fatBinaryReader;
@@ -33,6 +36,8 @@ namespace SymbolCollector.Core
             _serviceUri = new Uri(serviceUri, "image");
             _logger = logger ?? NullLogger<Client>.Instance;
             _client = new HttpClient(handler ?? new HttpClientHandler());
+            assemblyName ??= Assembly.GetEntryAssembly()?.GetName();
+            _userAgent = $"{assemblyName?.Name ?? "SymbolCollector"}/{assemblyName?.Version.ToString() ?? "?.?.?"}";
         }
 
         public async Task UploadAllPathsAsync(IEnumerable<string> paths, CancellationToken cancellationToken)
@@ -88,7 +93,7 @@ namespace SymbolCollector.Core
             using var fileStream = File.OpenRead(file);
             var postResult = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Post, _serviceUri)
             {
-                Headers = {{"debug-id", debugId}},
+                Headers = {{"debug-id", debugId}, {"User-Agent", _userAgent}},
                 Content = new MultipartFormDataContent(
                     // TODO: add a proper boundary
                     $"Upload----WebKitFormBoundary7MA4YWxkTrZu0gW--")
@@ -267,7 +272,8 @@ namespace SymbolCollector.Core
             {
                 builder.Append(b.ToString("x2"));
             }
-            var hash =  builder.ToString();
+
+            var hash = builder.ToString();
             return hash;
         }
 
@@ -309,6 +315,7 @@ namespace SymbolCollector.Core
                             _logger.LogTrace("Section AlignExponent: {alignExponent}",
                                 section.AlignExponent);
                         }
+
                         break;
                     case EntryPoint entryPoint:
                         _logger.LogTrace("EntryPoint Value: {entryPoint}", entryPoint.Value);
@@ -321,6 +328,7 @@ namespace SymbolCollector.Core
                             _logger.LogTrace("Symbol Name: {name}", symbol.Name);
                             _logger.LogTrace("Symbol Value: {value}", symbol.Value);
                         }
+
                         break;
                 }
             }
