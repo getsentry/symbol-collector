@@ -25,3 +25,7 @@ script:
   - dotnet tool install --global boots > nul
   - boots https://aka.ms/xamarin-android-commercial-d16-4-macos
   - ./build.sh
+after_success:
+  - curl -s https://codecov.io/bash > codecov
+  - chmod +x codecov
+  - ./codecov -f "*cobertura.xml"
