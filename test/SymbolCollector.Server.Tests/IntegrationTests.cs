@@ -29,18 +29,16 @@ namespace SymbolCollector.Server.Tests
             const string expectedFileName = "libfake.so";
             const string expectedDebugId = "982391283";
 
-            var resp = await client.SendAsync(new HttpRequestMessage(HttpMethod.Post, "/image")
+            var resp = await client.SendAsync(new HttpRequestMessage(HttpMethod.Put, "/image")
             {
                 Headers = { {"debug-id", expectedDebugId} },
-                Content = new MultipartFormDataContent {{new StringContent("fake stuff"), expectedFileName}}
+                Content = new MultipartFormDataContent {{new StringContent("fake stuff"), expectedFileName, expectedFileName}}
             });
 
             Assert.True(resp.IsSuccessStatusCode);
             await mockStorageClient.Received(1).UploadObjectAsync(
                 Arg.Any<string>(),
-                expectedDebugId,
-                // TODO: format debugid-fileName
-                // $"{expectedDebugId}-{expectedFileName}",
+                expectedFileName,
                 Arg.Any<string>(),
                 Arg.Any<Stream>(),
                 Arg.Any<UploadObjectOptions>(),

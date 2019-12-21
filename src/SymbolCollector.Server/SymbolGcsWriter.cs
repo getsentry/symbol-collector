@@ -47,7 +47,7 @@ namespace SymbolCollector.Server
                 options: new UploadObjectOptions { PredefinedAcl = PredefinedObjectAcl.PublicRead },
                 cancellationToken: cancellationToken);
 
-            _logger.LogInformation("Symbol stored {link}", obj.MediaLink);
+            _logger.LogInformation("Symbol {name} with {length} length stored {link}", name, data.Length, obj.MediaLink);
         }
     }
 
