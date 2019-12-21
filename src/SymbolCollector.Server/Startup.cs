@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Threading.Tasks;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -52,17 +53,13 @@ namespace SymbolCollector.Server
                 endpoints.MapControllerRoute(
                     name: "default",
                     pattern: "{controller=Home}/{action=Index}/{id?}");
-            });
 
-            app.Use(async (context, next) =>
-            {
-                if (context.Request.Path == "/health")
+                endpoints.Map("/health", context =>
                 {
                     // TODO: Proper health check
-                    context.Response.StatusCode = (int)HttpStatusCode.OK;
-                }
-
-                await next();
+                    context.Response.StatusCode = (int) HttpStatusCode.OK;
+                    return Task.CompletedTask;
+                });
             });
         }
     }
