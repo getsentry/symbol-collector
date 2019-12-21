@@ -5,11 +5,12 @@
   <br />
 </p>
 
-# Symbol Collector 
+# Symbol Collector
 [![Travis](https://travis-ci.org/getsentry/sentry-dotnet.svg?branch=master)](https://travis-ci.org/getsentry/sentry-dotnet)
 [![AppVeyor](https://ci.appveyor.com/api/projects/status/gldfulfd5kk2stst/branch/master?svg=true)](https://ci.appveyor.com/project/sentry/symbol-collector/branch/master)
 [![Tests](https://img.shields.io/appveyor/tests/sentry/symbol-collector/master?compact_message)](https://ci.appveyor.com/project/sentry/symbol-collector/branch/master/tests)
-[![Discord Chat](https://img.shields.io/discord/621778831602221064.svg)](https://discord.gg/Ww9hbqr)  
+[![codecov](https://codecov.io/gh/getsentry/symbol-collector/branch/master/graph/badge.svg)](https://codecov.io/gh/getsentry/symbol-collector)
+[![Discord Chat](https://img.shields.io/discord/621778831602221064.svg)](https://discord.gg/Ww9hbqr)
 
 This is a work in progress to collect system symbols from different devices like Android, macOS, Linux, etc.
 It involves a server that writes the symbols to Google cloud storage and a set of clients.
@@ -22,8 +23,8 @@ Current clients are:
 
 ## Why are you doing this?
 
-In order to stack unwind from a memory dump, every loaded image involved in the call stack needs to be available. 
-Unwind information is not in the debug files but in the libraries instead. 
+In order to stack unwind from a memory dump, every loaded image involved in the call stack needs to be available.
+Unwind information is not in the debug files but in the libraries instead.
 This project allows collecting these libraries so that native crash processing can be done on the backend as opposed to stackwalking on the client.
 
 ## Dependencies

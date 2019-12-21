@@ -17,3 +17,8 @@ artifacts:
   - path: 'src\SymbolCollector.Console\linux-musl-x64\'
   - path: 'src\SymbolCollector.Console\linux-arm\'
   - path: 'src\SymbolCollector.Server\server\'
+on_success:
+  - ps: |
+      $env:PATH = 'C:\msys64\usr\bin;' + $env:PATH
+      Invoke-WebRequest -Uri 'https://codecov.io/bash' -OutFile codecov.sh
+      bash codecov.sh -f "**\*cobertura.xml"

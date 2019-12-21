@@ -14,12 +14,15 @@ pushd src/SymbolCollector.Server/
 dotnet build -c Release
 popd
 
+# clean up old test results
+find test -name "TestResults" -type d -prune -exec rm -rf '{}' +
+
 pushd test/SymbolCollector.Server.Tests/
-dotnet test -c Release
+dotnet test -c Release --collect:"XPlat Code Coverage" --settings ../coverletArgs.runsettings
 popd
 
 pushd test/SymbolCollector.Core.Tests/
-dotnet test -c Release
+dotnet test -c Release --collect:"XPlat Code Coverage" --settings ../coverletArgs.runsettings
 popd
 
 pushd src/SymbolCollector.Console/
