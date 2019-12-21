@@ -4,7 +4,7 @@ FROM mcr.microsoft.com/dotnet/core/sdk:3.1 AS builder
 WORKDIR /app
 
 # Copy the whole solution into the first stage
-COPY * ./server/
+COPY ./ ./server/
 
 # Build target
 WORKDIR /app/server/SymbolCollector.Server/
