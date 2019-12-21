@@ -5,9 +5,9 @@ set -e
 # Line: <meta-data android:name="io.sentry.symbol-collector" android:value="" />
 # To add the correct endpoint, from env var at build time
 pushd src/SymbolCollector.Android/
-msbuild /p:Configuration=Release \
+msbuild /restore /p:Configuration=Release \
     /p:AndroidBuildApplicationPackage=true \
-    /t:Clean\;Restore\;Build\;SignAndroidPackage
+    /t:Clean\;Build\;SignAndroidPackage
 popd
 
 pushd src/SymbolCollector.Server/
@@ -23,5 +23,8 @@ dotnet test -c Release
 popd
 
 pushd src/SymbolCollector.Console/
-dotnet build -c Release
+dotnet publish -c release /p:PublishSingleFile=true --self-contained -r osx-x64
+dotnet publish -c release /p:PublishSingleFile=true --self-contained -r linux-x64
+dotnet publish -c release /p:PublishSingleFile=true --self-contained -r linux-musl-x64
+dotnet publish -c release /p:PublishSingleFile=true --self-contained -r linux-arm
 popd
