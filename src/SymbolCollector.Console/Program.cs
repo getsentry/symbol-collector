@@ -17,12 +17,18 @@ namespace SymbolCollector.Console
         private static async Task UploadSymbols()
         {
             // TODO: Get the paths via parameter or confi file/env var?
-            var paths = new List<string> {"/lib/", "/usr/lib/", "/usr/local/lib/"};
+            var paths = new List<string> {"/usr/lib/", "/usr/local/lib/"};
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
                 // TODO: Add per OS paths
-//                paths.Add("");
+                paths.Add("/System/Library/Frameworks/");
             }
+            else
+            {
+                paths.Add("/lib/");
+            }
+
+            var blackListedPaths = new HashSet<string> {"/usr/lib/cron/tabs"};
 
             var cancellation = new CancellationTokenSource();
             CancelKeyPress += (s, ev) =>
@@ -37,7 +43,12 @@ namespace SymbolCollector.Console
             // TODO: M.E.DependencyInjection/Configuration
             var loggerClient = new LoggerAdapter<Client>();
             var loggerFatBinaryReader = new LoggerAdapter<FatBinaryReader>();
-            var client = new Client(new Uri(SymbolCollectorServiceUrl), new FatBinaryReader(loggerFatBinaryReader), logger: loggerClient);
+            var client = new Client(
+                new Uri(SymbolCollectorServiceUrl),
+                new FatBinaryReader(loggerFatBinaryReader),
+                blackListedPaths: blackListedPaths,
+                logger: loggerClient);
+
             await client.UploadAllPathsAsync(paths, cancellation.Token);
         }
 
@@ -62,6 +73,7 @@ namespace SymbolCollector.Console
             }
             catch (Exception e)
             {
+                WriteLine(e);
                 SentrySdk.CaptureException(e);
             }
 

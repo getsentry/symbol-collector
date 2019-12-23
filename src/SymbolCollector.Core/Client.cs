@@ -19,19 +19,25 @@ namespace SymbolCollector.Core
     public class Client : IDisposable
     {
         private readonly FatBinaryReader? _fatBinaryReader;
+        private readonly int _parallelTasks;
         private readonly Uri _serviceUri;
         private readonly ILogger<Client> _logger;
         private readonly HttpClient _client;
         private readonly string _userAgent;
+        private readonly HashSet<string>? _blackListedPaths;
 
         public Client(
             Uri serviceUri,
             FatBinaryReader? fatBinaryReader = null,
             HttpMessageHandler? handler = null,
             AssemblyName? assemblyName = null,
+            int parallelTasks = 10,
+            HashSet<string>? blackListedPaths = null,
             ILogger<Client>? logger = null)
         {
             _fatBinaryReader = fatBinaryReader;
+            _parallelTasks = parallelTasks;
+            _blackListedPaths = blackListedPaths;
             // We only hit /image here
             _serviceUri = new Uri(serviceUri, "image");
             _logger = logger ?? NullLogger<Client>.Instance;
@@ -40,7 +46,37 @@ namespace SymbolCollector.Core
             _userAgent = $"{assemblyName?.Name ?? "SymbolCollector"}/{assemblyName?.Version.ToString() ?? "?.?.?"}";
         }
 
-        public async Task UploadAllPathsAsync(IEnumerable<string> paths, CancellationToken cancellationToken)
+        public async Task UploadAllPathsAsync(IEnumerable<string> topLevelPaths, CancellationToken cancellationToken)
+        {
+            var lookupDirectories =
+                from topPath in topLevelPaths
+                from lookupDirectory in SafeGetDirectories(topPath)
+                where _blackListedPaths?.Contains(lookupDirectory) != true
+                select lookupDirectory;
+
+            var batches =
+                lookupDirectories.Select((item, i) => (item, i))
+                .GroupBy(d => d.i / _parallelTasks)
+                .Select(g => g.Select(x => x.item));
+
+            foreach (var batch in batches)
+            {
+                await UploadParallel(batch, cancellationToken);
+            }
+
+            static IEnumerable<string> SafeGetDirectories(string path)
+            {
+                try
+                {
+                    return Directory.GetDirectories(path, "*", SearchOption.AllDirectories);
+                }
+                catch (UnauthorizedAccessException) { }
+                catch (DirectoryNotFoundException) { }
+                return Enumerable.Empty<string>();
+            }
+        }
+
+        private async Task UploadParallel(IEnumerable<string> paths, CancellationToken cancellationToken)
         {
             var tasks = new List<Task>();
             foreach (var path in paths)
