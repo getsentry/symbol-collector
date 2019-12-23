@@ -243,8 +243,8 @@ namespace SymbolCollector.Core
                     var hasUnwindingInfo = elf.TryGetSection(".eh_frame", out _);
                     var hasDwarfDebugInfo = elf.TryGetSection(".debug_frame", out _);
 
-                    _logger.LogInformation("Contains unwinding info: {hasUnwindingInfo}", hasUnwindingInfo);
-                    _logger.LogInformation("Contains DWARF debug info: {hasDwarfDebugInfo}", hasDwarfDebugInfo);
+                    _logger.LogDebug("Contains unwinding info: {hasUnwindingInfo}", hasUnwindingInfo);
+                    _logger.LogDebug("Contains DWARF debug info: {hasDwarfDebugInfo}", hasDwarfDebugInfo);
 
                     var hasBuildId = elf.TryGetSection(".note.gnu.build-id", out var buildId);
                     if (hasBuildId)

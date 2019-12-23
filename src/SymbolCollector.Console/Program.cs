@@ -5,7 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Sentry;
-using Sentry.Protocol;
 using SymbolCollector.Core;
 using static System.Console;
 
@@ -40,7 +39,7 @@ namespace SymbolCollector.Console
                 cancellation.Cancel();
             };
 
-            WriteLine("Press any key to exit...");
+            WriteLine("Press Ctrl+C to exit...");
 
             // TODO: M.E.DependencyInjection/Configuration
             var loggerClient = new LoggerAdapter<Client>(LogLevel.Information);
@@ -60,7 +59,7 @@ namespace SymbolCollector.Console
             {
                 o.Debug = true;
 #if !DEBUG
-                o.DiagnosticsLevel = SentryLevel.Info;
+                o.DiagnosticsLevel = Sentry.Protocol.SentryLevel.Info;
 #endif
                 o.AttachStacktrace = true;
                 o.Dsn = new Dsn(Dsn);
