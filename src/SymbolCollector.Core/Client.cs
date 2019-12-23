@@ -148,7 +148,7 @@ namespace SymbolCollector.Core
             // Ideally ELF would read headers as a stream which we could reset to 0 after reading heads
             // and ensuring it's what we need.
             using var fileStream = File.OpenRead(file);
-            var postResult = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Post, _serviceUri)
+            var postResult = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Put, _serviceUri)
             {
                 Headers = {{"debug-id", debugId}, {"User-Agent", _userAgent}},
                 Content = new MultipartFormDataContent(

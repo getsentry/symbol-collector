@@ -39,7 +39,8 @@ namespace SymbolCollector.Server
         [DisableFormValueModelBinding]
         public async Task<IActionResult> UploadSymbol(CancellationToken token)
         {
-            _logger.LogDebug("/image endpoint called from {user-agent}", Request.Headers["User-Agent"]);
+            _logger.LogDebug("/image endpoint called by {user-agent}",
+                Request.Headers["User-Agent"].FirstOrDefault() ?? "Unknown");
 
             if (!MultipartRequestHelper.IsMultipartContentType(Request.ContentType))
             {
