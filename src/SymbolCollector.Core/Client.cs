@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ELFSharp.ELF;
+using ELFSharp.ELF.Sections;
 using ELFSharp.MachO;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -19,7 +20,7 @@ namespace SymbolCollector.Core
     public class Client : IDisposable
     {
         private readonly FatBinaryReader? _fatBinaryReader;
-        private readonly int _parallelTasks;
+        internal int ParallelTasks { get; }
         private readonly Uri _serviceUri;
         private readonly ILogger<Client> _logger;
         private readonly HttpClient _client;
@@ -31,12 +32,12 @@ namespace SymbolCollector.Core
             FatBinaryReader? fatBinaryReader = null,
             HttpMessageHandler? handler = null,
             AssemblyName? assemblyName = null,
-            int parallelTasks = 10,
+            int? parallelTasks = null,
             HashSet<string>? blackListedPaths = null,
             ILogger<Client>? logger = null)
         {
             _fatBinaryReader = fatBinaryReader;
-            _parallelTasks = parallelTasks;
+            ParallelTasks = parallelTasks ?? 10;
             _blackListedPaths = blackListedPaths;
             // We only hit /image here
             _serviceUri = new Uri(serviceUri, "image");
@@ -56,8 +57,8 @@ namespace SymbolCollector.Core
 
             var batches =
                 lookupDirectories.Select((item, i) => (item, i))
-                .GroupBy(d => d.i / _parallelTasks)
-                .Select(g => g.Select(x => x.item));
+                    .GroupBy(d => d.i / ParallelTasks)
+                    .Select(g => g.Select(x => x.item));
 
             foreach (var batch in batches)
             {
@@ -70,8 +71,13 @@ namespace SymbolCollector.Core
                 {
                     return Directory.GetDirectories(path, "*", SearchOption.AllDirectories);
                 }
-                catch (UnauthorizedAccessException) { }
-                catch (DirectoryNotFoundException) { }
+                catch (UnauthorizedAccessException)
+                {
+                }
+                catch (DirectoryNotFoundException)
+                {
+                }
+
                 return Enumerable.Empty<string>();
             }
         }
@@ -163,7 +169,7 @@ namespace SymbolCollector.Core
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                getBuildId = GetElfBuildId;
+                getBuildId = d => GetElfBuildId(d)?.ToString();
             }
             else
             {
@@ -209,7 +215,7 @@ namespace SymbolCollector.Core
             }
         }
 
-        private string? GetElfBuildId(string file)
+        internal string? GetElfBuildId(string file)
         {
             IELF? elf = null;
             try
@@ -217,31 +223,39 @@ namespace SymbolCollector.Core
                 // TODO: find an async API if this is used by the server
                 if (ELFReader.TryLoad(file, out elf))
                 {
+                    var hasUnwindingInfo = elf.TryGetSection(".eh_frame", out _);
+                    var hasDwarfDebugInfo = elf.TryGetSection(".debug_frame", out _);
+
+                    _logger.LogInformation("Contains unwinding info: {hasUnwindingInfo}", hasUnwindingInfo);
+                    _logger.LogInformation("Contains DWARF debug info: {hasDwarfDebugInfo}", hasDwarfDebugInfo);
+
                     var hasBuildId = elf.TryGetSection(".note.gnu.build-id", out var buildId);
                     if (hasBuildId)
                     {
-                        var hasUnwindingInfo = elf.TryGetSection(".eh_frame", out _);
-                        var hasDwarfDebugInfo = elf.TryGetSection(".debug_frame", out _);
-
-                        if (hasUnwindingInfo || hasDwarfDebugInfo)
+                        var desc = buildId switch
                         {
-                            _logger.LogInformation("Contains unwinding info: {hasUnwindingInfo}", hasUnwindingInfo);
-                            _logger.LogInformation("Contains DWARF debug info: {hasDwarfDebugInfo}", hasDwarfDebugInfo);
-
-                            var builder = new StringBuilder();
-                            var bytes = buildId.GetContents().Skip(16);
-
-                            foreach (var @byte in bytes)
-                            {
-                                builder.Append(@byte.ToString("x2"));
-                            }
-
-                            return builder.ToString();
+                            NoteSection<uint> noteUint => noteUint.Description,
+                            NoteSection<ulong> noteUlong => noteUlong.Description,
+                            _ => null
+                        };
+                        if (desc == null)
+                        {
+                            _logger.LogError("build-id exists but bytes (desc) are null.");
                         }
                         else
                         {
-                            _logger.LogWarning("No unwind nor DWARF debug info in {file}", file);
-                            return null;
+                            // TODO ns2.1: get a slice
+                            desc = desc.Take(16).ToArray();
+                            if (desc.Length != 16)
+                            {
+                                // TODO: Throw?
+                                _logger.LogError("build-id exists but bytes (desc) length is unexpected {bytes}.",
+                                    desc.Length);
+                            }
+                            else
+                            {
+                                return new Guid(desc).ToString();
+                            }
                         }
                     }
                     else
@@ -267,7 +281,7 @@ namespace SymbolCollector.Core
             return null;
         }
 
-        private string? GetMachOBuildId(string file)
+        internal string? GetMachOBuildId(string file)
         {
             try
             {
