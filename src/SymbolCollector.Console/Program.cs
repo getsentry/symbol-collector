@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Sentry;
 using Sentry.Protocol;
 using SymbolCollector.Core;
@@ -17,7 +18,7 @@ namespace SymbolCollector.Console
 
         private static async Task UploadSymbols()
         {
-            // TODO: Get the paths via parameter or confi file/env var?
+            // TODO: Get the paths via parameter or config file/env var?
             var paths = new List<string> {"/usr/lib/", "/usr/local/lib/"};
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
@@ -42,7 +43,7 @@ namespace SymbolCollector.Console
             WriteLine("Press any key to exit...");
 
             // TODO: M.E.DependencyInjection/Configuration
-            var loggerClient = new LoggerAdapter<Client>();
+            var loggerClient = new LoggerAdapter<Client>(LogLevel.Information);
             var loggerFatBinaryReader = new LoggerAdapter<FatBinaryReader>();
             var client = new Client(
                 new Uri(SymbolCollectorServiceUrl),

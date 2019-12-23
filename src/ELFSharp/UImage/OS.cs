@@ -1,5 +1,3 @@
-using System;
-
 namespace ELFSharp.UImage
 {
 	public enum OS : byte

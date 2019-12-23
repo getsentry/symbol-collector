@@ -1,5 +1,4 @@
 using System;
-using ELFSharp;
 using ELFSharp.Utilities;
 
 namespace ELFSharp.ELF.Sections
