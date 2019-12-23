@@ -27,6 +27,8 @@ namespace SymbolCollector.Core
         private readonly string _userAgent;
         private readonly HashSet<string>? _blackListedPaths;
 
+        public Metrics CurrentMetrics { get; } = new Metrics();
+
         public Client(
             Uri serviceUri,
             FatBinaryReader? fatBinaryReader = null,
@@ -62,6 +64,7 @@ namespace SymbolCollector.Core
             foreach (var batch in batches)
             {
                 await UploadParallel(batch, cancellationToken);
+                CurrentMetrics.BatchProcessed();
             }
 
             IEnumerable<string> SafeGetDirectories(string path)
@@ -92,6 +95,7 @@ namespace SymbolCollector.Core
                 if (Directory.Exists(path))
                 {
                     tasks.Add(UploadFilesAsync(path, cancellationToken));
+                    CurrentMetrics.JobsInFlightAdd(1);
                     _logger.LogInformation("Uploading files from: {path}", path);
                 }
                 else
@@ -104,7 +108,7 @@ namespace SymbolCollector.Core
             {
                 if (tasks.Any())
                 {
-                    _logger.LogWarning("Awaiting {count} upload tasks to finish.", tasks.Count);
+                    _logger.LogInformation("Awaiting {count} upload tasks to finish.", tasks.Count);
                     await Task.WhenAll(tasks);
                 }
                 else
@@ -115,6 +119,10 @@ namespace SymbolCollector.Core
             catch (OperationCanceledException)
             {
                 _logger.LogInformation("Operation cancelled successfully.");
+            }
+            finally
+            {
+                CurrentMetrics.JobsInFlightRemove(tasks.Count);
             }
         }
 
@@ -131,6 +139,7 @@ namespace SymbolCollector.Core
                     _logger.LogWarning("Skipping file {file} because no debug id was found.");
                     continue;
                 }
+
                 await UploadAsync(debugId, file, cancellationToken);
             }
         }
@@ -158,9 +167,11 @@ namespace SymbolCollector.Core
                     {new StreamContent(fileStream), file}
                 }
             }, cancellationToken);
+            CurrentMetrics.UploadedBytesAdd(fileStream.Length);
 
             if (!postResult.IsSuccessStatusCode)
             {
+                CurrentMetrics.FailedToUpload();
                 _logger.LogError("{statusCode} for file {file}", postResult.StatusCode, file);
                 if (postResult.Headers.TryGetValues("X-Error-Code", out var code))
                 {
@@ -169,6 +180,7 @@ namespace SymbolCollector.Core
             }
             else
             {
+                CurrentMetrics.SuccessfullyUploaded();
                 _logger.LogInformation("Sent file: {file}", file);
             }
         }
@@ -203,10 +215,12 @@ namespace SymbolCollector.Core
                     .Where(result => result != null)
                     .SelectMany(result => result))
                 {
+                    CurrentMetrics.FileProcessed();
                     if (tuple.Item2 == null)
                     {
                         continue;
                     }
+
                     yield return tuple;
                 }
             }
@@ -218,6 +232,7 @@ namespace SymbolCollector.Core
             FatMachO? load = null;
             if (_fatBinaryReader?.TryLoad(file, out load) == true && load is { } fatMachO)
             {
+                CurrentMetrics.FatMachOFileFound();
                 _logger.LogInformation("Fat binary file with {count} Mach-O files: {file}.",
                     fatMachO.Header.FatArchCount, file);
 
@@ -240,6 +255,7 @@ namespace SymbolCollector.Core
                 // TODO: find an async API if this is used by the server
                 if (ELFReader.TryLoad(file, out elf))
                 {
+                    CurrentMetrics.ElfFileFound();
                     var hasUnwindingInfo = elf.TryGetSection(".eh_frame", out _);
                     var hasDwarfDebugInfo = elf.TryGetSection(".debug_frame", out _);
 
@@ -282,7 +298,7 @@ namespace SymbolCollector.Core
                 }
                 else
                 {
-                    _logger.LogWarning("Couldn't load': {file} with ELF reader.", file);
+                    _logger.LogDebug("Couldn't load': {file} with ELF reader.", file);
                 }
             }
             catch (Exception e)
@@ -305,6 +321,7 @@ namespace SymbolCollector.Core
                 // TODO: find an async API if this is used by the server
                 if (MachOReader.TryLoad(file, out var mach0) == MachOResult.OK)
                 {
+                    CurrentMetrics.MachOFileFound();
                     _logger.LogDebug("Mach-O found {file}", file);
                     LogTrace(mach0);
 
@@ -319,12 +336,14 @@ namespace SymbolCollector.Core
                     return buildId;
                 }
 
-                _logger.LogWarning("Couldn't load': {file} with mach-O reader.", file);
+                _logger.LogDebug("Couldn't load': {file} with mach-O reader.", file);
             }
             catch (Exception e)
             {
                 // You would expect TryLoad doesn't throw but that's not the case
-                _logger.LogError(e, "Failed processing file {file}.", file);
+                // _logger.LogError(e, "Failed processing file {file}. " + e, file);
+                // TODO: Print exception to console in debug
+                 _logger.LogError(e, "Failed processing file {file}. ", file);
             }
 
             return null;
@@ -398,6 +417,57 @@ namespace SymbolCollector.Core
 
                         break;
                 }
+            }
+        }
+
+        public class Metrics
+        {
+            private DateTimeOffset StartedTime { get; } = DateTimeOffset.Now;
+            private long _filesProcessed;
+            private long _batchesProcessed;
+            private long _jobsInFlight;
+            private long _failedToUploadCount;
+            private long _successfullyUploadCount;
+            private long _machOFileFound;
+            private long _elfFileFound;
+            private long _fatMockOFileFound;
+            private long _uploadedBytes;
+            public void FileProcessed() => Interlocked.Increment(ref _filesProcessed);
+            public void BatchProcessed() => Interlocked.Increment(ref _batchesProcessed);
+            public void MachOFileFound() => Interlocked.Increment(ref _machOFileFound);
+            public void ElfFileFound() => Interlocked.Increment(ref _elfFileFound);
+            public void FatMachOFileFound() => Interlocked.Increment(ref _fatMockOFileFound);
+            public void FailedToUpload() => Interlocked.Increment(ref _failedToUploadCount);
+            public void SuccessfullyUploaded() => Interlocked.Increment(ref _successfullyUploadCount);
+            public void JobsInFlightRemove(int tasksCount) => Interlocked.Add(ref _jobsInFlight, -tasksCount);
+            public void JobsInFlightAdd(int tasksCount) => Interlocked.Add(ref _jobsInFlight, tasksCount);
+            public void UploadedBytesAdd(long bytes) => Interlocked.Add(ref _uploadedBytes, bytes);
+
+            public void Print(TextWriter writer)
+            {
+                writer.WriteLine();
+                writer.Write("Started at:\t\t\t\t");
+                writer.WriteLine(StartedTime);
+                writer.Write("Ran for:\t\t\t\t");
+                writer.WriteLine(DateTimeOffset.Now - StartedTime);
+                writer.Write("FileProcessed:\t\t\t\t");
+                writer.WriteLine(_filesProcessed);
+                writer.Write("Batches completed:\t\t\t");
+                writer.WriteLine(_batchesProcessed);
+                writer.Write("Job in flight:\t\t\t\t");
+                writer.WriteLine(_jobsInFlight);
+                writer.Write("Failed to upload:\t\t\t");
+                writer.WriteLine(_failedToUploadCount);
+                writer.Write("Successfully uploaded:\t\t\t");
+                writer.WriteLine(_successfullyUploadCount);
+                writer.Write("Uploaded bytes:\t\t\t\t");
+                writer.WriteLine(_uploadedBytes);
+                writer.Write("ELF files loaded:\t\t\t");
+                writer.WriteLine(_elfFileFound);
+                writer.Write("Mach-O files loaded:\t\t\t");
+                writer.WriteLine(_machOFileFound);
+                writer.Write("Fat Mach-O files loaded:\t\t");
+                writer.WriteLine(_fatMockOFileFound);
             }
         }
 

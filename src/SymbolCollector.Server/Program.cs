@@ -69,6 +69,11 @@ namespace SymbolCollector.Server
             Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
+                    webBuilder.UseKestrel(o =>
+                    {
+                        // TODO: proper (safe) value
+                        o.Limits.MaxRequestBodySize = long.MaxValue;
+                    });
                     webBuilder.UseSentry(o =>
                     {
                         o.AddInAppExclude("Serilog");
