@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Sentry;
+using Sentry.Protocol;
 using SymbolCollector.Core;
 using static System.Console;
 
@@ -56,8 +57,9 @@ namespace SymbolCollector.Console
         {
             SentrySdk.Init(o =>
             {
-#if DEBUG
                 o.Debug = true;
+#if !DEBUG
+                o.DiagnosticsLevel = SentryLevel.Info;
 #endif
                 o.AttachStacktrace = true;
                 o.Dsn = new Dsn(Dsn);
