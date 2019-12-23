@@ -4,7 +4,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Sentry;
-using Sentry.Protocol;
 using SymbolCollector.Core;
 using static System.Console;
 
@@ -17,7 +16,7 @@ namespace SymbolCollector.Console
 
         private static async Task UploadSymbols()
         {
-            // TODO: Get the paths via parameter or confi file/env var?
+            // TODO: Get the paths via parameter or config file/env var?
             var paths = new List<string> {"/usr/lib/", "/usr/local/lib/"};
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {

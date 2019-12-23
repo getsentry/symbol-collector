@@ -49,27 +49,29 @@ namespace SymbolCollector.Core
 
         public async Task UploadAllPathsAsync(IEnumerable<string> topLevelPaths, CancellationToken cancellationToken)
         {
-            var lookupDirectories =
+            var counter = 0;
+            var batches =
                 from topPath in topLevelPaths
                 from lookupDirectory in SafeGetDirectories(topPath)
                 where _blackListedPaths?.Contains(lookupDirectory) != true
-                select lookupDirectory;
-
-            var batches =
-                lookupDirectories.Select((item, i) => (item, i))
-                    .GroupBy(d => d.i / ParallelTasks)
-                    .Select(g => g.Select(x => x.item));
+                let c = counter++
+                group lookupDirectory by c / ParallelTasks
+                into grp
+                select grp.ToList();
 
             foreach (var batch in batches)
             {
                 await UploadParallel(batch, cancellationToken);
             }
 
-            static IEnumerable<string> SafeGetDirectories(string path)
+            IEnumerable<string> SafeGetDirectories(string path)
             {
+                _logger.LogDebug("Probing {path} for child directories.", path);
                 try
                 {
-                    return Directory.GetDirectories(path, "*", SearchOption.AllDirectories);
+                    return Directory.GetDirectories(path, "*", SearchOption.AllDirectories)
+                        // Include the directory itself
+                        .Prepend(path);
                 }
                 catch (UnauthorizedAccessException)
                 {
@@ -118,17 +120,30 @@ namespace SymbolCollector.Core
 
         private async Task UploadFilesAsync(string path, CancellationToken cancellationToken)
         {
+            using var _ = _logger.BeginScope(("path", path));
             var files = Directory.GetFiles(path);
             _logger.LogInformation("Path {path} has {length} files to process", path, files.Length);
 
-            foreach (var (debugId, file) in GetFiles(files))
+            foreach (var (file, debugId) in GetFiles(files))
             {
+                if (debugId == null)
+                {
+                    _logger.LogWarning("Skipping file {file} because no debug id was found.");
+                    continue;
+                }
                 await UploadAsync(debugId, file, cancellationToken);
             }
         }
 
         private async Task UploadAsync(string debugId, string file, CancellationToken cancellationToken)
         {
+            using var _ = _logger.BeginScope(new Dictionary<string, string>
+            {
+                {"debugId", debugId},
+                {"file", file},
+                {"User-Agent", _userAgent}
+            });
+
             // Better would be if `ELF` class would expose its buffer so we don't need to read the file twice.
             // Ideally ELF would read headers as a stream which we could reset to 0 after reading heads
             // and ensuring it's what we need.
@@ -159,51 +174,45 @@ namespace SymbolCollector.Core
         }
 
         // TODO: IAsyncEnumerable when ELF library supports it
-        private IEnumerable<(string debugId, string file)> GetFiles(IEnumerable<string> files)
+        private IEnumerable<(string file, string? debugId)> GetFiles(IEnumerable<string> files)
         {
-            Func<string, string?> getBuildId;
+            var strategies = new List<Func<string, IEnumerable<(string, string?)>>>
+            {
+                s => new[]
+                {
+                    (s, GetElfBuildId(s))
+                },
+                s => new[]
+                {
+                    (s, GetMachOBuildId(s))
+                },
+                GetMachOFromFatFile
+            };
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                // TODO: Take this as a strategy class-wide to check for platform only once.
-                getBuildId = GetMachOBuildId;
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                getBuildId = d => GetElfBuildId(d)?.ToString();
-            }
-            else
-            {
-                // TODO: This needs to be check at the start of the program though
-                throw new NotSupportedException($"OS {RuntimeInformation.OSDescription} is not supported.");
+                // Move ELF as the last strategy if running on macOS
+                var elf = strategies.ElementAt(0);
+                strategies.RemoveAt(0);
+                strategies.Add(elf);
             }
 
             foreach (var file in files)
             {
-                _logger.LogInformation("Processing file: {file}.", file);
-
-                var buildId = getBuildId(file);
-                if (buildId is null)
+                foreach (var tuple in strategies
+                    .Select(strategy => strategy(file))
+                    .Where(result => result != null)
+                    .SelectMany(result => result))
                 {
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                    if (tuple.Item2 == null)
                     {
-                        foreach (var matchOdBuildId in GetMachOFromFatFile(file))
-                        {
-                            yield return matchOdBuildId;
-                        }
+                        continue;
                     }
-
-                    continue;
+                    yield return tuple;
                 }
-
-                // TODO: Store in the metadata/send in the header
-                var hash = GetHash(file);
-                _logger.LogInformation("File hash: {hash}.", hash);
-
-                yield return (buildId, file);
             }
         }
 
-        internal IEnumerable<(string debugId, string file)> GetMachOFromFatFile(string file)
+        internal IEnumerable<(string file, string? debugId)> GetMachOFromFatFile(string file)
         {
             // Check if it's a Fat Mach-O
             FatMachO? load = null;

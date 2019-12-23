@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using Xunit;
@@ -14,7 +17,10 @@ namespace SymbolCollector.Core.Tests
         private class Fixture
         {
             public Uri ServiceUri { get; set; } = new Uri("https://test.sentry/");
-            public FatBinaryReader? FatBinaryReader { get; set; }
+
+            public FatBinaryReader? FatBinaryReader { get; set; } =
+                new FatBinaryReader(Substitute.For<ILogger<FatBinaryReader>>());
+
             public HttpMessageHandler? HttpMessageHandler { get; set; }
             public AssemblyName? AssemblyName { get; set; }
             public int? ParallelTasks { get; set; }
@@ -102,7 +108,6 @@ namespace SymbolCollector.Core.Tests
         [InlineData(null, "TestFiles/DiskBuffer$1.class")]
         public void GetMachOFromFatFile_TestFile_CorrectId(string debugId, string path)
         {
-            _fixture.FatBinaryReader = new FatBinaryReader(Substitute.For<ILogger<FatBinaryReader>>());
             var sut = _fixture.GetSut();
             var actual = sut.GetMachOFromFatFile(path);
 
@@ -120,10 +125,39 @@ namespace SymbolCollector.Core.Tests
         }
 
         [Fact]
+        public async Task UploadAllPathsAsync_TestFilesDirectory_FilesDetected()
+        {
+            var counter = 0;
+            _fixture.HttpMessageHandler = new TestMessageHandler((message, token) =>
+            {
+                Interlocked.Increment(ref counter);
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.Created));
+            });
+
+            var sut = _fixture.GetSut();
+            await sut.UploadAllPathsAsync(new[] {"TestFiles"}, CancellationToken.None);
+            Assert.Equal(11, counter);
+            // TODO: Match exact files and their debug ids.
+        }
+
+        [Fact]
         public void ParallelTasks_DefaultValue_Ten()
         {
             var sut = _fixture.GetSut();
             Assert.Equal(10, sut.ParallelTasks);
+        }
+
+        private class TestMessageHandler : HttpMessageHandler
+        {
+            private readonly Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> _callback;
+
+            public TestMessageHandler(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> callback)
+                => _callback = callback;
+
+            protected override Task<HttpResponseMessage> SendAsync(
+                HttpRequestMessage request,
+                CancellationToken cancellationToken)
+                => _callback(request, cancellationToken);
         }
     }
 }
