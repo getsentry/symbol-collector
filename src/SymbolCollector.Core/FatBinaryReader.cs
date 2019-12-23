@@ -133,11 +133,17 @@ namespace SymbolCollector.Core
                 return null;
             }
 
-            var fatArchCount = new byte[4];
+            var fatArchCount = GetFatBinaryUint32(bytes, 4, new byte[4], 0);
+            // https://github.com/file/file/blob/c81d1ccbf4c224af50e6d556419961dba72666c7/magic/Magdir/cafebabe#L12
+            if (fatArchCount > 43)
+            {
+                return null;
+            }
+
             return new FatHeader
             {
                 Magic = magic,
-                FatArchCount = GetFatBinaryUint32(bytes, 4, fatArchCount, 0)
+                FatArchCount = fatArchCount
             };
         }
 

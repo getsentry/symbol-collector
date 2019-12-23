@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Reflection;
- using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
+using NSubstitute;
 using Xunit;
 
 namespace SymbolCollector.Core.Tests
@@ -61,6 +63,59 @@ namespace SymbolCollector.Core.Tests
             else
             {
                 Assert.Equal(new Guid(debugId).ToString(), actual);
+            }
+        }
+
+        // Ids were checked with: 'sentry-cli difutil check'
+        [Theory]
+        // SymbolCollector.Console macOS x86_x64 symtab, unwind
+        [InlineData("c5ff520a-e05c-3099-921e-a8229f808696", "TestFiles/System.Net.Http.Native.dylib")]
+        // From macOS Catalina x86_64 /usr/lib/ symtab
+        [InlineData("844b7887-09b3-3d12-acde-c4eb8f53dc62", "TestFiles/libutil.dylib")]
+        // ELF file:
+        [InlineData(null, "TestFiles/libxamarin-app-arm64-v8a.so")]
+        public void GetMachOBuildId_TestFile_CorrectId(string debugId, string path)
+        {
+            var sut = _fixture.GetSut();
+            var actual = sut.GetMachOBuildId(path);
+            if (debugId is null)
+            {
+                Assert.Null(actual);
+            }
+            else
+            {
+                Assert.Equal(new Guid(debugId).ToString(), actual);
+            }
+        }
+
+
+        // Ids were checked with: 'sentry-cli difutil check'
+        [Theory]
+        [InlineData("9787d26c-6cd6-30a9-b5a1-e9c7c42ddb22", "TestFiles/libswiftObjectiveC.dylib")]
+        [InlineData("b18e9245-d333-326c-af0b-29285a0b3a6d", "TestFiles/libswiftObjectiveC.dylib")]
+        // libswiftObjectiveC.dylib Fat Mach-O (symtab, unwind) has 2 debug ids:
+        // > 9787d26c-6cd6-30a9-b5a1-e9c7c42ddb22 (x86)
+        // > b18e9245-d333-326c-af0b-29285a0b3a6d (x86_64)
+        // ELF file:
+        [InlineData(null, "TestFiles/libxamarin-app-arm64-v8a.so")]
+        // Java class file which has the same magic bytes as a Fat Mach-O file
+        [InlineData(null, "TestFiles/DiskBuffer$1.class")]
+        public void GetMachOFromFatFile_TestFile_CorrectId(string debugId, string path)
+        {
+            _fixture.FatBinaryReader = new FatBinaryReader(Substitute.For<ILogger<FatBinaryReader>>());
+            var sut = _fixture.GetSut();
+            var actual = sut.GetMachOFromFatFile(path);
+
+            Assert.NotNull(actual);
+
+            if (debugId is null)
+            {
+                Assert.Empty(actual);
+            }
+            else
+            {
+                var ids = actual.Select(a => a.debugId).ToList();
+                Assert.Contains(debugId, ids);
             }
         }
 

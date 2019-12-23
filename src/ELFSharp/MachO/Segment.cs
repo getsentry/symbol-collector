@@ -46,7 +46,10 @@ namespace ELFSharp.MachO
                 var offsetInSegment = ReadInt32OrInt64() - fileOffset;
                 if(offsetInSegment < 0)
                 {
-                    throw new InvalidOperationException("Unexpected section offset lower than segment offset.");
+                    // TODO: Figure out how to handle this/what to do when sending changes upstream
+                    // Throws here although sentry-cli doesn't error (nor warn, as it does i.e:
+                    //   WARN    2019-12-23 18:53:49.572415 +01:00 section #1 size 548064 out of bounds  (from goblin)
+                    // throw new InvalidOperationException("Unexpected section offset lower than segment offset.");
                 }
                 var alignExponent = Reader.ReadInt32();
                 Reader.ReadBytes(20);
