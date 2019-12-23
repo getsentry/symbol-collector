@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.0</TargetFramework>
@@ -16,4 +16,8 @@
     <ProjectReference Include="..\..\src\SymbolCollector.Core\SymbolCollector.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="$(ProjectDir)TestFiles\**" CopyToOutputDirectory="PreserveNewest" LinkBase="TestFiles\" />
+  </ItemGroup>
+  
 </Project>
