@@ -12,9 +12,11 @@ namespace ELFSharp.MachO
             Reader.Read(OriginalUuid, 0, 16);
 
             // TODO: Make sure this needs to go LE
-            if (!BitConverter.IsLittleEndian)
+            if (BitConverter.IsLittleEndian)
             {
-                Array.Reverse(OriginalUuid);
+                Array.Reverse(OriginalUuid, 0, 4);
+                Array.Reverse(OriginalUuid, 4, 2);
+                Array.Reverse(OriginalUuid, 6, 2);
             }
         }
 

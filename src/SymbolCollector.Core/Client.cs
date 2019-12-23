@@ -186,21 +186,9 @@ namespace SymbolCollector.Core
                 {
                     if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                     {
-                        // Check if it's a Fat Mach-O
-                        FatMachO? load = null;
-                        if (_fatBinaryReader?.TryLoad(file, out load) == true && load is { } fatMachO)
+                        foreach (var matchOdBuildId in GetMachOFromFatFile(file))
                         {
-                            _logger.LogInformation("Fat binary file with {count} Mach-O files: {file}.",
-                                fatMachO.Header.FatArchCount, file);
-
-                            using (_logger.BeginScope(new {FatMachO = file}))
-                            using (fatMachO)
-                            {
-                                foreach (var buildIdFile in GetFiles(fatMachO.MachOFiles))
-                                {
-                                    yield return buildIdFile;
-                                }
-                            }
+                            yield return matchOdBuildId;
                         }
                     }
 
@@ -212,6 +200,26 @@ namespace SymbolCollector.Core
                 _logger.LogInformation("File hash: {hash}.", hash);
 
                 yield return (buildId, file);
+            }
+        }
+
+        internal IEnumerable<(string debugId, string file)> GetMachOFromFatFile(string file)
+        {
+            // Check if it's a Fat Mach-O
+            FatMachO? load = null;
+            if (_fatBinaryReader?.TryLoad(file, out load) == true && load is { } fatMachO)
+            {
+                _logger.LogInformation("Fat binary file with {count} Mach-O files: {file}.",
+                    fatMachO.Header.FatArchCount, file);
+
+                using (_logger.BeginScope(new {FatMachO = file}))
+                using (fatMachO)
+                {
+                    foreach (var buildIdFile in GetFiles(fatMachO.MachOFiles))
+                    {
+                        yield return buildIdFile;
+                    }
+                }
             }
         }
 
