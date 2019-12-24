@@ -22,7 +22,12 @@ namespace ELFSharp.MachO
         {
             machO = null;
             uint magic;
-            using(var reader = new BinaryReader(File.OpenRead(fileName)))
+            var file = File.OpenRead(fileName);
+            if (file.Length < 2)
+            {
+                return MachOResult.NotMachO;
+            }
+            using(var reader = new BinaryReader(file))
             {
                 magic = reader.ReadUInt32();
                 if(magic != Magic64 && magic != Magic32)
@@ -37,7 +42,7 @@ namespace ELFSharp.MachO
         private const uint Magic32 = 0xFEEDFACE;
         private const uint Magic64 = 0xFEEDFACF;
 
-               
+
     }
 }
 

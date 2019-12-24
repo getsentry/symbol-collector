@@ -27,6 +27,8 @@ namespace SymbolCollector.Core
         private readonly string _userAgent;
         private readonly HashSet<string>? _blackListedPaths;
 
+        public ClientMetrics CurrentMetrics { get; } = new ClientMetrics();
+
         public Client(
             Uri serviceUri,
             FatBinaryReader? fatBinaryReader = null,
@@ -38,6 +40,7 @@ namespace SymbolCollector.Core
         {
             _fatBinaryReader = fatBinaryReader;
             ParallelTasks = parallelTasks ?? 10;
+
             _blackListedPaths = blackListedPaths;
             // We only hit /image here
             _serviceUri = new Uri(serviceUri, "image");
@@ -62,6 +65,7 @@ namespace SymbolCollector.Core
             foreach (var batch in batches)
             {
                 await UploadParallel(batch, cancellationToken);
+                CurrentMetrics.BatchProcessed();
             }
 
             IEnumerable<string> SafeGetDirectories(string path)
@@ -75,9 +79,11 @@ namespace SymbolCollector.Core
                 }
                 catch (UnauthorizedAccessException)
                 {
+                    CurrentMetrics.DirectoryUnauthorizedAccess();
                 }
                 catch (DirectoryNotFoundException)
                 {
+                    CurrentMetrics.DirectoryDoesNotExist();
                 }
 
                 return Enumerable.Empty<string>();
@@ -92,10 +98,12 @@ namespace SymbolCollector.Core
                 if (Directory.Exists(path))
                 {
                     tasks.Add(UploadFilesAsync(path, cancellationToken));
+                    CurrentMetrics.JobsInFlightAdd(1);
                     _logger.LogInformation("Uploading files from: {path}", path);
                 }
                 else
                 {
+                    CurrentMetrics.DirectoryDoesNotExist();
                     _logger.LogWarning("The path {path} doesn't exist.", path);
                 }
             }
@@ -104,8 +112,15 @@ namespace SymbolCollector.Core
             {
                 if (tasks.Any())
                 {
-                    _logger.LogWarning("Awaiting {count} upload tasks to finish.", tasks.Count);
-                    await Task.WhenAll(tasks);
+                    try
+                    {
+                        _logger.LogInformation("Awaiting {count} upload tasks to finish.", tasks.Count);
+                        await Task.WhenAll(tasks);
+                    }
+                    finally
+                    {
+                        CurrentMetrics.JobsInFlightRemove(tasks.Count);
+                    }
                 }
                 else
                 {
@@ -126,11 +141,6 @@ namespace SymbolCollector.Core
 
             foreach (var (file, debugId) in GetFiles(files))
             {
-                if (debugId == null)
-                {
-                    _logger.LogWarning("Skipping file {file} because no debug id was found.");
-                    continue;
-                }
                 await UploadAsync(debugId, file, cancellationToken);
             }
         }
@@ -155,26 +165,26 @@ namespace SymbolCollector.Core
                     // TODO: add a proper boundary
                     $"Upload----WebKitFormBoundary7MA4YWxkTrZu0gW--")
                 {
-                    {new StreamContent(fileStream), file}
+                    {new StreamContent(fileStream), file, Path.GetFileName(file)}
                 }
             }, cancellationToken);
+            CurrentMetrics.UploadedBytesAdd(fileStream.Length);
 
             if (!postResult.IsSuccessStatusCode)
             {
-                _logger.LogError("{statusCode} for file {file}", postResult.StatusCode, file);
-                if (postResult.Headers.TryGetValues("X-Error-Code", out var code))
-                {
-                    _logger.LogError("Code: {code}", code);
-                }
+                CurrentMetrics.FailedToUpload();
+                var error = await postResult.Content.ReadAsStringAsync();
+                _logger.LogError("{statusCode} for file {file} with body: {body}", postResult.StatusCode, file, error);
             }
             else
             {
+                CurrentMetrics.SuccessfulUpload();
                 _logger.LogInformation("Sent file: {file}", file);
             }
         }
 
         // TODO: IAsyncEnumerable when ELF library supports it
-        private IEnumerable<(string file, string? debugId)> GetFiles(IEnumerable<string> files)
+        private IEnumerable<(string file, string debugId)> GetFiles(IEnumerable<string> files)
         {
             var strategies = new List<Func<string, IEnumerable<(string, string?)>>>
             {
@@ -203,10 +213,12 @@ namespace SymbolCollector.Core
                     .Where(result => result != null)
                     .SelectMany(result => result))
                 {
+                    CurrentMetrics.FileProcessed();
                     if (tuple.Item2 == null)
                     {
                         continue;
                     }
+
                     yield return tuple;
                 }
             }
@@ -218,6 +230,7 @@ namespace SymbolCollector.Core
             FatMachO? load = null;
             if (_fatBinaryReader?.TryLoad(file, out load) == true && load is { } fatMachO)
             {
+                CurrentMetrics.FatMachOFileFound();
                 _logger.LogInformation("Fat binary file with {count} Mach-O files: {file}.",
                     fatMachO.Header.FatArchCount, file);
 
@@ -240,6 +253,7 @@ namespace SymbolCollector.Core
                 // TODO: find an async API if this is used by the server
                 if (ELFReader.TryLoad(file, out elf))
                 {
+                    CurrentMetrics.ElfFileFound();
                     var hasUnwindingInfo = elf.TryGetSection(".eh_frame", out _);
                     var hasDwarfDebugInfo = elf.TryGetSection(".debug_frame", out _);
 
@@ -282,7 +296,7 @@ namespace SymbolCollector.Core
                 }
                 else
                 {
-                    _logger.LogWarning("Couldn't load': {file} with ELF reader.", file);
+                    _logger.LogDebug("Couldn't load': {file} with ELF reader.", file);
                 }
             }
             catch (Exception e)
@@ -305,6 +319,7 @@ namespace SymbolCollector.Core
                 // TODO: find an async API if this is used by the server
                 if (MachOReader.TryLoad(file, out var mach0) == MachOResult.OK)
                 {
+                    CurrentMetrics.MachOFileFound();
                     _logger.LogDebug("Mach-O found {file}", file);
                     LogTrace(mach0);
 
@@ -319,12 +334,12 @@ namespace SymbolCollector.Core
                     return buildId;
                 }
 
-                _logger.LogWarning("Couldn't load': {file} with mach-O reader.", file);
+                _logger.LogDebug("Couldn't load': {file} with mach-O reader.", file);
             }
             catch (Exception e)
             {
                 // You would expect TryLoad doesn't throw but that's not the case
-                _logger.LogError(e, "Failed processing file {file}.", file);
+                 _logger.LogError(e, "Failed processing file {file}.", file);
             }
 
             return null;

@@ -15,6 +15,8 @@ namespace SymbolCollector.Console
         private const string Dsn = "https://02619ad38bcb40d0be5167e1fb335954@sentry.io/1847454";
         private const string SymbolCollectorServiceUrl = "http://localhost:5000";
 
+        private static Client? _client;
+
         private static async Task UploadSymbols()
         {
             // TODO: Get the paths via parameter or config file/env var?
@@ -34,6 +36,7 @@ namespace SymbolCollector.Console
             var cancellation = new CancellationTokenSource();
             CancelKeyPress += (s, ev) =>
             {
+                _client?.CurrentMetrics.Write(Out);
                 WriteLine("Shutting down.");
                 ev.Cancel = false;
                 cancellation.Cancel();
@@ -42,15 +45,16 @@ namespace SymbolCollector.Console
             WriteLine("Press Ctrl+C to exit...");
 
             // TODO: M.E.DependencyInjection/Configuration
-            var loggerClient = new LoggerAdapter<Client>(LogLevel.Information);
-            var loggerFatBinaryReader = new LoggerAdapter<FatBinaryReader>();
-            var client = new Client(
+            var logLevel = LogLevel.Warning;
+            var loggerClient = new LoggerAdapter<Client>(logLevel);
+            var loggerFatBinaryReader = new LoggerAdapter<FatBinaryReader>(logLevel);
+            _client = new Client(
                 new Uri(SymbolCollectorServiceUrl),
                 new FatBinaryReader(loggerFatBinaryReader),
                 blackListedPaths: blackListedPaths,
                 logger: loggerClient);
 
-            await client.UploadAllPathsAsync(paths, cancellation.Token);
+            await _client.UploadAllPathsAsync(paths, cancellation.Token);
         }
 
         private static async Task Main(string[] args)
@@ -68,6 +72,13 @@ namespace SymbolCollector.Console
             {
                 s.SetTag("app", typeof(Program).Assembly.GetName().Name);
                 s.SetTag("server-endpoint", SymbolCollectorServiceUrl);
+                s.AddEventProcessor(@event =>
+                {
+                    var uploadMetrics = new Dictionary<string, object>();
+                    @event.Contexts["metrics"] = uploadMetrics;
+                    _client?.CurrentMetrics.Write(uploadMetrics);
+                    return @event;
+                });
             });
             try
             {
@@ -80,6 +91,8 @@ namespace SymbolCollector.Console
             }
 
             await SentrySdk.FlushAsync(TimeSpan.FromSeconds(2));
+
+            _client?.CurrentMetrics.Write(Out);
         }
     }
 }

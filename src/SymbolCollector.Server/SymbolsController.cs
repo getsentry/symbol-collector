@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -39,7 +40,7 @@ namespace SymbolCollector.Server
         [DisableFormValueModelBinding]
         public async Task<IActionResult> UploadSymbol(CancellationToken token)
         {
-            _logger.LogDebug("/image endpoint called by {user-agent}",
+            _logger.LogDebug("/image endpoint called by {userAgent}",
                 Request.Headers["User-Agent"].FirstOrDefault() ?? "Unknown");
 
             if (!MultipartRequestHelper.IsMultipartContentType(Request.ContentType))
@@ -59,8 +60,12 @@ namespace SymbolCollector.Server
                 return BadRequest("No file received.");
             }
 
+            var filesCreated = 0;
+            var sectionsCount = 0;
+            var invalidContentDispositions = new List<string>();
             while (section != null)
             {
+                sectionsCount++;
                 if (ContentDispositionHeaderValue.TryParse(
                         section.ContentDisposition, out var contentDisposition) && MultipartRequestHelper
                         .HasFileContentDisposition(contentDisposition))
@@ -80,12 +85,28 @@ namespace SymbolCollector.Server
 
                     await _gcsWriter.WriteAsync(fileName, data, token);
                     await data.DisposeAsync();
+                    filesCreated++;
+                }
+                else
+                {
+                    invalidContentDispositions.Add(section.ContentDisposition);
+                    _logger.LogWarning("ContentDisposition not supported: {contentDisposition}", section.ContentDisposition);
                 }
 
                 section = await reader.ReadNextSectionAsync(token);
             }
 
-            return Created(nameof(SymbolsController), null);
+            if (filesCreated == 0)
+            {
+                return BadRequest(new
+                {
+                    errorMessage="Invalid request. No file accepted.",
+                    numberOfSectionsReceived=sectionsCount,
+                    invalidContentDispositions
+                });
+            }
+
+            return Created(nameof(SymbolsController), new { filesCreated });
         }
 
         public async ValueTask<(string fileName, Stream data)> ProcessStreamedFile(

@@ -16,7 +16,7 @@ namespace SymbolCollector.Console
             Exception exception,
             Func<TState, Exception, string> formatter)
         {
-            if (logLevel == LogLevel.None)
+            if (logLevel == LogLevel.None || !IsEnabled(logLevel))
             {
                 return;
             }
