@@ -339,9 +339,7 @@ namespace SymbolCollector.Core
             catch (Exception e)
             {
                 // You would expect TryLoad doesn't throw but that's not the case
-                // _logger.LogError(e, "Failed processing file {file}. " + e, file);
-                // TODO: Print exception to console in debug
-                 _logger.LogError(e, "Failed processing file {file}. ", file);
+                 _logger.LogError(e, "Failed processing file {file}.", file);
             }
 
             return null;
