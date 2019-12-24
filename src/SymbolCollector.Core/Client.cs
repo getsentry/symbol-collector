@@ -71,22 +71,29 @@ namespace SymbolCollector.Core
             IEnumerable<string> SafeGetDirectories(string path)
             {
                 _logger.LogDebug("Probing {path} for child directories.", path);
+                yield return path;
+                IEnumerable<string> dirs;
                 try
                 {
-                    return Directory.GetDirectories(path, "*", SearchOption.AllDirectories)
-                        // Include the directory itself
-                        .Prepend(path);
+                    dirs = Directory.GetDirectories(path, "*");
+                    // can't yield return here, didn't blow up so go go
                 }
                 catch (UnauthorizedAccessException)
                 {
                     CurrentMetrics.DirectoryUnauthorizedAccess();
+                    yield break;
                 }
                 catch (DirectoryNotFoundException)
                 {
                     CurrentMetrics.DirectoryDoesNotExist();
+                    yield break;
                 }
 
-                return Enumerable.Empty<string>();
+                foreach (var dir in dirs)
+                foreach (var safeDir in SafeGetDirectories(dir))
+                {
+                    yield return safeDir;
+                }
             }
         }
 
