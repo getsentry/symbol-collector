@@ -27,7 +27,7 @@ namespace SymbolCollector.Core
         private readonly string _userAgent;
         private readonly HashSet<string>? _blackListedPaths;
 
-        public Metrics CurrentMetrics { get; } = new Metrics();
+        public ClientMetrics CurrentMetrics { get; } = new ClientMetrics();
 
         public Client(
             Uri serviceUri,
@@ -40,6 +40,7 @@ namespace SymbolCollector.Core
         {
             _fatBinaryReader = fatBinaryReader;
             ParallelTasks = parallelTasks ?? 10;
+
             _blackListedPaths = blackListedPaths;
             // We only hit /image here
             _serviceUri = new Uri(serviceUri, "image");
@@ -78,9 +79,11 @@ namespace SymbolCollector.Core
                 }
                 catch (UnauthorizedAccessException)
                 {
+                    CurrentMetrics.DirectoryUnauthorizedAccess();
                 }
                 catch (DirectoryNotFoundException)
                 {
+                    CurrentMetrics.DirectoryDoesNotExist();
                 }
 
                 return Enumerable.Empty<string>();
@@ -100,6 +103,7 @@ namespace SymbolCollector.Core
                 }
                 else
                 {
+                    CurrentMetrics.DirectoryDoesNotExist();
                     _logger.LogWarning("The path {path} doesn't exist.", path);
                 }
             }
@@ -108,8 +112,15 @@ namespace SymbolCollector.Core
             {
                 if (tasks.Any())
                 {
-                    _logger.LogInformation("Awaiting {count} upload tasks to finish.", tasks.Count);
-                    await Task.WhenAll(tasks);
+                    try
+                    {
+                        _logger.LogInformation("Awaiting {count} upload tasks to finish.", tasks.Count);
+                        await Task.WhenAll(tasks);
+                    }
+                    finally
+                    {
+                        CurrentMetrics.JobsInFlightRemove(tasks.Count);
+                    }
                 }
                 else
                 {
@@ -119,10 +130,6 @@ namespace SymbolCollector.Core
             catch (OperationCanceledException)
             {
                 _logger.LogInformation("Operation cancelled successfully.");
-            }
-            finally
-            {
-                CurrentMetrics.JobsInFlightRemove(tasks.Count);
             }
         }
 
@@ -134,12 +141,6 @@ namespace SymbolCollector.Core
 
             foreach (var (file, debugId) in GetFiles(files))
             {
-                if (debugId == null)
-                {
-                    _logger.LogWarning("Skipping file {file} because no debug id was found.");
-                    continue;
-                }
-
                 await UploadAsync(debugId, file, cancellationToken);
             }
         }
@@ -164,7 +165,7 @@ namespace SymbolCollector.Core
                     // TODO: add a proper boundary
                     $"Upload----WebKitFormBoundary7MA4YWxkTrZu0gW--")
                 {
-                    {new StreamContent(fileStream), file}
+                    {new StreamContent(fileStream), file, Path.GetFileName(file)}
                 }
             }, cancellationToken);
             CurrentMetrics.UploadedBytesAdd(fileStream.Length);
@@ -172,21 +173,18 @@ namespace SymbolCollector.Core
             if (!postResult.IsSuccessStatusCode)
             {
                 CurrentMetrics.FailedToUpload();
-                _logger.LogError("{statusCode} for file {file}", postResult.StatusCode, file);
-                if (postResult.Headers.TryGetValues("X-Error-Code", out var code))
-                {
-                    _logger.LogError("Code: {code}", code);
-                }
+                var error = await postResult.Content.ReadAsStringAsync();
+                _logger.LogError("{statusCode} for file {file} with body: {body}", postResult.StatusCode, file, error);
             }
             else
             {
-                CurrentMetrics.SuccessfullyUploaded();
+                CurrentMetrics.SuccessfulUpload();
                 _logger.LogInformation("Sent file: {file}", file);
             }
         }
 
         // TODO: IAsyncEnumerable when ELF library supports it
-        private IEnumerable<(string file, string? debugId)> GetFiles(IEnumerable<string> files)
+        private IEnumerable<(string file, string debugId)> GetFiles(IEnumerable<string> files)
         {
             var strategies = new List<Func<string, IEnumerable<(string, string?)>>>
             {
@@ -417,57 +415,6 @@ namespace SymbolCollector.Core
 
                         break;
                 }
-            }
-        }
-
-        public class Metrics
-        {
-            private DateTimeOffset StartedTime { get; } = DateTimeOffset.Now;
-            private long _filesProcessed;
-            private long _batchesProcessed;
-            private long _jobsInFlight;
-            private long _failedToUploadCount;
-            private long _successfullyUploadCount;
-            private long _machOFileFound;
-            private long _elfFileFound;
-            private long _fatMockOFileFound;
-            private long _uploadedBytes;
-            public void FileProcessed() => Interlocked.Increment(ref _filesProcessed);
-            public void BatchProcessed() => Interlocked.Increment(ref _batchesProcessed);
-            public void MachOFileFound() => Interlocked.Increment(ref _machOFileFound);
-            public void ElfFileFound() => Interlocked.Increment(ref _elfFileFound);
-            public void FatMachOFileFound() => Interlocked.Increment(ref _fatMockOFileFound);
-            public void FailedToUpload() => Interlocked.Increment(ref _failedToUploadCount);
-            public void SuccessfullyUploaded() => Interlocked.Increment(ref _successfullyUploadCount);
-            public void JobsInFlightRemove(int tasksCount) => Interlocked.Add(ref _jobsInFlight, -tasksCount);
-            public void JobsInFlightAdd(int tasksCount) => Interlocked.Add(ref _jobsInFlight, tasksCount);
-            public void UploadedBytesAdd(long bytes) => Interlocked.Add(ref _uploadedBytes, bytes);
-
-            public void Print(TextWriter writer)
-            {
-                writer.WriteLine();
-                writer.Write("Started at:\t\t\t\t");
-                writer.WriteLine(StartedTime);
-                writer.Write("Ran for:\t\t\t\t");
-                writer.WriteLine(DateTimeOffset.Now - StartedTime);
-                writer.Write("FileProcessed:\t\t\t\t");
-                writer.WriteLine(_filesProcessed);
-                writer.Write("Batches completed:\t\t\t");
-                writer.WriteLine(_batchesProcessed);
-                writer.Write("Job in flight:\t\t\t\t");
-                writer.WriteLine(_jobsInFlight);
-                writer.Write("Failed to upload:\t\t\t");
-                writer.WriteLine(_failedToUploadCount);
-                writer.Write("Successfully uploaded:\t\t\t");
-                writer.WriteLine(_successfullyUploadCount);
-                writer.Write("Uploaded bytes:\t\t\t\t");
-                writer.WriteLine(_uploadedBytes);
-                writer.Write("ELF files loaded:\t\t\t");
-                writer.WriteLine(_elfFileFound);
-                writer.Write("Mach-O files loaded:\t\t\t");
-                writer.WriteLine(_machOFileFound);
-                writer.Write("Fat Mach-O files loaded:\t\t");
-                writer.WriteLine(_fatMockOFileFound);
             }
         }
 

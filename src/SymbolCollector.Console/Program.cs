@@ -36,7 +36,7 @@ namespace SymbolCollector.Console
             var cancellation = new CancellationTokenSource();
             CancelKeyPress += (s, ev) =>
             {
-                _client?.CurrentMetrics.Print(Out);
+                _client?.CurrentMetrics.Write(Out);
                 WriteLine("Shutting down.");
                 ev.Cancel = false;
                 cancellation.Cancel();
@@ -72,6 +72,13 @@ namespace SymbolCollector.Console
             {
                 s.SetTag("app", typeof(Program).Assembly.GetName().Name);
                 s.SetTag("server-endpoint", SymbolCollectorServiceUrl);
+                s.AddEventProcessor(@event =>
+                {
+                    var uploadMetrics = new Dictionary<string, object>();
+                    @event.Contexts["metrics"] = uploadMetrics;
+                    _client?.CurrentMetrics.Write(uploadMetrics);
+                    return @event;
+                });
             });
             try
             {
@@ -85,7 +92,7 @@ namespace SymbolCollector.Console
 
             await SentrySdk.FlushAsync(TimeSpan.FromSeconds(2));
 
-            _client?.CurrentMetrics.Print(Out);
+            _client?.CurrentMetrics.Write(Out);
         }
     }
 }
