@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
+using SymbolCollector.Core;
 
 namespace SymbolCollector.Server
 {
@@ -21,6 +22,7 @@ namespace SymbolCollector.Server
         private readonly ISymbolGcsWriter _gcsWriter;
         private readonly ILogger<SymbolsController> _logger;
         private readonly char[] _invalidChars;
+        private static long _filesCreated = 0;
 
         private static readonly FormOptions DefaultFormOptions = new FormOptions();
 
@@ -35,6 +37,9 @@ namespace SymbolCollector.Server
 
         // TODO: HEAD to verify image is needed
         // TODO: Get to give status
+
+        [HttpGet]
+        public string Get() => "Received: " + _filesCreated;
 
         [HttpPut]
         [DisableFormValueModelBinding]
@@ -105,6 +110,8 @@ namespace SymbolCollector.Server
                     invalidContentDispositions
                 });
             }
+
+            _logger.LogInformation("------------------ Created: " + Interlocked.Increment(ref _filesCreated));
 
             return Created(nameof(SymbolsController), new { filesCreated });
         }

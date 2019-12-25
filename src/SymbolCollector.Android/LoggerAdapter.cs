@@ -15,14 +15,16 @@ namespace SymbolCollector.Android
             {
                 return;
             }
+
             var formatted = formatter?.Invoke(state, exception);
             if (formatted != null && exception != null)
             {
                 formatted = $"{formatted} ex: {exception}";
             }
+
             formatted ??= exception?.ToString()
-                          ?? state?.ToString()
-                          ?? eventId.ToString();
+                      ?? state?.ToString()
+                      ?? eventId.ToString();
 
             AndroidLog.WriteLine(logLevel.ToLogPriority(), Tag, formatted);
         }

@@ -39,15 +39,15 @@ namespace SymbolCollector.Server
                 }
             }
 
-            var obj = await _storageClient!.UploadObjectAsync(
-                bucket: BucketName,
-                objectName: name,
-                contentType: "application/octet-stream",
-                source: data,
-                options: new UploadObjectOptions { PredefinedAcl = PredefinedObjectAcl.PublicRead },
-                cancellationToken: cancellationToken);
-
-            _logger.LogInformation("Symbol {name} with {length} length stored {link}", name, data.Length, obj.MediaLink);
+            // var obj = await _storageClient!.UploadObjectAsync(
+            //     bucket: BucketName,
+            //     objectName: name,
+            //     contentType: "application/octet-stream",
+            //     source: data,
+            //     options: new UploadObjectOptions { PredefinedAcl = PredefinedObjectAcl.PublicRead },
+            //     cancellationToken: cancellationToken);
+            //
+            // _logger.LogInformation("Symbol {name} with {length} length stored {link}", name, data.Length, obj.MediaLink);
         }
     }
 
