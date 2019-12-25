@@ -26,12 +26,6 @@ namespace SymbolCollector.Android
 
         private Task StartUpload()
         {
-#if DEBUG
-            // For local testing on macOS: https://docs.microsoft.com/en-US/aspnet/core/grpc/troubleshoot?view=aspnetcore-3.0#unable-to-start-aspnet-core-grpc-app-on-macos
-            // 'HTTP/2 over TLS is not supported on macOS due to missing ALPN support.'.
-            AppContext.SetSwitch(
-                "System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
-#endif
             var bundle = PackageManager.GetApplicationInfo(PackageName, global::Android.Content.PM.PackageInfoFlags.MetaData).MetaData;
             var url = bundle.GetString("io.sentry.symbol-collector");
             Log.Info(Tag, "Using Symbol Collector endpoint: " + url);
