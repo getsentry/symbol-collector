@@ -152,7 +152,7 @@ namespace SymbolCollector.Core
             }
             catch (Exception e)
             {
-                _logger.LogWarning(e, "Can't list files in {path}", path);
+                _logger.LogWarning(e, "Can't list files in {path}.", path);
                 return;
             }
 
