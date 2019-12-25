@@ -143,8 +143,18 @@ namespace SymbolCollector.Core
         private async Task UploadFilesAsync(string path, CancellationToken cancellationToken)
         {
             using var _ = _logger.BeginScope(("path", path));
-            var files = Directory.GetFiles(path);
-            _logger.LogInformation("Path {path} has {length} files to process", path, files.Length);
+            IReadOnlyCollection<string> files;
+            try
+            {
+                files = Directory.GetFiles(path);
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning(e, "Can't list files in {path}.", path);
+                return;
+            }
+
+            _logger.LogInformation("Path {path} has {length} files to process", path, files.Count);
 
             foreach (var (file, debugId) in GetFiles(files))
             {
