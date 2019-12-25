@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ELFSharp.ELF;
+using ELFSharp.ELF.Sections;
 using ELFSharp.MachO;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -19,19 +20,28 @@ namespace SymbolCollector.Core
     public class Client : IDisposable
     {
         private readonly FatBinaryReader? _fatBinaryReader;
+        internal int ParallelTasks { get; }
         private readonly Uri _serviceUri;
         private readonly ILogger<Client> _logger;
         private readonly HttpClient _client;
         private readonly string _userAgent;
+        private readonly HashSet<string>? _blackListedPaths;
+
+        public ClientMetrics CurrentMetrics { get; } = new ClientMetrics();
 
         public Client(
             Uri serviceUri,
             FatBinaryReader? fatBinaryReader = null,
             HttpMessageHandler? handler = null,
             AssemblyName? assemblyName = null,
+            int? parallelTasks = null,
+            HashSet<string>? blackListedPaths = null,
             ILogger<Client>? logger = null)
         {
             _fatBinaryReader = fatBinaryReader;
+            ParallelTasks = parallelTasks ?? 10;
+
+            _blackListedPaths = blackListedPaths;
             // We only hit /image here
             _serviceUri = new Uri(serviceUri, "image");
             _logger = logger ?? NullLogger<Client>.Instance;
@@ -40,7 +50,54 @@ namespace SymbolCollector.Core
             _userAgent = $"{assemblyName?.Name ?? "SymbolCollector"}/{assemblyName?.Version.ToString() ?? "?.?.?"}";
         }
 
-        public async Task UploadAllPathsAsync(IEnumerable<string> paths, CancellationToken cancellationToken)
+        public async Task UploadAllPathsAsync(IEnumerable<string> topLevelPaths, CancellationToken cancellationToken)
+        {
+            var counter = 0;
+            var batches =
+                from topPath in topLevelPaths
+                from lookupDirectory in SafeGetDirectories(topPath)
+                where _blackListedPaths?.Contains(lookupDirectory) != true
+                let c = counter++
+                group lookupDirectory by c / ParallelTasks
+                into grp
+                select grp.ToList();
+
+            foreach (var batch in batches)
+            {
+                await UploadParallel(batch, cancellationToken);
+                CurrentMetrics.BatchProcessed();
+            }
+
+            IEnumerable<string> SafeGetDirectories(string path)
+            {
+                _logger.LogDebug("Probing {path} for child directories.", path);
+                yield return path;
+                IEnumerable<string> dirs;
+                try
+                {
+                    dirs = Directory.GetDirectories(path, "*");
+                    // can't yield return here, didn't blow up so go go
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    CurrentMetrics.DirectoryUnauthorizedAccess();
+                    yield break;
+                }
+                catch (DirectoryNotFoundException)
+                {
+                    CurrentMetrics.DirectoryDoesNotExist();
+                    yield break;
+                }
+
+                foreach (var dir in dirs)
+                foreach (var safeDir in SafeGetDirectories(dir))
+                {
+                    yield return safeDir;
+                }
+            }
+        }
+
+        private async Task UploadParallel(IEnumerable<string> paths, CancellationToken cancellationToken)
         {
             var tasks = new List<Task>();
             foreach (var path in paths)
@@ -48,10 +105,12 @@ namespace SymbolCollector.Core
                 if (Directory.Exists(path))
                 {
                     tasks.Add(UploadFilesAsync(path, cancellationToken));
+                    CurrentMetrics.JobsInFlightAdd(1);
                     _logger.LogInformation("Uploading files from: {path}", path);
                 }
                 else
                 {
+                    CurrentMetrics.DirectoryDoesNotExist();
                     _logger.LogWarning("The path {path} doesn't exist.", path);
                 }
             }
@@ -60,8 +119,15 @@ namespace SymbolCollector.Core
             {
                 if (tasks.Any())
                 {
-                    _logger.LogWarning("Awaiting {count} upload tasks to finish.", tasks.Count);
-                    await Task.WhenAll(tasks);
+                    try
+                    {
+                        _logger.LogInformation("Awaiting {count} upload tasks to finish.", tasks.Count);
+                        await Task.WhenAll(tasks);
+                    }
+                    finally
+                    {
+                        CurrentMetrics.JobsInFlightRemove(tasks.Count);
+                    }
                 }
                 else
                 {
@@ -76,10 +142,11 @@ namespace SymbolCollector.Core
 
         private async Task UploadFilesAsync(string path, CancellationToken cancellationToken)
         {
+            using var _ = _logger.BeginScope(("path", path));
             var files = Directory.GetFiles(path);
             _logger.LogInformation("Path {path} has {length} files to process", path, files.Length);
 
-            foreach (var (debugId, file) in GetFiles(files))
+            foreach (var (file, debugId) in GetFiles(files))
             {
                 await UploadAsync(debugId, file, cancellationToken);
             }
@@ -87,93 +154,105 @@ namespace SymbolCollector.Core
 
         private async Task UploadAsync(string debugId, string file, CancellationToken cancellationToken)
         {
+            using var _ = _logger.BeginScope(new Dictionary<string, string>
+            {
+                {"debugId", debugId},
+                {"file", file},
+                {"User-Agent", _userAgent}
+            });
+
             // Better would be if `ELF` class would expose its buffer so we don't need to read the file twice.
             // Ideally ELF would read headers as a stream which we could reset to 0 after reading heads
             // and ensuring it's what we need.
             using var fileStream = File.OpenRead(file);
-            var postResult = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Post, _serviceUri)
+            var postResult = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Put, _serviceUri)
             {
                 Headers = {{"debug-id", debugId}, {"User-Agent", _userAgent}},
                 Content = new MultipartFormDataContent(
                     // TODO: add a proper boundary
                     $"Upload----WebKitFormBoundary7MA4YWxkTrZu0gW--")
                 {
-                    {new StreamContent(fileStream), file}
+                    {new StreamContent(fileStream), file, Path.GetFileName(file)}
                 }
             }, cancellationToken);
+            CurrentMetrics.UploadedBytesAdd(fileStream.Length);
 
             if (!postResult.IsSuccessStatusCode)
             {
-                _logger.LogError("{statusCode} for file {file}", postResult.StatusCode, file);
-                if (postResult.Headers.TryGetValues("X-Error-Code", out var code))
-                {
-                    _logger.LogError("Code: {code}", code);
-                }
+                CurrentMetrics.FailedToUpload();
+                var error = await postResult.Content.ReadAsStringAsync();
+                _logger.LogError("{statusCode} for file {file} with body: {body}", postResult.StatusCode, file, error);
             }
             else
             {
+                CurrentMetrics.SuccessfulUpload();
                 _logger.LogInformation("Sent file: {file}", file);
             }
         }
 
         // TODO: IAsyncEnumerable when ELF library supports it
-        private IEnumerable<(string debugId, string file)> GetFiles(IEnumerable<string> files)
+        private IEnumerable<(string file, string debugId)> GetFiles(IEnumerable<string> files)
         {
-            Func<string, string?> getBuildId;
+            var strategies = new List<Func<string, IEnumerable<(string, string?)>>>
+            {
+                s => new[]
+                {
+                    (s, GetElfBuildId(s))
+                },
+                s => new[]
+                {
+                    (s, GetMachOBuildId(s))
+                },
+                GetMachOFromFatFile
+            };
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                // TODO: Take this as a strategy class-wide to check for platform only once.
-                getBuildId = GetMachOBuildId;
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                getBuildId = GetElfBuildId;
-            }
-            else
-            {
-                // TODO: This needs to be check at the start of the program though
-                throw new NotSupportedException($"OS {RuntimeInformation.OSDescription} is not supported.");
+                // Move ELF as the last strategy if running on macOS
+                var elf = strategies.ElementAt(0);
+                strategies.RemoveAt(0);
+                strategies.Add(elf);
             }
 
             foreach (var file in files)
             {
-                _logger.LogInformation("Processing file: {file}.", file);
-
-                var buildId = getBuildId(file);
-                if (buildId is null)
+                foreach (var tuple in strategies
+                    .Select(strategy => strategy(file))
+                    .Where(result => result != null)
+                    .SelectMany(result => result))
                 {
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                    CurrentMetrics.FileProcessed();
+                    if (tuple.Item2 == null)
                     {
-                        // Check if it's a Fat Mach-O
-                        FatMachO? load = null;
-                        if (_fatBinaryReader?.TryLoad(file, out load) == true && load is { } fatMachO)
-                        {
-                            _logger.LogInformation("Fat binary file with {count} Mach-O files: {file}.",
-                                fatMachO.Header.FatArchCount, file);
-
-                            using (_logger.BeginScope(new {FatMachO = file}))
-                            using (fatMachO)
-                            {
-                                foreach (var buildIdFile in GetFiles(fatMachO.MachOFiles))
-                                {
-                                    yield return buildIdFile;
-                                }
-                            }
-                        }
+                        continue;
                     }
 
-                    continue;
+                    yield return tuple;
                 }
-
-                // TODO: Store in the metadata/send in the header
-                var hash = GetHash(file);
-                _logger.LogInformation("File hash: {hash}.", hash);
-
-                yield return (buildId, file);
             }
         }
 
-        private string? GetElfBuildId(string file)
+        internal IEnumerable<(string file, string? debugId)> GetMachOFromFatFile(string file)
+        {
+            // Check if it's a Fat Mach-O
+            FatMachO? load = null;
+            if (_fatBinaryReader?.TryLoad(file, out load) == true && load is { } fatMachO)
+            {
+                CurrentMetrics.FatMachOFileFound();
+                _logger.LogInformation("Fat binary file with {count} Mach-O files: {file}.",
+                    fatMachO.Header.FatArchCount, file);
+
+                using (_logger.BeginScope(new {FatMachO = file}))
+                using (fatMachO)
+                {
+                    foreach (var buildIdFile in GetFiles(fatMachO.MachOFiles))
+                    {
+                        yield return buildIdFile;
+                    }
+                }
+            }
+        }
+
+        internal string? GetElfBuildId(string file)
         {
             IELF? elf = null;
             try
@@ -181,31 +260,40 @@ namespace SymbolCollector.Core
                 // TODO: find an async API if this is used by the server
                 if (ELFReader.TryLoad(file, out elf))
                 {
+                    CurrentMetrics.ElfFileFound();
+                    var hasUnwindingInfo = elf.TryGetSection(".eh_frame", out _);
+                    var hasDwarfDebugInfo = elf.TryGetSection(".debug_frame", out _);
+
+                    _logger.LogDebug("Contains unwinding info: {hasUnwindingInfo}", hasUnwindingInfo);
+                    _logger.LogDebug("Contains DWARF debug info: {hasDwarfDebugInfo}", hasDwarfDebugInfo);
+
                     var hasBuildId = elf.TryGetSection(".note.gnu.build-id", out var buildId);
                     if (hasBuildId)
                     {
-                        var hasUnwindingInfo = elf.TryGetSection(".eh_frame", out _);
-                        var hasDwarfDebugInfo = elf.TryGetSection(".debug_frame", out _);
-
-                        if (hasUnwindingInfo || hasDwarfDebugInfo)
+                        var desc = buildId switch
                         {
-                            _logger.LogInformation("Contains unwinding info: {hasUnwindingInfo}", hasUnwindingInfo);
-                            _logger.LogInformation("Contains DWARF debug info: {hasDwarfDebugInfo}", hasDwarfDebugInfo);
-
-                            var builder = new StringBuilder();
-                            var bytes = buildId.GetContents().Skip(16);
-
-                            foreach (var @byte in bytes)
-                            {
-                                builder.Append(@byte.ToString("x2"));
-                            }
-
-                            return builder.ToString();
+                            NoteSection<uint> noteUint => noteUint.Description,
+                            NoteSection<ulong> noteUlong => noteUlong.Description,
+                            _ => null
+                        };
+                        if (desc == null)
+                        {
+                            _logger.LogError("build-id exists but bytes (desc) are null.");
                         }
                         else
                         {
-                            _logger.LogWarning("No unwind nor DWARF debug info in {file}", file);
-                            return null;
+                            // TODO ns2.1: get a slice
+                            desc = desc.Take(16).ToArray();
+                            if (desc.Length != 16)
+                            {
+                                // TODO: Throw?
+                                _logger.LogError("build-id exists but bytes (desc) length is unexpected {bytes}.",
+                                    desc.Length);
+                            }
+                            else
+                            {
+                                return new Guid(desc).ToString();
+                            }
                         }
                     }
                     else
@@ -215,7 +303,7 @@ namespace SymbolCollector.Core
                 }
                 else
                 {
-                    _logger.LogWarning("Couldn't load': {file} with ELF reader.", file);
+                    _logger.LogDebug("Couldn't load': {file} with ELF reader.", file);
                 }
             }
             catch (Exception e)
@@ -231,13 +319,14 @@ namespace SymbolCollector.Core
             return null;
         }
 
-        private string? GetMachOBuildId(string file)
+        internal string? GetMachOBuildId(string file)
         {
             try
             {
                 // TODO: find an async API if this is used by the server
                 if (MachOReader.TryLoad(file, out var mach0) == MachOResult.OK)
                 {
+                    CurrentMetrics.MachOFileFound();
                     _logger.LogDebug("Mach-O found {file}", file);
                     LogTrace(mach0);
 
@@ -252,12 +341,12 @@ namespace SymbolCollector.Core
                     return buildId;
                 }
 
-                _logger.LogWarning("Couldn't load': {file} with mach-O reader.", file);
+                _logger.LogDebug("Couldn't load': {file} with mach-O reader.", file);
             }
             catch (Exception e)
             {
                 // You would expect TryLoad doesn't throw but that's not the case
-                _logger.LogError(e, "Failed processing file {file}.", file);
+                 _logger.LogError(e, "Failed processing file {file}.", file);
             }
 
             return null;

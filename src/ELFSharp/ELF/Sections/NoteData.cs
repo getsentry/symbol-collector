@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using ELFSharp;
 using System.Text;
 using ELFSharp.Utilities;
 

@@ -1,5 +1,3 @@
-using System;
-
 namespace ELFSharp.UImage
 {
 	// here only supported image types are listed
