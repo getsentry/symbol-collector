@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -12,6 +13,7 @@ using System.Threading.Tasks;
 using ELFSharp.ELF;
 using ELFSharp.ELF.Sections;
 using ELFSharp.MachO;
+using LibObjectFile.Elf;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -143,8 +145,18 @@ namespace SymbolCollector.Core
         private async Task UploadFilesAsync(string path, CancellationToken cancellationToken)
         {
             using var _ = _logger.BeginScope(("path", path));
-            var files = Directory.GetFiles(path);
-            _logger.LogInformation("Path {path} has {length} files to process", path, files.Length);
+            IReadOnlyCollection<string> files;
+            try
+            {
+                files = Directory.GetFiles(path);
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning(e, "Can't list files in {path}", path);
+                return;
+            }
+
+            _logger.LogInformation("Path {path} has {length} files to process", path, files.Count);
 
             foreach (var (file, debugId) in GetFiles(files))
             {
@@ -156,9 +168,7 @@ namespace SymbolCollector.Core
         {
             using var _ = _logger.BeginScope(new Dictionary<string, string>
             {
-                {"debugId", debugId},
-                {"file", file},
-                {"User-Agent", _userAgent}
+                {"debugId", debugId}, {"file", file}, {"User-Agent", _userAgent}
             });
 
             // Better would be if `ELF` class would expose its buffer so we don't need to read the file twice.
@@ -195,15 +205,7 @@ namespace SymbolCollector.Core
         {
             var strategies = new List<Func<string, IEnumerable<(string, string?)>>>
             {
-                s => new[]
-                {
-                    (s, GetElfBuildId(s))
-                },
-                s => new[]
-                {
-                    (s, GetMachOBuildId(s))
-                },
-                GetMachOFromFatFile
+                s => new[] {(s, GetElfBuildId2(s))}, s => new[] {(s, GetMachOBuildId(s))}, GetMachOFromFatFile
             };
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
@@ -250,6 +252,116 @@ namespace SymbolCollector.Core
                     }
                 }
             }
+        }
+
+        internal string? GetElfBuildId2(string file)
+        {
+            Stream inStream;
+            try
+            {
+                inStream = File.OpenRead(file);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Failed opening file {file}.", file);
+                return null;
+            }
+
+            try
+            {
+                if (ElfObjectFile.TryRead(inStream, out var elf, out var diagnosticBag))
+                {
+                    CurrentMetrics.ElfFileFound();
+                    var hasUnwindingInfo = elf.Sections.Any(s => s.Name == ".eh_frame");
+                    var hasDwarfDebugInfo = elf.Sections.Any(s => s.Name == ".debug_frame");
+
+                    _logger.LogDebug("Contains unwinding info: {hasUnwindingInfo}", hasUnwindingInfo);
+                    _logger.LogDebug("Contains DWARF debug info: {hasDwarfDebugInfo}", hasDwarfDebugInfo);
+
+                    if (elf.Sections.FirstOrDefault(s => s.Name == ".note.gnu.build-id") is ElfNoteTable note
+                        && note.Entries.FirstOrDefault() is ElfGnuNoteBuildId theThing)
+                    {
+                        var buildId = ToGuid(theThing.BuildId).ToString();
+                        var oldBuildId = GetElfBuildId(file);
+                        if (buildId != oldBuildId)
+                        {
+                            throw new Exception($"Doesn't match {buildId} - {oldBuildId}");
+                        }
+
+                        return buildId;
+                    }
+                    else
+                    {
+                        // No debug id so fallback to symbolic/breakpad strategy of:
+                        // 'hashing the first page of the ".text" (program code) section'.
+                        // https://github.com/getsentry/symbolic/blob/f928869b64f43112ec70ecd87aa24441ebc899e6/debuginfo/src/elf.rs#L100
+                        if (elf.Sections.FirstOrDefault(s => s.Name == ".text") is ElfBinarySection textSection)
+                        {
+                            Console.WriteLine(textSection);
+                            if (textSection.Size == 0)
+                            {
+                                _logger.LogWarning(".text section is 0 bytes long on file {file}", file);
+                                return null;
+                            }
+                            var length = (int)Math.Min(4096, textSection.Size);
+                            var buffer = ArrayPool<byte>.Shared.Rent(length);
+                            try
+                            {
+                                var read = textSection.Stream.Read(buffer, 0, length);
+                                if (read == length)
+                                {
+                                    var UUID_SIZE = 16;
+                                    var hash = new byte[UUID_SIZE];
+                                    for (var i = 0; i < length; i++)
+                                    {
+                                        hash[i % UUID_SIZE] ^= buffer[i];
+                                    }
+                                    var hashId = new Guid(hash).ToString();
+                                    return hashId;
+                                }
+                                else
+                                {
+                                    _logger.LogError("LibObjectFile claimed section is {libSize} but stream read only {streamRead} bytes from {file}",
+                                        textSection.Size, read, file);
+                                }
+                            }
+                            finally
+                            {
+                                ArrayPool<byte>.Shared.Return(buffer);
+                            }
+                        }
+                        else
+                        {
+                            _logger.LogWarning("File has no .text section: {file}", file);
+                        }
+                    }
+                }
+                else
+                {
+                    _logger.LogDebug("Couldn't load': {file} with ELF reader.", file);
+                    _logger.LogTrace("File {file} diagnostics: {diagnostic}.", file, diagnosticBag);
+                }
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "LibObjectFile shouldn't throw. File: {file}", file);
+            }
+
+            var oldBuildId2 = GetElfBuildId(file);
+            if (!(oldBuildId2 is null))
+            {
+                _logger.LogError("LibObjectFile returned null but ELFSharp didn't. File: {file}", file);
+            }
+
+            return null;
+        }
+
+        // TODO: To internal Extension meehod
+        private Guid ToGuid(Stream stream)
+        {
+            Span<byte> bytes = stackalloc byte[16];
+            stream.Read(bytes);
+            return new Guid(bytes);
         }
 
         internal string? GetElfBuildId(string file)
@@ -346,7 +458,7 @@ namespace SymbolCollector.Core
             catch (Exception e)
             {
                 // You would expect TryLoad doesn't throw but that's not the case
-                 _logger.LogError(e, "Failed processing file {file}.", file);
+                _logger.LogError(e, "Failed processing file {file}.", file);
             }
 
             return null;
