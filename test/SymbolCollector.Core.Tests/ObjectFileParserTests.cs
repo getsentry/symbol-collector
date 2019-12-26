@@ -86,7 +86,14 @@ namespace SymbolCollector.Core.Tests
             {
                 Assert.NotNull(actual);
                 Assert.Equal(new Guid(debugId).ToString(), actual!.BuildId);
-                Assert.Equal(BuildIdType.GnuBuildId, actual.BuildIdType);
+                if (path.EndsWith("libqcbassboost.so"))
+                {
+                    Assert.Equal(BuildIdType.TextSectionHash, actual.BuildIdType);
+                }
+                else
+                {
+                    Assert.Equal(BuildIdType.GnuBuildId, actual.BuildIdType);
+                }
             }
         }
 
