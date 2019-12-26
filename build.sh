@@ -26,7 +26,7 @@ dotnet test -c Release --collect:"XPlat Code Coverage" --settings ../coverletArg
 popd
 
 pushd src/SymbolCollector.Console/
-REM Smoke test the console app
+# Smoke test the console app
 dotnet run -c release -- \
     --check ../../test/SymbolCollector.Core.Tests/TestFiles/System.Net.Http.Native.dylib \
     | grep c5ff520a-e05c-3099-921e-a8229f808696
