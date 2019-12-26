@@ -27,7 +27,7 @@ namespace SymbolCollector.Core
         private readonly string _userAgent;
         private readonly HashSet<string>? _blackListedPaths;
 
-        public ClientMetrics CurrentMetrics { get; } = new ClientMetrics();
+        public ClientMetrics Metrics { get; }
 
         public Client(
             Uri serviceUri,
@@ -36,6 +36,7 @@ namespace SymbolCollector.Core
             AssemblyName? assemblyName = null,
             int? parallelTasks = null,
             HashSet<string>? blackListedPaths = null,
+            ClientMetrics? metrics = null,
             ILogger<Client>? logger = null)
         {
             _fatBinaryReader = fatBinaryReader;
@@ -48,6 +49,7 @@ namespace SymbolCollector.Core
             _client = new HttpClient(handler ?? new HttpClientHandler());
             assemblyName ??= Assembly.GetEntryAssembly()?.GetName();
             _userAgent = $"{assemblyName?.Name ?? "SymbolCollector"}/{assemblyName?.Version.ToString() ?? "?.?.?"}";
+            Metrics = metrics ?? new ClientMetrics();
         }
 
         public async Task UploadAllPathsAsync(IEnumerable<string> topLevelPaths, CancellationToken cancellationToken)
@@ -65,7 +67,7 @@ namespace SymbolCollector.Core
             foreach (var batch in batches)
             {
                 await UploadParallel(batch, cancellationToken);
-                CurrentMetrics.BatchProcessed();
+                Metrics.BatchProcessed();
             }
 
             IEnumerable<string> SafeGetDirectories(string path)
@@ -80,12 +82,12 @@ namespace SymbolCollector.Core
                 }
                 catch (UnauthorizedAccessException)
                 {
-                    CurrentMetrics.DirectoryUnauthorizedAccess();
+                    Metrics.DirectoryUnauthorizedAccess();
                     yield break;
                 }
                 catch (DirectoryNotFoundException)
                 {
-                    CurrentMetrics.DirectoryDoesNotExist();
+                    Metrics.DirectoryDoesNotExist();
                     yield break;
                 }
 
@@ -105,12 +107,12 @@ namespace SymbolCollector.Core
                 if (Directory.Exists(path))
                 {
                     tasks.Add(UploadFilesAsync(path, cancellationToken));
-                    CurrentMetrics.JobsInFlightAdd(1);
+                    Metrics.JobsInFlightAdd(1);
                     _logger.LogInformation("Uploading files from: {path}", path);
                 }
                 else
                 {
-                    CurrentMetrics.DirectoryDoesNotExist();
+                    Metrics.DirectoryDoesNotExist();
                     _logger.LogWarning("The path {path} doesn't exist.", path);
                 }
             }
@@ -126,7 +128,7 @@ namespace SymbolCollector.Core
                     }
                     finally
                     {
-                        CurrentMetrics.JobsInFlightRemove(tasks.Count);
+                        Metrics.JobsInFlightRemove(tasks.Count);
                     }
                 }
                 else
@@ -185,17 +187,17 @@ namespace SymbolCollector.Core
                     {new StreamContent(fileStream), file, Path.GetFileName(file)}
                 }
             }, cancellationToken);
-            CurrentMetrics.UploadedBytesAdd(fileStream.Length);
+            Metrics.UploadedBytesAdd(fileStream.Length);
 
             if (!postResult.IsSuccessStatusCode)
             {
-                CurrentMetrics.FailedToUpload();
+                Metrics.FailedToUpload();
                 var error = await postResult.Content.ReadAsStringAsync();
                 _logger.LogError("{statusCode} for file {file} with body: {body}", postResult.StatusCode, file, error);
             }
             else
             {
-                CurrentMetrics.SuccessfulUpload();
+                Metrics.SuccessfulUpload();
                 _logger.LogInformation("Sent file: {file}", file);
             }
         }
@@ -230,7 +232,7 @@ namespace SymbolCollector.Core
                     .Where(result => result != null)
                     .SelectMany(result => result))
                 {
-                    CurrentMetrics.FileProcessed();
+                    Metrics.FileProcessed();
                     if (tuple.Item2 == null)
                     {
                         continue;
@@ -247,7 +249,7 @@ namespace SymbolCollector.Core
             FatMachO? load = null;
             if (_fatBinaryReader?.TryLoad(file, out load) == true && load is { } fatMachO)
             {
-                CurrentMetrics.FatMachOFileFound();
+                Metrics.FatMachOFileFound();
                 _logger.LogInformation("Fat binary file with {count} Mach-O files: {file}.",
                     fatMachO.Header.FatArchCount, file);
 
@@ -270,7 +272,7 @@ namespace SymbolCollector.Core
                 // TODO: find an async API if this is used by the server
                 if (ELFReader.TryLoad(file, out elf))
                 {
-                    CurrentMetrics.ElfFileFound();
+                    Metrics.ElfFileFound();
                     var hasUnwindingInfo = elf.TryGetSection(".eh_frame", out _);
                     var hasDwarfDebugInfo = elf.TryGetSection(".debug_frame", out _);
 
@@ -336,7 +338,7 @@ namespace SymbolCollector.Core
                 // TODO: find an async API if this is used by the server
                 if (MachOReader.TryLoad(file, out var mach0) == MachOResult.OK)
                 {
-                    CurrentMetrics.MachOFileFound();
+                    Metrics.MachOFileFound();
                     _logger.LogDebug("Mach-O found {file}", file);
                     LogTrace(mach0);
 

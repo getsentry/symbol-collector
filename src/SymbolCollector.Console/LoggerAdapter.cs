@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 
 namespace SymbolCollector.Console
 {
-    public class LoggerAdapter<T> : ILogger<T>
+    internal class LoggerAdapter<T> : ILogger<T>
     {
         private readonly LogLevel _minLogLevel;
 

@@ -25,6 +25,7 @@ namespace SymbolCollector.Core.Tests
             public AssemblyName? AssemblyName { get; set; }
             public int? ParallelTasks { get; set; }
             public HashSet<string>? BlackListedPaths { get; set; }
+            public ClientMetrics? Metrics { get; set; }
             public ILogger<Client>? Logger { get; set; }
 
             public Client GetSut() =>
@@ -35,6 +36,7 @@ namespace SymbolCollector.Core.Tests
                     AssemblyName,
                     ParallelTasks,
                     BlackListedPaths,
+                    Metrics,
                     Logger);
         }
 

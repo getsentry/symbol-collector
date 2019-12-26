@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,10 +16,21 @@ namespace SymbolCollector.Console
         private const string Dsn = "https://02619ad38bcb40d0be5167e1fb335954@sentry.io/1847454";
         private const string SymbolCollectorServiceUrl = "http://localhost:5000";
 
-        private static Client? _client;
+        private static readonly ClientMetrics _metrics = new ClientMetrics();
 
-        private static async Task UploadSymbols()
+        private static async Task UploadSymbols(Uri endpoint)
         {
+            SentrySdk.ConfigureScope(s =>
+            {
+                s.AddEventProcessor(@event =>
+                {
+                    var uploadMetrics = new Dictionary<string, object>();
+                    @event.Contexts["metrics"] = uploadMetrics;
+                    _metrics.Write(uploadMetrics);
+                    return @event;
+                });
+            });
+
             // TODO: Get the paths via parameter or config file/env var?
             var paths = new List<string> {"/usr/lib/", "/usr/local/lib/"};
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
@@ -36,7 +48,7 @@ namespace SymbolCollector.Console
             var cancellation = new CancellationTokenSource();
             CancelKeyPress += (s, ev) =>
             {
-                _client?.CurrentMetrics.Write(Out);
+                _metrics.Write(Out);
                 WriteLine("Shutting down.");
                 ev.Cancel = false;
                 cancellation.Cancel();
@@ -48,51 +60,90 @@ namespace SymbolCollector.Console
             var logLevel = LogLevel.Warning;
             var loggerClient = new LoggerAdapter<Client>(logLevel);
             var loggerFatBinaryReader = new LoggerAdapter<FatBinaryReader>(logLevel);
-            _client = new Client(
-                new Uri(SymbolCollectorServiceUrl),
+            var client = new Client(
+                endpoint,
                 new FatBinaryReader(loggerFatBinaryReader),
                 blackListedPaths: blackListedPaths,
+                metrics: _metrics,
                 logger: loggerClient);
 
-            await _client.UploadAllPathsAsync(paths, cancellation.Token);
+            await client.UploadAllPathsAsync(paths, cancellation.Token);
+            _metrics.Write(Out);
         }
 
-        private static async Task Main(string[] args)
+        static async Task Main(
+            string? upload = null,
+            string? check = null,
+            string? package = null,
+            Uri? serverEndpoint = null)
         {
             SentrySdk.Init(o =>
             {
                 o.Debug = true;
-#if !DEBUG
-                o.DiagnosticsLevel = Sentry.Protocol.SentryLevel.Info;
-#endif
+                o.DiagnosticsLevel = Sentry.Protocol.SentryLevel.Warning;
                 o.AttachStacktrace = true;
                 o.Dsn = new Dsn(Dsn);
             });
-            SentrySdk.ConfigureScope(s =>
             {
-                s.SetTag("app", typeof(Program).Assembly.GetName().Name);
-                s.SetTag("server-endpoint", SymbolCollectorServiceUrl);
-                s.AddEventProcessor(@event =>
+                var capturedEndpoint = serverEndpoint;
+                SentrySdk.ConfigureScope(s =>
                 {
-                    var uploadMetrics = new Dictionary<string, object>();
-                    @event.Contexts["metrics"] = uploadMetrics;
-                    _client?.CurrentMetrics.Write(uploadMetrics);
-                    return @event;
+                    s.SetTag("app", typeof(Program).Assembly.GetName().Name);
+                    s.SetExtra("parameters", new {upload, check, package, endpoint = capturedEndpoint});
                 });
-            });
+            }
+
+            serverEndpoint ??= new Uri(SymbolCollectorServiceUrl);
+
             try
             {
-                await UploadSymbols();
+                switch (upload)
+                {
+                    case "device":
+                        WriteLine("Uploading images from this device.");
+                        await UploadSymbols(serverEndpoint);
+                        return;
+                    case "package":
+                        if (package is null)
+                        {
+                            WriteLine("Package not defined. Define which one with: --package path/to/package.dmg");
+                            return;
+                        }
+
+                        WriteLine($"Uploading stuff from package: '{package}'.");
+                        // TODO:
+                        break;
+                }
+
+                if (check is { } checkLib)
+                {
+                    if (!File.Exists(check))
+                    {
+                        WriteLine($"File to check '{checkLib}' doesn't exist.");
+                        return;
+                    }
+                    else
+                    {
+                        WriteLine($"Checking '{checkLib}'.");
+                        // TODO: Check file.
+                        return;
+                    }
+                }
+
+                WriteLine(@"Parameters:
+--upload device
+--upload package --package ~/location
+--check file-to-check");
             }
             catch (Exception e)
             {
                 WriteLine(e);
                 SentrySdk.CaptureException(e);
             }
-
-            await SentrySdk.FlushAsync(TimeSpan.FromSeconds(2));
-
-            _client?.CurrentMetrics.Write(Out);
+            finally
+            {
+                await SentrySdk.FlushAsync(TimeSpan.FromSeconds(2));
+            }
         }
     }
 }

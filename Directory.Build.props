@@ -8,7 +8,8 @@
     <Deterministic>True</Deterministic>
     <!-- CS1998: When developing, let me comment out an `await Something()` and add some synchronous code please -->
     <!-- CS8321: Unused local function -->
-    <NoWarn Condition="'$(Configuration)' == 'Debug'">$(NoWarn);CS1998;CS8321</NoWarn>
+    <!-- CS1591: Missing XML comment for public member -->
+    <NoWarn Condition="'$(Configuration)' == 'Debug'">$(NoWarn);CS1998;CS8321;CS1591</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
