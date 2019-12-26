@@ -26,6 +26,7 @@ pushd src\SymbolCollector.Console\
 dotnet run -c release -- ^
     --check ..\..\test\SymbolCollector.Core.Tests\TestFiles\System.Net.Http.Native.dylib ^
     | find "c5ff520a-e05c-3099-921e-a8229f808696"
+if "%errorlevel%" NEQ "0" exit /b %errorlevel%
 dotnet publish -c release /p:PublishSingleFile=true --self-contained -r osx-x64 -o osx-x64
 if "%errorlevel%" NEQ "0" exit /b %errorlevel%
 dotnet publish -c release /p:PublishSingleFile=true --self-contained -r linux-x64 -o linux-x64
