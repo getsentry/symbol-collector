@@ -22,10 +22,8 @@
     <MonoAndroidAssetsPrefix>Assets</MonoAndroidAssetsPrefix>
     <AndroidHttpClientHandlerType>Xamarin.Android.Net.AndroidClientHandler</AndroidHttpClientHandlerType>
     <LangVersion>8</LangVersion>
-
     <!-- Set in the Xamarin.Forms.Android template from JetBrains? -->
     <!-- <AndroidUseLatestPlatformSdk>false</AndroidUseLatestPlatformSdk> -->
-    
     <!-- From VS For Mac 8.3.10 template -->
     <AndroidUseAapt2>true</AndroidUseAapt2>
     <AndroidEnableSGenConcurrent>true</AndroidEnableSGenConcurrent>
@@ -85,11 +83,9 @@
     <None Include="Properties\AndroidManifest.xml" />
   </ItemGroup>
   <ItemGroup>
-    <AndroidResource Include="Resources\layout\activity_main.axml">
-      <SubType>Designer</SubType>
-    </AndroidResource>
+    <AndroidResource Include="Resources\layout\Tabbar.xml" />
+    <AndroidResource Include="Resources\layout\Toolbar.xml" />
     <AndroidResource Include="Resources\values\colors.xml" />
-    <AndroidResource Include="Resources\values\ic_launcher_background.xml" />
     <AndroidResource Include="Resources\values\strings.xml" />
     <AndroidResource Include="Resources\values\styles.xml" />
   </ItemGroup>
@@ -97,9 +93,9 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.0.0" />
     <PackageReference Include="Sentry" Version="2.0.0-beta7" />
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
-<!--    <PackageReference Include="Xamarin.Forms" Version="4.3.0.991250" />-->
-<!--    <PackageReference Include="Xamarin.Android.Support.Core.Utils" Version="28.0.0.3" />-->
-<!--    <PackageReference Include="Xamarin.Essentials" Version="1.3.1" />-->
+    <!--    <PackageReference Include="Xamarin.Forms" Version="4.3.0.991250" />-->
+    <!--    <PackageReference Include="Xamarin.Android.Support.Core.Utils" Version="28.0.0.3" />-->
+    <PackageReference Include="Xamarin.Essentials" Version="1.2.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SymbolCollector.Core\SymbolCollector.Core.csproj">
