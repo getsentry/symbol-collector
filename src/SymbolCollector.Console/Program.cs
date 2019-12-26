@@ -62,7 +62,10 @@ namespace SymbolCollector.Console
             var loggerFatBinaryReader = new LoggerAdapter<FatBinaryReader>(logLevel);
             var client = new Client(
                 endpoint,
-                new FatBinaryReader(loggerFatBinaryReader),
+                new ObjectFileParser(
+                    new FatBinaryReader(loggerFatBinaryReader),
+                    _metrics,
+                    new LoggerAdapter<ObjectFileParser>(logLevel)),
                 blackListedPaths: blackListedPaths,
                 metrics: _metrics,
                 logger: loggerClient);
@@ -125,6 +128,7 @@ namespace SymbolCollector.Console
                     else
                     {
                         WriteLine($"Checking '{checkLib}'.");
+
                         // TODO: Check file.
                         return;
                     }
