@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace SymbolCollector.Core
 {
@@ -38,7 +39,8 @@ namespace SymbolCollector.Core
         private const int FatArchSize = 20;
         private const int HeaderSize = 8;
 
-        public FatBinaryReader(ILogger<FatBinaryReader> logger) => _logger = logger;
+        public FatBinaryReader(ILogger<FatBinaryReader>? logger = null)
+            => _logger = logger ?? NullLogger<FatBinaryReader>.Instance;
 
         public bool TryLoad(string path, out FatMachO? fatMachO)
         {
