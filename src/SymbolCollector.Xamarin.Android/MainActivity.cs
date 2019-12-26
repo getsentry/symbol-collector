@@ -19,6 +19,7 @@ namespace SymbolCollector.Xamarin.Android
 
             base.OnCreate(savedInstanceState);
 
+            Startup.Init(c => {});
             global::Xamarin.Essentials.Platform.Init(this, savedInstanceState);
             global::Xamarin.Forms.Forms.Init(this, savedInstanceState);
 
