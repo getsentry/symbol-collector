@@ -55,7 +55,7 @@ namespace SymbolCollector.Core.Tests
 
             var sut = _fixture.GetSut();
             await sut.UploadAllPathsAsync(new[] {"TestFiles"}, CancellationToken.None);
-            Assert.Equal(11, counter);
+            Assert.Equal(12, counter);
             // TODO: Match exact files and their debug ids.
         }
 

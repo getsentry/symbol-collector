@@ -31,6 +31,7 @@ namespace SymbolCollector.Core
             {
                 logger.LogWarning("No FatBinaryReader was provided while running on macOS.");
             }
+
             _fatBinaryReader = fatBinaryReader;
             _logger = logger ?? NullLogger<ObjectFileParser>.Instance;
             Metrics = metrics ?? new ClientMetrics();
@@ -187,7 +188,30 @@ namespace SymbolCollector.Core
                     }
                     else
                     {
-                        _logger.LogWarning("No Debug Id in {file}", file);
+                        if (elf.TryGetSection(".text", out var textSection))
+                        {
+                            try
+                            {
+                                var fallbackDebugId = GetFallbackDebugId(textSection.GetContents());
+                                if (fallbackDebugId is {})
+                                {
+                                    result = new ObjectFileResult(
+                                        fallbackDebugId,
+                                        file,
+                                        BuildIdType.TextSectionHash);
+                                    return true;
+                                }
+                                _logger.LogDebug("Could not compute fallback id with textSection {textSection} from file {file}", textSection, file);
+                            }
+                            catch (Exception e)
+                            {
+                                _logger.LogError(e, "Failed to compute fallback id with textSection {textSection} from file {file}", textSection, file);
+                            }
+                        }
+                        else
+                        {
+                            _logger.LogWarning("No Debug Id and no .text section for fallback in {file}", file);
+                        }
                     }
                 }
                 else
@@ -257,6 +281,32 @@ namespace SymbolCollector.Core
 
             var hash = builder.ToString();
             return hash;
+        }
+
+        internal string? GetFallbackDebugId(byte[] textSection)
+        {
+            if (textSection is null)
+            {
+                _logger.LogWarning("Can't create fallback debug id from a null buffer.");
+                return null;
+            }
+
+            if (textSection.Length == 0)
+            {
+                _logger.LogWarning(".text section is 0 bytes long.");
+                return null;
+            }
+
+            var length = Math.Min(4096, textSection.Length);
+            var UUID_SIZE = 16;
+            var hash = new byte[UUID_SIZE];
+            for (var i = 0; i < length; i++)
+            {
+                hash[i % UUID_SIZE] ^= textSection[i];
+            }
+
+            var hashId = new Guid(hash).ToString();
+            return hashId;
         }
     }
 }

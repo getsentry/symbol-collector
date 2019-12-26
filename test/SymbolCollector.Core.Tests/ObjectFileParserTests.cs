@@ -38,6 +38,8 @@ namespace SymbolCollector.Core.Tests
         [InlineData("df3a9df5-26a8-d63d-88ad-820f74a325b5", "TestFiles/libxamarin-app.so")]
         // SymbolCollector.Android Android arm64 symtab
         [InlineData("09752176-f337-f80b-e756-cec46b960391", "TestFiles/libxamarin-app-arm64-v8a.so")]
+        // Android 4.4.4 device, no debug-id (using hash of .text section) "difutil says not usable)
+        [InlineData("637aa379-d34e-d455-c314-d646b8f3eaec", "TestFiles/libqcbassboost.so")]
         // SymbolCollector.Console macOS x86_x64 symtab, unwind
         [InlineData("c5ff520a-e05c-3099-921e-a8229f808696", "TestFiles/System.Net.Http.Native.dylib")]
         // From macOS Catalina x86_64 /usr/lib/ symtab
@@ -65,6 +67,8 @@ namespace SymbolCollector.Core.Tests
         [InlineData("df3a9df5-26a8-d63d-88ad-820f74a325b5", "TestFiles/libxamarin-app.so")]
         // SymbolCollector.Android Android arm64 symtab
         [InlineData("09752176-f337-f80b-e756-cec46b960391", "TestFiles/libxamarin-app-arm64-v8a.so")]
+        // Android 4.4.4 device, no debug-id (using hash of .text section) "difutil says not usable)
+        [InlineData("637aa379-d34e-d455-c314-d646b8f3eaec", "TestFiles/libqcbassboost.so")]
         // Not an ELF file (came from an Android x86 emulator)
         [InlineData(null, "TestFiles/libdl.bc")]
         // macOS file
@@ -82,7 +86,14 @@ namespace SymbolCollector.Core.Tests
             {
                 Assert.NotNull(actual);
                 Assert.Equal(new Guid(debugId).ToString(), actual!.BuildId);
-                Assert.Equal(BuildIdType.GnuBuildId, actual.BuildIdType);
+                if (path.EndsWith("libqcbassboost.so"))
+                {
+                    Assert.Equal(BuildIdType.TextSectionHash, actual.BuildIdType);
+                }
+                else
+                {
+                    Assert.Equal(BuildIdType.GnuBuildId, actual.BuildIdType);
+                }
             }
         }
 
