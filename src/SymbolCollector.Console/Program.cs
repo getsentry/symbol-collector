@@ -58,14 +58,16 @@ namespace SymbolCollector.Console
 
             // TODO: M.E.DependencyInjection/Configuration
             var logLevel = LogLevel.Warning;
-            var loggerClient = new LoggerAdapter<Client>(logLevel);
             var loggerFatBinaryReader = new LoggerAdapter<FatBinaryReader>(logLevel);
+            var parser = new ObjectFileParser(
+                new FatBinaryReader(loggerFatBinaryReader),
+                _metrics,
+                new LoggerAdapter<ObjectFileParser>(logLevel));
+
+            var loggerClient = new LoggerAdapter<Client>(logLevel);
             var client = new Client(
                 endpoint,
-                new ObjectFileParser(
-                    new FatBinaryReader(loggerFatBinaryReader),
-                    _metrics,
-                    new LoggerAdapter<ObjectFileParser>(logLevel)),
+                parser,
                 blackListedPaths: blackListedPaths,
                 metrics: _metrics,
                 logger: loggerClient);
@@ -129,7 +131,44 @@ namespace SymbolCollector.Console
                     {
                         WriteLine($"Checking '{checkLib}'.");
 
-                        // TODO: Check file.
+                        // TODO: M.E.DependencyInjection/Configuration
+                        var logLevel = LogLevel.Warning;
+                        var loggerFatBinaryReader = new LoggerAdapter<FatBinaryReader>(logLevel);
+                        var parser = new ObjectFileParser(
+                            new FatBinaryReader(loggerFatBinaryReader),
+                            _metrics,
+                            new LoggerAdapter<ObjectFileParser>(logLevel));
+
+                        if (parser.TryParse(checkLib, out var result) && result is {})
+                        {
+                            if (result is FatMachOFileResult fatMachOFileResult)
+                            {
+                                WriteLine($"Fat Mach-O File:");
+                                Print(fatMachOFileResult);
+                                foreach (var innerFile in fatMachOFileResult.InnerFiles)
+                                {
+                                    WriteLine("Inner file:");
+                                    Print(innerFile);
+                                }
+                            }
+                            else
+                            {
+                                Print(result);
+                            }
+
+                            static void Print(ObjectFileResult r)
+                                => WriteLine($@"
+Path: {r.Path}
+BuildId: {r.BuildId}
+BuildIdType: {r.BuildIdType}
+File hash: {r.Hash}
+");
+                        }
+                        else
+                        {
+                            WriteLine($"Failed to parse {checkLib}.");
+                        }
+
                         return;
                     }
                 }
