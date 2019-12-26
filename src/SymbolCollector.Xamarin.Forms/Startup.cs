@@ -3,48 +3,58 @@ using System.IO;
 using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using SymbolCollector.Core;
 using Xamarin.Essentials;
 
 namespace SymbolCollector.Xamarin.Forms
 {
     public class Startup
     {
-        public static IServiceProvider ServiceProvider { get; set; } = null!;
-
-        public static void Init(Action<IServiceCollection> configureServices)
+        public static IServiceProvider Init(Action<IServiceCollection> configureServices)
         {
             var host = new HostBuilder()
-                // .UseContentRoot(FileSystem.AppDataDirectory)
-                .ConfigureHostConfiguration(c =>
-                {
-                    // Tell the host configuration where to find the file (this is required for Xamarin apps)
-                    c.AddCommandLine(new[] {$"ContentRoot={FileSystem.AppDataDirectory}"});
-
-                    c.AddJsonFile(GetAppSettingsFilePath());
-                })
+                .UseContentRoot(FileSystem.AppDataDirectory)
+                .ConfigureHostConfiguration(c => c.AddJsonFile(GetAppSettingsFilePath()))
                 .ConfigureServices((hostBuilderContext, services) =>
                 {
-                    configureServices?.Invoke(services);
                     ConfigureServices(hostBuilderContext, services);
+                    configureServices?.Invoke(services);
                 })
-                .ConfigureLogging(l =>
-                    l.AddConsole(o =>
-                    {
-                        //setup a console logger and disable colors since they don't have any colors in VS
-                        o.DisableColors = true;
-                    }))
+                .ConfigureLogging(l => l.AddConsole(o => o.DisableColors = true))
                 .Build();
 
-            ServiceProvider = host.Services;
+            return host.Services;
         }
 
-        private static void ConfigureServices(HostBuilderContext ctx, IServiceCollection services)
+        private static void ConfigureServices(HostBuilderContext context, IServiceCollection services)
         {
-            var world = ctx.Configuration["Hello"];
-            Console.WriteLine(world);
+            services.Configure<SymbolCollectorOptions>(context.Configuration.GetSection("SymbolCollector"));
+
+            services.AddSingleton<App>();
+            services.AddSingleton<ObjectFileParser>();
+            services.AddSingleton<ClientMetrics>();
+            services.AddSingleton<FatBinaryReader>();
+            services.AddSingleton(r =>
+            {
+                var options = r.GetRequiredService<IOptions<SymbolCollectorOptions>>().Value;
+
+                if (options.ServerEndpoint is null)
+                {
+                    throw new InvalidOperationException("No Server endpoint was configured.");
+                }
+
+                return new Client(
+                    options.ServerEndpoint,
+                    r.GetRequiredService<ObjectFileParser>(),
+                    options.ClientName ?? "SymbolCollector/0.0.0",
+                    metrics: r.GetRequiredService<ClientMetrics>(),
+                    blackListedPaths: options.BlackListedPaths,
+                    parallelTasks: options.ParallelTasks,
+                    logger: r.GetRequiredService<ILogger<Client>>());
+            });
         }
 
         private static string GetAppSettingsFilePath()
@@ -61,7 +71,7 @@ namespace SymbolCollector.Xamarin.Forms
                 return fullPath;
             }
 
-            throw new InvalidOperationException($"Configuration file 'appsettings.json' was in {fileName}");
+            throw new InvalidOperationException($"Configuration file 'appsettings.json' was not found at {fileName}.");
         }
     }
 }

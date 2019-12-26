@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Xamarin.Forms;
+using Microsoft.Extensions.Logging;
 using Xamarin.Forms.Xaml;
 using SymbolCollector.Core;
 using Exception = System.Exception;
@@ -12,59 +12,37 @@ namespace SymbolCollector.Xamarin.Forms
 {
     public partial class App
     {
-        private readonly string _serverEndpoint;
+        private readonly Client _client;
+        private readonly ILogger<App> _logger;
 
-        public App(string serverEndpoint)
+        public App(Client client, ILogger<App> logger)
         {
-            _serverEndpoint = serverEndpoint ?? throw new ArgumentNullException(nameof(serverEndpoint));
-            InitializeComponent();
+            _client = client ?? throw new ArgumentNullException(nameof(client));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
+            InitializeComponent();
             MainPage = new MainPage();
         }
 
-        protected override void OnStart()
-        {
-            _ = StartUpload(_serverEndpoint);
-        }
+        protected override void OnStart() => _ = StartUpload(CancellationToken.None);
 
-        protected override void OnSleep()
-        {
-            // Handle when your app sleeps
-        }
-
-        protected override void OnResume()
-        {
-            // Handle when your app resumes
-        }
-
-        private Task StartUpload(string url)
-        {
-
-            return Task.Run(async () =>
+        private Task StartUpload(CancellationToken cancellationToken) =>
+            Task.Run(async () =>
             {
+                // TODO: from the config system
                 var paths = new[] {
                     "/system/lib",
                     "/system/lib64",
                     "/system/"};
 
-                var client = new Client(
-                    new Uri(url),
-                    new ObjectFileParser(
-                        // TODO: logging
-                    ),
-                    assemblyName: GetType().Assembly.GetName());
-                    // logger: new LoggerAdapter<Client>());
                 try
                 {
-                    await client.UploadAllPathsAsync(paths, CancellationToken.None);
+                    await _client.UploadAllPathsAsync(paths, cancellationToken);
                 }
                 catch (Exception e)
                 {
-                    // TODO logging
-                    Console.WriteLine(e);
-                    // Log.Error(Tag, Throwable.FromException(e), "Failed uploading.");
+                    _logger.LogError(e, "Failed uploading files.");
                 }
-            });
-        }
+            }, cancellationToken);
     }
 }
