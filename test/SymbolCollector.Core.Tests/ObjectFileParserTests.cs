@@ -34,9 +34,9 @@ namespace SymbolCollector.Core.Tests
         [InlineData("72a49017-aea7-e862-3ac8-eb00d97749d3", "TestFiles/System.Net.Http.Native.so")]
         // SymbolCollector.Console Linux arm symtab, unwind
         [InlineData("74c165bb-c9e6-805a-3926-1e2c63f12f9a", "TestFiles/System.Globalization.Native.so")]
-        // SymbolCollector.Android Android armeabi-v7a symtab
+        // SymbolCollector.Xamarin.Android Android armeabi-v7a symtab
         [InlineData("df3a9df5-26a8-d63d-88ad-820f74a325b5", "TestFiles/libxamarin-app.so")]
-        // SymbolCollector.Android Android arm64 symtab
+        // SymbolCollector.Xamarin.Android Android arm64 symtab
         [InlineData("09752176-f337-f80b-e756-cec46b960391", "TestFiles/libxamarin-app-arm64-v8a.so")]
         // Android 4.4.4 device, no debug-id (using hash of .text section) "difutil says not usable)
         [InlineData("637aa379-d34e-d455-c314-d646b8f3eaec", "TestFiles/libqcbassboost.so")]
@@ -63,9 +63,9 @@ namespace SymbolCollector.Core.Tests
         [InlineData("72a49017-aea7-e862-3ac8-eb00d97749d3", "TestFiles/System.Net.Http.Native.so")]
         // SymbolCollector.Console Linux arm symtab, unwind
         [InlineData("74c165bb-c9e6-805a-3926-1e2c63f12f9a", "TestFiles/System.Globalization.Native.so")]
-        // SymbolCollector.Android Android armeabi-v7a symtab
+        // SymbolCollector.Xamarin.Android Android armeabi-v7a symtab
         [InlineData("df3a9df5-26a8-d63d-88ad-820f74a325b5", "TestFiles/libxamarin-app.so")]
-        // SymbolCollector.Android Android arm64 symtab
+        // SymbolCollector.Xamarin.Android Android arm64 symtab
         [InlineData("09752176-f337-f80b-e756-cec46b960391", "TestFiles/libxamarin-app-arm64-v8a.so")]
         // Android 4.4.4 device, no debug-id (using hash of .text section) "difutil says not usable)
         [InlineData("637aa379-d34e-d455-c314-d646b8f3eaec", "TestFiles/libqcbassboost.so")]

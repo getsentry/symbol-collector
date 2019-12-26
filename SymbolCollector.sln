@@ -8,7 +8,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SymbolCollector.Core", "src
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SymbolCollector.Server", "src\SymbolCollector.Server\SymbolCollector.Server.csproj", "{74300E52-A354-4527-B666-4A0D3660C1EA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SymbolCollector.Android", "src\SymbolCollector.Android\SymbolCollector.Android.csproj", "{B66B3A36-CE78-4278-998B-D43F6E0C63E8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SymbolCollector.Xamarin.Android", "src\SymbolCollector.Xamarin.Android\SymbolCollector.Xamarin.Android.csproj", "{B66B3A36-CE78-4278-998B-D43F6E0C63E8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SymbolCollector.Server.Tests", "test\SymbolCollector.Server.Tests\SymbolCollector.Server.Tests.csproj", "{DE51CE4F-0F0A-4573-B274-F94562DADDCF}"
 EndProject

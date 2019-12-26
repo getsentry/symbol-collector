@@ -4,11 +4,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("SymbolCollector.Android")]
+[assembly: AssemblyTitle("SymbolCollector.Xamarin.Android")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("SymbolCollector.Android")]
+[assembly: AssemblyProduct("SymbolCollector.Xamarin.Android")]
 [assembly: AssemblyCopyright("Copyright Sentry ©  2019")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

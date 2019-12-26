@@ -9,7 +9,7 @@ using Java.Lang;
 using SymbolCollector.Core;
 using Exception = System.Exception;
 
-namespace SymbolCollector.Android
+namespace SymbolCollector.Xamarin.Android
 {
     [Activity(Label = "@string/app_name", Theme = "@style/AppTheme", MainLauncher = true)]
     public class MainActivity : AppCompatActivity
