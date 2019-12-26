@@ -190,12 +190,23 @@ namespace SymbolCollector.Core
                     {
                         if (elf.TryGetSection(".text", out var textSection))
                         {
-                            var fallbackDebugId = GetFallbackDebugId(textSection.GetContents());
-                            result = new ObjectFileResult(
-                                fallbackDebugId,
-                                file,
-                                BuildIdType.TextSectionHash);
-                            return true;
+                            try
+                            {
+                                var fallbackDebugId = GetFallbackDebugId(textSection.GetContents());
+                                if (fallbackDebugId is {})
+                                {
+                                    result = new ObjectFileResult(
+                                        fallbackDebugId,
+                                        file,
+                                        BuildIdType.TextSectionHash);
+                                    return true;
+                                }
+                                _logger.LogDebug("Could not compute fallback id with textSection {textSection} from file {file}", textSection, file);
+                            }
+                            catch (Exception e)
+                            {
+                                _logger.LogError(e, "Failed to compute fallback id with textSection {textSection} from file {file}", textSection, file);
+                            }
                         }
                         else
                         {
