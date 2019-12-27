@@ -1,10 +1,10 @@
 #!/bin/bash
 set -e
 
-# Patch src/SymbolCollector.Xamarin.Android/Properties/AndroidManifest.xml
+# Patch src/SymbolCollector.Android/Properties/AndroidManifest.xml
 # Line: <meta-data android:name="io.sentry.symbol-collector" android:value="" />
 # To add the correct endpoint, from env var at build time
-pushd src/SymbolCollector.Xamarin.Android/
+pushd src/SymbolCollector.Android/
 msbuild /restore /p:Configuration=Release \
     /p:AndroidBuildApplicationPackage=true \
     /t:Clean\;Build\;SignAndroidPackage

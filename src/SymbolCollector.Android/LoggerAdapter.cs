@@ -3,7 +3,7 @@ using Android.Util;
 using Microsoft.Extensions.Logging;
 using AndroidLog = Android.Util.Log;
 
-namespace SymbolCollector.Xamarin.Android
+namespace SymbolCollector.Android
 {
     internal class LoggerAdapter<T> : ILogger<T>
     {

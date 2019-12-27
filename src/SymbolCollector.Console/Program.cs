@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -65,14 +64,10 @@ namespace SymbolCollector.Console
                 _metrics,
                 new LoggerAdapter<ObjectFileParser>(logLevel));
 
-            var assemblyName = Assembly.GetEntryAssembly()?.GetName();
-            var clientName = $"{assemblyName?.Name ?? "SymbolCollector.Console"}/{assemblyName?.Version?.ToString() ?? "?.?.?"}";
-
             var loggerClient = new LoggerAdapter<Client>(logLevel);
             var client = new Client(
                 endpoint,
                 parser,
-                clientName,
                 blackListedPaths: blackListedPaths,
                 metrics: _metrics,
                 logger: loggerClient);

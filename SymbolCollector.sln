@@ -8,15 +8,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SymbolCollector.Core", "src
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SymbolCollector.Server", "src\SymbolCollector.Server\SymbolCollector.Server.csproj", "{74300E52-A354-4527-B666-4A0D3660C1EA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SymbolCollector.Xamarin.Android", "src\SymbolCollector.Xamarin.Android\SymbolCollector.Xamarin.Android.csproj", "{B66B3A36-CE78-4278-998B-D43F6E0C63E8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SymbolCollector.Android", "src\SymbolCollector.Android\SymbolCollector.Android.csproj", "{B66B3A36-CE78-4278-998B-D43F6E0C63E8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SymbolCollector.Server.Tests", "test\SymbolCollector.Server.Tests\SymbolCollector.Server.Tests.csproj", "{DE51CE4F-0F0A-4573-B274-F94562DADDCF}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SymbolCollector.Core.Tests", "test\SymbolCollector.Core.Tests\SymbolCollector.Core.Tests.csproj", "{7F808549-0A33-4858-B01C-D278ABEFECAA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ELFSharp", "src\ELFSharp\ELFSharp.csproj", "{2B98ED62-A2B8-436D-8D4C-F805DDEA712A}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SymbolCollector.Xamarin.Forms", "src\SymbolCollector.Xamarin.Forms\SymbolCollector.Xamarin.Forms.csproj", "{B8CDFA61-615C-41DD-A6D5-7029AABDBCAB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -115,17 +113,5 @@ Global
 		{2B98ED62-A2B8-436D-8D4C-F805DDEA712A}.Release|x64.Build.0 = Release|Any CPU
 		{2B98ED62-A2B8-436D-8D4C-F805DDEA712A}.Release|x86.ActiveCfg = Release|Any CPU
 		{2B98ED62-A2B8-436D-8D4C-F805DDEA712A}.Release|x86.Build.0 = Release|Any CPU
-		{B8CDFA61-615C-41DD-A6D5-7029AABDBCAB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B8CDFA61-615C-41DD-A6D5-7029AABDBCAB}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B8CDFA61-615C-41DD-A6D5-7029AABDBCAB}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{B8CDFA61-615C-41DD-A6D5-7029AABDBCAB}.Debug|x64.Build.0 = Debug|Any CPU
-		{B8CDFA61-615C-41DD-A6D5-7029AABDBCAB}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{B8CDFA61-615C-41DD-A6D5-7029AABDBCAB}.Debug|x86.Build.0 = Debug|Any CPU
-		{B8CDFA61-615C-41DD-A6D5-7029AABDBCAB}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B8CDFA61-615C-41DD-A6D5-7029AABDBCAB}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B8CDFA61-615C-41DD-A6D5-7029AABDBCAB}.Release|x64.ActiveCfg = Release|Any CPU
-		{B8CDFA61-615C-41DD-A6D5-7029AABDBCAB}.Release|x64.Build.0 = Release|Any CPU
-		{B8CDFA61-615C-41DD-A6D5-7029AABDBCAB}.Release|x86.ActiveCfg = Release|Any CPU
-		{B8CDFA61-615C-41DD-A6D5-7029AABDBCAB}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
