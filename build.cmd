@@ -1,4 +1,4 @@
-pushd src\SymbolCollector.Xamarin.Android\
+pushd src\SymbolCollector.Android\
 msbuild /restore /p:Configuration=Release ^
     /p:AndroidBuildApplicationPackage=true ^
     /t:Clean;Build;SignAndroidPackage
