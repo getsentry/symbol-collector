@@ -32,8 +32,8 @@ namespace SymbolCollector.Core.Tests
                 new Client(
                     ServiceUri,
                     ObjectFileParser,
+                    "client/1.0",
                     HttpMessageHandler,
-                    AssemblyName,
                     ParallelTasks,
                     BlackListedPaths,
                     Metrics,

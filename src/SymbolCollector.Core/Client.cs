@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -26,8 +25,8 @@ namespace SymbolCollector.Core
         public Client(
             Uri serviceUri,
             ObjectFileParser objectFileParser,
+            string clientName,
             HttpMessageHandler? handler = null,
-            AssemblyName? assemblyName = null,
             int? parallelTasks = null,
             HashSet<string>? blackListedPaths = null,
             ClientMetrics? metrics = null,
@@ -41,8 +40,7 @@ namespace SymbolCollector.Core
             _serviceUri = new Uri(serviceUri, "image");
             _logger = logger ?? NullLogger<Client>.Instance;
             _client = new HttpClient(handler ?? new HttpClientHandler());
-            assemblyName ??= Assembly.GetEntryAssembly()?.GetName();
-            _userAgent = $"{assemblyName?.Name ?? "SymbolCollector"}/{assemblyName?.Version.ToString() ?? "?.?.?"}";
+            _userAgent = clientName;
             Metrics = metrics ?? new ClientMetrics();
         }
 
