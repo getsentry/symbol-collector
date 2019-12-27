@@ -38,7 +38,7 @@ namespace SymbolCollector.Core
 
             _blackListedPaths = blackListedPaths;
             // We only hit /image here
-            _serviceUri = new Uri(serviceUri, "image");
+            _serviceUri = new Uri(serviceUri, "symbol");
             _logger = logger ?? NullLogger<Client>.Instance;
             _client = new HttpClient(handler ?? new HttpClientHandler());
             assemblyName ??= Assembly.GetEntryAssembly()?.GetName();
@@ -194,7 +194,7 @@ namespace SymbolCollector.Core
             // Ideally ELF would read headers as a stream which we could reset to 0 after reading heads
             // and ensuring it's what we need.
             using var fileStream = File.OpenRead(objectFileResult.Path);
-            var postResult = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Put, _serviceUri)
+            var postResult = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Post, _serviceUri)
             {
                 Headers = {{"debug-id", objectFileResult.BuildId}, {"User-Agent", _userAgent}},
                 Content = new MultipartFormDataContent(

@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http.Features;
@@ -11,22 +13,62 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
+using SymbolCollector.Core;
 
 namespace SymbolCollector.Server
 {
-    [Route("/image")]
+    public class BatchStartRequestModel
+    {
+        [Required]
+        [StringLength(1000, ErrorMessage = "A batch friendly name can't be longer than 1000 characters.")]
+        [Display(Name = "Batch friendly name")]
+        public string BatchFriendlyName { get; set; } = default!; // model validation
+
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        [Range((int)BatchType.WatchOS, (int)BatchType.Android)]
+        public BatchType BatchType { get; set; }
+    }
+
+    public class BatchEndRequestModel
+    {
+        public ClientMetricsModel? ClientMetrics { get; set; }
+    }
+
+    public class ClientMetricsModel : IClientMetrics
+    {
+        public DateTimeOffset StartedTime { get; set; }
+        public long FilesProcessedCount { get; set; }
+        public long BatchesProcessedCount { get; set; }
+        public long JobsInFlightCount { get; set; }
+        public long FailedToUploadCount { get; set; }
+        public long SuccessfullyUploadCount { get; set; }
+        public long MachOFileFoundCount { get; set; }
+        public long ElfFileFoundCount { get; set; }
+        public int FatMachOFileFoundCount { get; set; }
+        public long UploadedBytesCount { get; set; }
+        public int DirectoryUnauthorizedAccessCount { get; set; }
+        public int DirectoryDoesNotExistCount { get; set; }
+    }
+
+
+    [Route(Route)]
     public class SymbolsController : Controller
     {
+        public const string Route = "/symbol";
+
         private readonly long _fileSizeLimit;
-        private readonly ISymbolGcsWriter _gcsWriter;
+        private readonly ISymbolService _symbolService;
         private readonly ILogger<SymbolsController> _logger;
         private readonly char[] _invalidChars;
 
         private static readonly FormOptions DefaultFormOptions = new FormOptions();
 
-        public SymbolsController(IConfiguration config, ISymbolGcsWriter gcsWriter, ILogger<SymbolsController> logger)
+        public SymbolsController(
+            IConfiguration config,
+            ISymbolService symbolService,
+            ILogger<SymbolsController> logger)
         {
-            _gcsWriter = gcsWriter;
+            _symbolService = symbolService;
             _logger = logger;
             _fileSizeLimit = config.GetValue<long>("FileSizeLimitBytes");
             // Don't allow file names with paths encoded.
@@ -35,17 +77,107 @@ namespace SymbolCollector.Server
 
         // TODO: HEAD to verify image is needed
         // TODO: Get to give status
-
-        [HttpPut]
-        [DisableFormValueModelBinding]
-        public async Task<IActionResult> UploadSymbol(CancellationToken token)
+        [HttpPost(Route + "/batch/{batchId}/start")]
+        public async Task<IActionResult> Start(
+            [FromRoute] Guid batchId,
+            [FromBody] BatchStartRequestModel model,
+            CancellationToken token)
         {
-            _logger.LogDebug("/image endpoint called by {userAgent}",
-                Request.Headers["User-Agent"].FirstOrDefault() ?? "Unknown");
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            // if (startBatchRequestModel.BatchFriendlyName is null)
+            // {
+            //     return BadRequest("Missing Batch Friendly Name.");
+            // }
+            // if (startBatchRequestModel.BatchType == default)
+            // {
+            //     return BadRequest("Missing BatchType.");
+            // }
+
+            if (await _symbolService.GetBatch(batchId, token) is {})
+            {
+                return BadRequest($"Batch Id {batchId} was already used.");
+            }
+
+            await _symbolService.Start(batchId, model.BatchFriendlyName, model.BatchType, token);
+
+            return Ok();
+        }
+
+        [HttpPost(Route + "/batch/{batchId}/close")]
+        public async Task<IActionResult> CloseBatch([FromRoute] Guid batchId, [FromBody] BatchEndRequestModel model,
+            CancellationToken token)
+        {
+            await ValidateBatch(batchId, ModelState, token);
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            await _symbolService.Finish(batchId, model.ClientMetrics, token);
+            return NoContent();
+        }
+
+        // TODO: Mark parameter as required
+        [HttpHead(Route + "/batch/{batchId}/check/{debugId}/{hash?}")]
+        public async Task<IActionResult> IsSymbolMissing(
+            [FromRoute] Guid batchId,
+            [FromRoute] string debugId,
+            [FromRoute] string? hash,
+            CancellationToken token)
+        {
+            await ValidateBatch(batchId, ModelState, token);
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var symbol = await _symbolService.GetSymbol(debugId, token);
+            if (symbol is null)
+            {
+                _logger.LogDebug("{batchId} looked for {debugId} and {hash} which is a missing symbol.",
+                    batchId, debugId, hash);
+                return Ok();
+            }
+
+            if (hash is {} && string.CompareOrdinal(hash, symbol.Hash) != 0)
+            {
+                // TODO: Debug Id exists but doesn't match the existing file's hash.
+                // Return OK so that client uploads the symbol. The upload handing code
+                // will take the file "aside" for troubleshooting
+                _logger.LogWarning(
+                    "File with {debugId} as part of {batchId} has a conflicting hash with the existing file.",
+                    debugId,
+                    batchId);
+
+                return Ok();
+            }
+
+            await _symbolService.Relate(batchId, symbol, token);
+            return Conflict();
+        }
+
+        [HttpPost(Route + "/batch/{batchId}/upload/")]
+        [DisableFormValueModelBinding]
+        public async Task<IActionResult> UploadSymbol(
+            [FromRoute] Guid batchId,
+            CancellationToken token)
+        {
+            await ValidateBatch(batchId, ModelState, token);
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
 
             if (!MultipartRequestHelper.IsMultipartContentType(Request.ContentType))
             {
-                return BadRequest(ModelState);
+                return BadRequest($"ContentType {Request.ContentType} is not supported.");
             }
 
             var boundary = MultipartRequestHelper.GetBoundary(
@@ -60,9 +192,9 @@ namespace SymbolCollector.Server
                 return BadRequest("No file received.");
             }
 
-            var filesCreated = 0;
             var sectionsCount = 0;
             var invalidContentDispositions = new List<string>();
+            var results = new List<(string FileName, StoreResult Result)>();
             while (section != null)
             {
                 sectionsCount++;
@@ -83,30 +215,61 @@ namespace SymbolCollector.Server
 
                     // TODO: Process the image: do we have it already? is it valid?
 
-                    await _gcsWriter.WriteAsync(fileName, data, token);
+                    results.Add((fileName,
+                        await _symbolService.Store(
+                            batchId,
+                            fileName,
+                            data,
+                            token)));
+
                     await data.DisposeAsync();
-                    filesCreated++;
                 }
                 else
                 {
                     invalidContentDispositions.Add(section.ContentDisposition);
-                    _logger.LogWarning("ContentDisposition not supported: {contentDisposition}", section.ContentDisposition);
+                    _logger.LogWarning("ContentDisposition not supported: {contentDisposition}",
+                        section.ContentDisposition);
                 }
 
                 section = await reader.ReadNextSectionAsync(token);
             }
 
-            if (filesCreated == 0)
-            {
-                return BadRequest(new
-                {
-                    errorMessage="Invalid request. No file accepted.",
-                    numberOfSectionsReceived=sectionsCount,
-                    invalidContentDispositions
-                });
-            }
+            var filesCreated = results.Count(r => r.Result == StoreResult.Created);
 
-            return Created(nameof(SymbolsController), new { filesCreated });
+            var response = new {filesCreated, results};
+            return filesCreated switch
+            {
+                0 when results.Any(p => p.Result == StoreResult.AlreadyExisted)
+                => StatusCode(208, response),
+                0 => BadRequest(new
+                {
+                    errorMessage = "Invalid request. No file accepted.",
+                    numberOfSectionsReceived = sectionsCount,
+                    invalidContentDispositions,
+                    response
+                }),
+                _ => Created(nameof(SymbolsController), response)
+            };
+        }
+
+        public async Task ValidateBatch(Guid batchId, ModelStateDictionary modelState, CancellationToken token)
+        {
+            if (batchId == default)
+            {
+                modelState.AddModelError("Batch", "A BatchId is required.");
+            }
+            else
+            {
+                var batch = await _symbolService.GetBatch(batchId, token);
+                if (batch is null)
+                {
+                    modelState.AddModelError("Batch", $"Batch Id {batchId} does not exist.");
+                }
+                else if (batch.IsClosed)
+                {
+                    modelState.AddModelError("Batch", $"Batch Id {batchId} is already closed.");
+                }
+            }
         }
 
         public async ValueTask<(string fileName, Stream data)> ProcessStreamedFile(

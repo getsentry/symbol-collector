@@ -5,7 +5,7 @@ using System.Threading;
 
 namespace SymbolCollector.Core
 {
-    public class ClientMetrics
+    public class ClientMetrics : IClientMetrics
     {
         private int _filesProcessedCount;
         private int _batchesProcessedCount;

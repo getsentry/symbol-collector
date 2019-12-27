@@ -91,7 +91,7 @@ namespace SymbolCollector.Core
         {
             if (TryGetMachOFilesFromFatFile(file, out var files))
             {
-                result = new FatMachOFileResult(null, file, BuildIdType.None, files);
+                result = new FatMachOFileResult(string.Empty, file, BuildIdType.None, files);
                 return true;
             }
 
@@ -244,7 +244,7 @@ namespace SymbolCollector.Core
                     Metrics.MachOFileFound();
                     _logger.LogDebug("Mach-O found {file}", file);
 
-                    string? buildId = null;
+                    var buildId = string.Empty;
                     var uuid = mach0.GetCommandsOfType<Uuid?>().FirstOrDefault();
                     if (!(uuid is null))
                     {
@@ -269,7 +269,7 @@ namespace SymbolCollector.Core
         }
 
         // TODO: Hash the file
-        private object GetHash(string file)
+        private string GetHash(string file)
         {
             using var algorithm = SHA256.Create();
             var hashingAlgo = algorithm.ComputeHash(File.ReadAllBytes(file));
