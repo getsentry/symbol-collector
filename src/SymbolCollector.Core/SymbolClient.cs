@@ -3,6 +3,7 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Reflection;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -28,15 +29,40 @@ namespace SymbolCollector.Core
         Android
     }
 
-    public class SymbolClient : IDisposable
+    public interface ISymbolClient : IDisposable
+    {
+        Task<Guid> Start(string friendlyName, BatchType batchType, CancellationToken token);
+        Task<Guid> Close(Guid batchId, IClientMetrics? metrics, CancellationToken token);
+
+        Task<bool> Upload(
+            Guid batchId,
+            string buildId,
+            string? hash,
+            string fileName,
+            Stream file,
+            CancellationToken token);
+    }
+
+    public class SymbolClient : ISymbolClient
     {
         private readonly Uri _baseAddress;
         private readonly ILogger<SymbolClient> _logger;
-        private readonly HttpClient _httpClient = new HttpClient();
+        private readonly HttpClient _httpClient;
 
-        public SymbolClient(Uri baseAddress, ILogger<SymbolClient> logger)
+        public SymbolClient(
+            Uri baseAddress,
+            ILogger<SymbolClient> logger,
+            HttpMessageHandler? handler = null,
+            AssemblyName? assemblyName = null)
         {
+            _httpClient = new HttpClient(handler ?? new HttpClientHandler());
+            _httpClient.DefaultRequestHeaders.Add(
+                "User-Agent",
+                $"{assemblyName?.Name ?? "SymbolCollector"}/{assemblyName?.Version?.ToString() ?? "0.0.0"}");
+
             _baseAddress = baseAddress;
+            assemblyName ??= Assembly.GetEntryAssembly()?.GetName();
+
             _logger = logger;
         }
 
@@ -113,6 +139,9 @@ namespace SymbolCollector.Core
                     _logger.LogDebug("Upload response body: {body}", responseBody);
                 }
 
+                _logger.LogInformation("File {file} with {bytes} was uploaded successfully.",
+                    fileName, file.Length);
+
                 return true;
             }
         }
@@ -132,14 +161,6 @@ namespace SymbolCollector.Core
             }
         }
 
-
-        public async Task Upload(string file, string buildId, CancellationToken token)
-        {
-        }
-
-        public void Dispose()
-        {
-            _httpClient.Dispose();
-        }
+        public void Dispose() => _httpClient.Dispose();
     }
 }

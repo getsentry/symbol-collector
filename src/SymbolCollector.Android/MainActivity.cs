@@ -38,9 +38,8 @@ namespace SymbolCollector.Android
                     "/system/"};
 
                 var client = new Client(
-                    new Uri(url),
+                    new SymbolClient(new Uri(url), new LoggerAdapter<SymbolClient>(), assemblyName: GetType().Assembly.GetName()),
                     new ObjectFileParser(logger: new LoggerAdapter<ObjectFileParser>()),
-                    assemblyName: GetType().Assembly.GetName(),
                     logger: new LoggerAdapter<Client>());
                 try
                 {

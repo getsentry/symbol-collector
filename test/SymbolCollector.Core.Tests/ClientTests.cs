@@ -26,14 +26,13 @@ namespace SymbolCollector.Core.Tests
             public int? ParallelTasks { get; set; }
             public HashSet<string>? BlackListedPaths { get; set; }
             public ClientMetrics? Metrics { get; set; }
+            public ISymbolClient SymbolClient { get; set; } = Substitute.For<ISymbolClient>();
             public ILogger<Client>? Logger { get; set; }
 
             public Client GetSut() =>
                 new Client(
-                    ServiceUri,
+                    SymbolClient,
                     ObjectFileParser,
-                    HttpMessageHandler,
-                    AssemblyName,
                     ParallelTasks,
                     BlackListedPaths,
                     Metrics,
@@ -49,9 +48,16 @@ namespace SymbolCollector.Core.Tests
             _fixture.ObjectFileParser = new ObjectFileParser(new FatBinaryReader());
             _fixture.HttpMessageHandler = new TestMessageHandler((message, token) =>
             {
-                Interlocked.Increment(ref counter);
+                if (message.RequestUri.PathAndQuery.EndsWith("upload"))
+                {
+                    Interlocked.Increment(ref counter);
+                }
                 return Task.FromResult(new HttpResponseMessage(HttpStatusCode.Created));
             });
+            _fixture.SymbolClient = new SymbolClient(
+                _fixture.ServiceUri,
+                Substitute.For<ILogger<SymbolClient>>(),
+                _fixture.HttpMessageHandler);
 
             var sut = _fixture.GetSut();
             await sut.UploadAllPathsAsync(new[] {"TestFiles"}, CancellationToken.None);

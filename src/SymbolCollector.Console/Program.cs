@@ -66,7 +66,7 @@ namespace SymbolCollector.Console
 
             var loggerClient = new LoggerAdapter<Client>(logLevel);
             var client = new Client(
-                endpoint,
+                new SymbolClient(endpoint, new LoggerAdapter<SymbolClient>(logLevel)),
                 parser,
                 blackListedPaths: blackListedPaths,
                 metrics: _metrics,
