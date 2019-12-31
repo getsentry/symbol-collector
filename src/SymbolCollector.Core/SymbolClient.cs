@@ -56,12 +56,12 @@ namespace SymbolCollector.Core
             AssemblyName? assemblyName = null)
         {
             _httpClient = new HttpClient(handler ?? new HttpClientHandler());
+            assemblyName ??= Assembly.GetEntryAssembly()?.GetName();
             _httpClient.DefaultRequestHeaders.Add(
                 "User-Agent",
                 $"{assemblyName?.Name ?? "SymbolCollector"}/{assemblyName?.Version?.ToString() ?? "0.0.0"}");
 
             _baseAddress = baseAddress;
-            assemblyName ??= Assembly.GetEntryAssembly()?.GetName();
 
             _logger = logger;
         }
@@ -74,9 +74,20 @@ namespace SymbolCollector.Core
             HttpContent content = new ByteArrayContent(JsonSerializer.SerializeToUtf8Bytes(body));
             content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/json");
 
-            var response = await _httpClient.PostAsync($"{_baseAddress.AbsoluteUri}/symbol/batch/{batchId}/start",
-                content, token);
-            await ThrowForUnsuccessful("Could not start batch.", response);
+            var url = $"{_baseAddress.AbsoluteUri}symbol/batch/{batchId}/start";
+            try
+            {
+                var response = await _httpClient.PostAsync(url,
+                    content, token);
+                await ThrowForUnsuccessful("Could not start batch.", response);
+            }
+            catch (Exception e)
+            {
+                using var _ = _logger.BeginScope(("url", url));
+                _logger.LogError(e, "Failed to start batch through {url}", url);
+                throw;
+            }
+
             return batchId;
         }
 
@@ -87,12 +98,22 @@ namespace SymbolCollector.Core
             var content = new ByteArrayContent(JsonSerializer.SerializeToUtf8Bytes(body));
             content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/json");
 
-            var response = await _httpClient.PostAsync(
-                $"{_baseAddress.AbsoluteUri}/symbol/batch/{batchId}/close",
-                content,
-                token);
+            var url = $"{_baseAddress.AbsoluteUri}symbol/batch/{batchId}/close";
+            try
+            {
+                var response = await _httpClient.PostAsync(
+                    url,
+                    content,
+                    token);
+                await ThrowForUnsuccessful("Could not close batch.", response);
+            }
+            catch (Exception e)
+            {
+                using var _ = _logger.BeginScope(("url", url));
+                _logger.LogError(e, "Failed to close batch through {url}", url);
+                throw;
+            }
 
-            await ThrowForUnsuccessful("Could not close batch.", response);
             return batchId;
         }
 
@@ -104,39 +125,60 @@ namespace SymbolCollector.Core
             Stream file,
             CancellationToken token)
         {
+            if (string.IsNullOrWhiteSpace(buildId))
             {
-                var checkUrl = $"{_baseAddress.AbsoluteUri}/symbol/batch/{batchId}/check/{buildId}";
-                if (string.IsNullOrWhiteSpace(hash))
+                throw new ArgumentException("Invalid empty BuildId");
+            }
+            {
+                var checkUrl = $"{_baseAddress.AbsoluteUri}symbol/batch/{batchId}/check/{buildId}";
+                if (!string.IsNullOrWhiteSpace(hash))
                 {
                     checkUrl = $"{checkUrl}/{hash}";
                 }
-
-                var checkResponse =
-                    await _httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Head, checkUrl), token);
-
-                if (checkResponse.StatusCode == HttpStatusCode.Conflict)
+                try
                 {
-                    _logger.LogDebug("Server returns {statusCode} for {buildId}",
-                        checkResponse.StatusCode, buildId);
-                    return true; // already in the server, consider it successful.
-                }
+                    var checkResponse =
+                        await _httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Head, checkUrl), token);
 
-                await ThrowForUnsuccessful("Failed checking if file is needed.", checkResponse);
+                    if (checkResponse.StatusCode == HttpStatusCode.Conflict)
+                    {
+                        _logger.LogDebug("Server returns {statusCode} for {buildId}",
+                            checkResponse.StatusCode, buildId);
+                        return false;
+                    }
+
+                    await ThrowForUnsuccessful("Failed checking if file is needed.", checkResponse);
+                }
+                catch (Exception e)
+                {
+                    using var _ = _logger.BeginScope(("url", checkUrl));
+                    _logger.LogError(e, "Failed to check for debugid through {url}", checkUrl);
+                    throw;
+                }
             }
             {
-                var uploadUrl = $"{_baseAddress.AbsoluteUri}/symbol/batch/{batchId}/upload";
-                var uploadResponse = await _httpClient.SendAsync(
-                    new HttpRequestMessage(HttpMethod.Post, uploadUrl)
-                    {
-                        Content = new MultipartFormDataContent {{new StreamContent(file), fileName, fileName}}
-                    }, token);
-
-                await ThrowForUnsuccessful("Failed uploading file.", uploadResponse);
-
-                if (_logger.IsEnabled(LogLevel.Debug))
+                var uploadUrl = $"{_baseAddress.AbsoluteUri}symbol/batch/{batchId}/upload";
+                try
                 {
-                    var responseBody = await uploadResponse.Content.ReadAsStringAsync();
-                    _logger.LogDebug("Upload response body: {body}", responseBody);
+                    var uploadResponse = await _httpClient.SendAsync(
+                        new HttpRequestMessage(HttpMethod.Post, uploadUrl)
+                        {
+                            Content = new MultipartFormDataContent {{new StreamContent(file), fileName, fileName}}
+                        }, token);
+
+                    if (_logger.IsEnabled(LogLevel.Debug))
+                    {
+                        var responseBody = await uploadResponse.Content.ReadAsStringAsync();
+                        _logger.LogDebug("Upload response body: {body}", responseBody);
+                    }
+
+                    await ThrowForUnsuccessful("Failed uploading file.", uploadResponse);
+                }
+                catch (Exception e)
+                {
+                    using var _ = _logger.BeginScope(("url", uploadUrl));
+                    _logger.LogError(e, "Failed to upload through {url}", uploadUrl);
+                    throw;
                 }
 
                 _logger.LogInformation("File {file} with {bytes} was uploaded successfully.",

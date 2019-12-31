@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -21,7 +23,8 @@ namespace SymbolCollector.Server
 
         public BatchType BatchType { get; }
 
-        public Dictionary<string, SymbolMetadata> Symbols { get; } = new Dictionary<string, SymbolMetadata>();
+        public ConcurrentDictionary<string, SymbolMetadata> Symbols { get; } =
+            new ConcurrentDictionary<string, SymbolMetadata>();
 
         public IClientMetrics? ClientMetrics { get; set; }
 
@@ -129,7 +132,9 @@ namespace SymbolCollector.Server
     {
         private readonly ObjectFileParser _parser;
         private readonly ILogger<InMemorySymbolService> _logger;
-        private readonly Dictionary<Guid, SymbolUploadBatch> _batches = new Dictionary<Guid, SymbolUploadBatch>();
+
+        private readonly ConcurrentDictionary<Guid, SymbolUploadBatch> _batches =
+            new ConcurrentDictionary<Guid, SymbolUploadBatch>();
 
         public InMemorySymbolService(ObjectFileParser parser, ILogger<InMemorySymbolService> logger)
         {
@@ -166,12 +171,19 @@ namespace SymbolCollector.Server
             return Task.FromResult((SymbolMetadata?)symbol);
         }
 
+        private readonly Random _random = new Random();
+
         public async Task<StoreResult> Store(Guid batchId, string fileName, Stream stream, CancellationToken token)
         {
             var batch = await GetOpenBatch(batchId, token);
 
             // TODO: Until parser supports Stream instead of file path, we write the file to TMP before we can validate it.
-            var destination = Path.Combine("processing", batchId.ToString(), fileName);
+            var destination = Path.Combine(
+                "processing",
+                batchId.ToString(),
+                // To avoid files with conflicting name from the same batch
+                _random.Next().ToString(CultureInfo.InvariantCulture),
+                fileName);
             var tempDestination = Path.Combine(Path.GetTempPath(), destination);
             Directory.CreateDirectory(Path.GetDirectoryName(tempDestination));
 
@@ -182,14 +194,33 @@ namespace SymbolCollector.Server
 
             if (!_parser.TryParse(tempDestination, out var fileResult) || fileResult is null)
             {
+                _logger.LogDebug("Failed parsing {file}.", Path.GetFileName(tempDestination));
                 File.Delete(tempDestination);
                 return StoreResult.Invalid;
             }
 
+            _logger.LogInformation("Parsed file with {buildId}", fileResult.BuildId);
             var symbol = await GetSymbol(fileResult.BuildId, token);
             if (symbol is {})
             {
-                if (fileResult.Hash is {} && fileResult.Hash == symbol.Hash)
+                if (fileResult.Hash is {}
+                    && symbol.Hash is {}
+                    && string.CompareOrdinal(fileResult.Hash, symbol.Hash) != 0)
+                {
+                    // TODO: Unlikely case a debugId on un-matching file hash (modified file?)
+                    // TODO: Store the file for debugging, raise a Sentry event attachments
+                    using (_logger.BeginScope(new Dictionary<string, string>()
+                    {
+                        {"existing-file-hash", symbol.Hash},
+                        {"existing-file-name", symbol.Name},
+                        {"new-file-hash", fileResult.Hash},
+                        {"new-file-name", Path.GetFileName(fileResult.Path)}
+                    }))
+                    {
+                        _logger.LogError("File with the same debug id and un-matching hashes.");
+                    }
+                }
+                else
                 {
                     if (symbol.BatchIds.Any(b => b == batchId))
                     {
@@ -201,10 +232,7 @@ namespace SymbolCollector.Server
                     {
                         await Relate(batchId, symbol, token);
                     }
-
-                } // else
-                // TODO: Unlikely case a debugId on un-matching file hash (modified file?)
-                // TODO: Store the file for debugging, raise a Sentry event (attachments?)
+                }
 
                 _logger.LogDebug("Symbol {debugId} already exists.", symbol.DebugId);
 
@@ -219,10 +247,11 @@ namespace SymbolCollector.Server
                 fileName,
                 fileResult.Architecture,
                 fileResult.FileFormat,
-                new HashSet<Guid> { batchId });
+                new HashSet<Guid> {batchId});
 
             batch.Symbols[metadata.DebugId] = metadata;
 
+            Directory.CreateDirectory(Path.GetDirectoryName(destination));
             File.Move(tempDestination, destination);
 
             _logger.LogDebug("File {fileName} created.", metadata.Name);
@@ -259,15 +288,12 @@ namespace SymbolCollector.Server
                     file,
                     batch,
                     cancellationToken: token,
-                    options: new JsonSerializerOptions
-                    {
-                        WriteIndented = true
-                    });
+                    options: new JsonSerializerOptions {WriteIndented = true});
             }
 
             var destination = Path.Combine("done", batchId.ToString());
 
-            Directory.Move(processingLocation,destination);
+            Directory.Move(processingLocation, destination);
 
             _logger.LogInformation("Batch {batchId} is now closed at {location}.",
                 batchId, destination);
@@ -293,7 +319,7 @@ namespace SymbolCollector.Server
         private async Task<SymbolUploadBatch> GetOpenBatch(Guid batchId, CancellationToken token)
         {
             var batch = await GetBatch(batchId, token);
-            if (batch == null)
+            if (batch is null)
             {
                 throw new InvalidOperationException($"Batch '{batchId}' was not found.");
             }

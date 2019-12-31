@@ -58,7 +58,6 @@ namespace SymbolCollector.Core
                 foreach (var group in groups)
                 {
                     await UploadParallel(batchId, group, cancellationToken);
-                    Metrics.BatchProcessed();
                 }
             }
             catch (Exception e)
@@ -67,6 +66,7 @@ namespace SymbolCollector.Core
                     batchId);
                 throw;
             }
+
             await _symbolClient.Close(batchId, Metrics, cancellationToken);
 
             IEnumerable<string> SafeGetDirectories(string path)
@@ -180,9 +180,10 @@ namespace SymbolCollector.Core
             }
         }
 
-        private async Task UploadAsync(Guid batchId, ObjectFileResult objectFileResult, CancellationToken cancellationToken)
+        private async Task UploadAsync(Guid batchId, ObjectFileResult objectFileResult,
+            CancellationToken cancellationToken)
         {
-            if (objectFileResult.BuildId is null)
+            if (string.IsNullOrWhiteSpace(objectFileResult.BuildId))
             {
                 _logger.LogError("Cannot upload file without debug id: {file}", objectFileResult.Path);
                 return;
@@ -197,22 +198,31 @@ namespace SymbolCollector.Core
             // Ideally ELF would read headers as a stream which we could reset to 0 after reading heads
             // and ensuring it's what we need.
             using var fileStream = File.OpenRead(objectFileResult.Path);
-            var uploaded = await _symbolClient.Upload(
-                batchId,
-                objectFileResult.BuildId,
-                objectFileResult.Hash,
-                objectFileResult.Path,
-                fileStream,
-                cancellationToken);
-
-            if (uploaded)
+            try
             {
-                Metrics.UploadedBytesAdd(fileStream.Length);
-                Metrics.SuccessfulUpload();
+                var uploaded = await _symbolClient.Upload(
+                    batchId,
+                    objectFileResult.BuildId,
+                    objectFileResult.Hash,
+                    Path.GetFileName(objectFileResult.Path),
+                    fileStream,
+                    cancellationToken);
+
+                if (uploaded)
+                {
+                    Metrics.UploadedBytesAdd(fileStream.Length);
+                    Metrics.SuccessfulUpload();
+                }
+                else
+                {
+                    Metrics.AlreadyExisted();
+                }
             }
-            else
+            catch (Exception e)
             {
                 Metrics.FailedToUpload();
+                _logger.LogError(e, "Failed to upload.");
+                throw;
             }
         }
 

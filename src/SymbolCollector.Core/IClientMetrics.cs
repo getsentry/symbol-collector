@@ -6,10 +6,10 @@ namespace SymbolCollector.Core
     {
         DateTimeOffset StartedTime { get; }
         long FilesProcessedCount { get; }
-        long BatchesProcessedCount { get; }
         long JobsInFlightCount { get; }
         long FailedToUploadCount { get; }
         long SuccessfullyUploadCount { get; }
+        long AlreadyExistedCount { get; }
         long MachOFileFoundCount { get; }
         long ElfFileFoundCount { get; }
         int FatMachOFileFoundCount { get; }

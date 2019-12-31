@@ -72,8 +72,14 @@ namespace SymbolCollector.Console
                 metrics: _metrics,
                 logger: loggerClient);
 
-            await client.UploadAllPathsAsync(paths, cancellation.Token);
-            _metrics.Write(Out);
+            try
+            {
+                await client.UploadAllPathsAsync(paths, cancellation.Token);
+            }
+            finally
+            {
+                _metrics.Write(Out);
+            }
         }
 
         static async Task Main(

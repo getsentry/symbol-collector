@@ -8,7 +8,6 @@ namespace SymbolCollector.Core
     public class ClientMetrics : IClientMetrics
     {
         private int _filesProcessedCount;
-        private int _batchesProcessedCount;
         private int _jobsInFlightCount;
         private int _failedToUploadCount;
         private int _successfullyUploadCount;
@@ -18,18 +17,18 @@ namespace SymbolCollector.Core
         private long _uploadedBytesCount;
         private int _directoryUnauthorizedAccessCount;
         private int _directoryDoesNotExistCount;
+        private int _alreadyExistedCount;
 
         public DateTimeOffset StartedTime { get; } = DateTimeOffset.Now;
 
         public long FilesProcessedCount => _filesProcessedCount;
-
-        public long BatchesProcessedCount => _batchesProcessedCount;
 
         public long JobsInFlightCount => _jobsInFlightCount;
 
         public long FailedToUploadCount => _failedToUploadCount;
 
         public long SuccessfullyUploadCount => _successfullyUploadCount;
+        public long AlreadyExistedCount => _alreadyExistedCount;
 
         public long MachOFileFoundCount => _machOFileFoundCount;
 
@@ -43,12 +42,12 @@ namespace SymbolCollector.Core
         public int DirectoryDoesNotExistCount => _directoryDoesNotExistCount;
 
         public void FileProcessed() => Interlocked.Increment(ref _filesProcessedCount);
-        public void BatchProcessed() => Interlocked.Increment(ref _batchesProcessedCount);
         public void MachOFileFound() => Interlocked.Increment(ref _machOFileFoundCount);
         public void ElfFileFound() => Interlocked.Increment(ref _elfFileFoundCount);
         public void FatMachOFileFound() => Interlocked.Increment(ref _fatMachOFileFoundCount);
         public void FailedToUpload() => Interlocked.Increment(ref _failedToUploadCount);
         public void SuccessfulUpload() => Interlocked.Increment(ref _successfullyUploadCount);
+        public void AlreadyExisted() => Interlocked.Increment(ref _alreadyExistedCount);
         public void JobsInFlightRemove(int tasksCount) => Interlocked.Add(ref _jobsInFlightCount, -tasksCount);
         public void JobsInFlightAdd(int tasksCount) => Interlocked.Add(ref _jobsInFlightCount, tasksCount);
         public void UploadedBytesAdd(long bytes) => Interlocked.Add(ref _uploadedBytesCount, bytes);
@@ -64,10 +63,10 @@ namespace SymbolCollector.Core
             // TODO: Fix PII stripping, Sentry is deleting the field for containing "Unauthorized"
             data["Directory Unautnorized"] = DirectoryUnauthorizedAccessCount;
             data["Directory DoesNotExist"] = DirectoryDoesNotExistCount;
-            data["Batches completed"] = BatchesProcessedCount;
             data["Jobs in flight"] = JobsInFlightCount;
             data["Failed to upload"] = FailedToUploadCount;
             data["Successfully uploaded"] = SuccessfullyUploadCount;
+            data["Already existed"] = AlreadyExistedCount;
             data["Uploaded bytes"] = UploadedBytesCount;
             data["ELF files loaded"] = ElfFileFoundCount;
             data["Mach-O files loaded"] = MachOFileFoundCount;
@@ -87,14 +86,14 @@ namespace SymbolCollector.Core
             writer.WriteLine(DirectoryUnauthorizedAccessCount);
             writer.Write("Directory DoesNotExist:\t\t\t");
             writer.WriteLine(DirectoryDoesNotExistCount);
-            writer.Write("Batches completed:\t\t\t");
-            writer.WriteLine(BatchesProcessedCount);
             writer.Write("Job in flight:\t\t\t\t");
             writer.WriteLine(JobsInFlightCount);
             writer.Write("Failed to upload:\t\t\t");
             writer.WriteLine(FailedToUploadCount);
             writer.Write("Successfully uploaded:\t\t\t");
             writer.WriteLine(SuccessfullyUploadCount);
+            writer.Write("Already existed:\t\t\t");
+            writer.WriteLine(AlreadyExistedCount);
             writer.Write("Uploaded bytes:\t\t\t\t");
             writer.WriteLine(UploadedBytesCount);
             writer.Write("ELF files loaded:\t\t\t");

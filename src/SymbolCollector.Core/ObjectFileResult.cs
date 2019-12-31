@@ -10,15 +10,17 @@ namespace SymbolCollector.Core
         public FileFormat FileFormat { get; set; }
         public Architecture Architecture { get; set; }
         public ObjectFileType ObjectFileType { get; set; }
-        public string? Hash { get; set; }
+        public string Hash { get; set; }
 
         public ObjectFileResult(
             string buildId,
             string path,
+            string hash,
             BuildIdType buildIdType)
         {
             BuildId = buildId;
             Path = path;
+            Hash = hash;
             BuildIdType = buildIdType;
         }
     }
@@ -38,9 +40,10 @@ namespace SymbolCollector.Core
         public FatMachOFileResult(
             string buildId,
             string path,
+            string hash,
             BuildIdType buildIdType,
             IEnumerable<ObjectFileResult> innerFiles)
-            : base(buildId, path, buildIdType)
+            : base(buildId, path, hash, buildIdType)
             => InnerFiles = innerFiles;
     }
 }

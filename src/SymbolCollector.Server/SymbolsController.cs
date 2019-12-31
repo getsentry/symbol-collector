@@ -42,6 +42,7 @@ namespace SymbolCollector.Server
         public long JobsInFlightCount { get; set; }
         public long FailedToUploadCount { get; set; }
         public long SuccessfullyUploadCount { get; set; }
+        public long AlreadyExistedCount { get; set; }
         public long MachOFileFoundCount { get; set; }
         public long ElfFileFoundCount { get; set; }
         public int FatMachOFileFoundCount { get; set; }
@@ -145,20 +146,30 @@ namespace SymbolCollector.Server
                 return Ok();
             }
 
-            if (hash is {} && string.CompareOrdinal(hash, symbol.Hash) != 0)
+            if (hash is {} && symbol.Hash is {} && string.CompareOrdinal(hash, symbol.Hash) != 0)
             {
-                // TODO: Debug Id exists but doesn't match the existing file's hash.
-                // Return OK so that client uploads the symbol. The upload handing code
-                // will take the file "aside" for troubleshooting
-                _logger.LogWarning(
-                    "File with {debugId} as part of {batchId} has a conflicting hash with the existing file.",
-                    debugId,
-                    batchId);
+                using (_logger.BeginScope(new Dictionary<string, string>()
+                {
+                    {"existing-file-hash", symbol.Hash},
+                    {"existing-file-name", symbol.Name},
+                    {"new-file-hash", hash},
+                }))
+                {
+                    // Return OK so that client uploads the symbol. The upload handing code
+                    // will take the file "aside" for troubleshooting
+                    _logger.LogWarning(
+                        "File with {debugId} as part of {batchId} has a conflicting hash with the existing file.",
+                        debugId, batchId);
+                }
 
                 return Ok();
             }
 
-            await _symbolService.Relate(batchId, symbol, token);
+            if (!symbol.BatchIds.TryGetValue(batchId, out _))
+            {
+                await _symbolService.Relate(batchId, symbol, token);
+            }
+
             return Conflict();
         }
 

@@ -91,7 +91,7 @@ namespace SymbolCollector.Core
         {
             if (TryGetMachOFilesFromFatFile(file, out var files))
             {
-                result = new FatMachOFileResult(string.Empty, file, BuildIdType.None, files);
+                result = new FatMachOFileResult(string.Empty, file, GetHash(file), BuildIdType.None, files);
                 return true;
             }
 
@@ -181,6 +181,7 @@ namespace SymbolCollector.Core
                                 result = new ObjectFileResult(
                                     new Guid(desc).ToString(),
                                     file,
+                                    GetHash(file),
                                     BuildIdType.GnuBuildId);
                                 return true;
                             }
@@ -198,6 +199,7 @@ namespace SymbolCollector.Core
                                     result = new ObjectFileResult(
                                         fallbackDebugId,
                                         file,
+                                        GetHash(file),
                                         BuildIdType.TextSectionHash);
                                     return true;
                                 }
@@ -252,7 +254,7 @@ namespace SymbolCollector.Core
                         buildId = uuid.Id.ToString();
                     }
 
-                    result = new ObjectFileResult(buildId, file, BuildIdType.Uuid);
+                    result = new ObjectFileResult(buildId, file, GetHash(file), BuildIdType.Uuid);
                     return true;
                 }
 
@@ -268,7 +270,6 @@ namespace SymbolCollector.Core
             return false;
         }
 
-        // TODO: Hash the file
         private string GetHash(string file)
         {
             using var algorithm = SHA256.Create();
