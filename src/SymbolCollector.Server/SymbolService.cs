@@ -10,24 +10,6 @@ using SymbolCollector.Core;
 
 namespace SymbolCollector.Server
 {
-    // prefix to final structure: ios, watchos, macos, android
-    public enum BatchType
-    {
-        Unknown,
-
-        // watchos
-        WatchOS,
-
-        // macos
-        MacOS,
-
-        // ios
-        IOS,
-
-        // android (doesn't exist yet)
-        Android
-    }
-
     public class SymbolUploadBatch
     {
         public Guid BatchId { get; }
