@@ -31,7 +31,7 @@ namespace SymbolCollector.Core
         {
             _symbolClient = symbolClient;
             _objectFileParser = objectFileParser;
-            ParallelTasks = parallelTasks ?? 10;
+            ParallelTasks = parallelTasks ?? 20;
 
             _blackListedPaths = blackListedPaths;
             // We only hit /image here

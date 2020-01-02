@@ -69,7 +69,7 @@ namespace SymbolCollector.Core.Tests
         public void ParallelTasks_DefaultValue_Ten()
         {
             var sut = _fixture.GetSut();
-            Assert.Equal(10, sut.ParallelTasks);
+            Assert.Equal(20, sut.ParallelTasks);
         }
 
         private class TestMessageHandler : HttpMessageHandler

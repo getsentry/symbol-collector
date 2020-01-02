@@ -225,10 +225,11 @@ namespace SymbolCollector.Server
                         {"new-file-name", Path.GetFileName(fileResult.Path)}
                     }))
                     {
-                        File.Move(tempDestination, conflictDestination);
+                        Directory.CreateDirectory(Path.GetDirectoryName(conflictDestination));
                         _logger.LogError(
                             "File with the same debug id and un-matching hashes. File stored at: {path}",
                             conflictDestination);
+                        File.Move(tempDestination, conflictDestination);
                     }
                 }
                 else
