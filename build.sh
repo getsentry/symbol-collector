@@ -28,8 +28,8 @@ popd
 pushd src/SymbolCollector.Console/
 # Smoke test the console app
 dotnet run -c release -- \
-    --check ../../test/SymbolCollector.Core.Tests/TestFiles/System.Net.Http.Native.dylib \
-    | grep c5ff520a-e05c-3099-921e-a8229f808696
+    --check ../../test/TestFiles/System.Net.Http.Native.dylib \
+    | grep c5ff520a-e05c-3099-921e-a8229f808696 || echo -e "Failed testing console 'release' command"
 dotnet publish -c release /p:PublishSingleFile=true --self-contained -r osx-x64
 dotnet publish -c release /p:PublishSingleFile=true --self-contained -r linux-x64
 dotnet publish -c release /p:PublishSingleFile=true --self-contained -r linux-musl-x64

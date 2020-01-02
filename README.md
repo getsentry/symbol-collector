@@ -56,8 +56,8 @@ curl -sD - --header "Content-Type: application/json" --request POST \
 
 ```sh
 curl -i \
-  -F "/libxamarin-app-arm64-v8a.so=@test/SymbolCollector.Core.Tests/TestFiles/libxamarin-app-arm64-v8a.so" \
-  -F "/libxamarin-app.so=@test/SymbolCollector.Core.Tests/TestFiles/libxamarin-app.so" \
+  -F "libxamarin-app-arm64-v8a.so=@test/TestFiles/libxamarin-app-arm64-v8a.so" \
+  -F "libxamarin-app.so=@test/TestFiles/libxamarin-app.so" \
   $server/symbol/batch/$batchId/upload
 ```
 3. Close batch (without providing metrics): 
