@@ -208,15 +208,27 @@ namespace SymbolCollector.Server
                 {
                     // TODO: Unlikely case a debugId on un-matching file hash (modified file?)
                     // TODO: Store the file for debugging, raise a Sentry event attachments
+                    Directory.CreateDirectory("conflict");
+                    var conflictDestination = Path.Combine(
+                        "conflict",
+                        batchId.ToString(),
+                        // To avoid files with conflicting name from the same batch
+                        _random.Next().ToString(CultureInfo.InvariantCulture),
+                        fileName);
+
                     using (_logger.BeginScope(new Dictionary<string, string>()
                     {
                         {"existing-file-hash", symbol.Hash},
                         {"existing-file-name", symbol.Name},
+                        {"staging-location", conflictDestination},
                         {"new-file-hash", fileResult.Hash},
                         {"new-file-name", Path.GetFileName(fileResult.Path)}
                     }))
                     {
-                        _logger.LogError("File with the same debug id and un-matching hashes.");
+                        File.Move(tempDestination, conflictDestination);
+                        _logger.LogError(
+                            "File with the same debug id and un-matching hashes. File stored at: {path}",
+                            conflictDestination);
                     }
                 }
                 else
@@ -262,6 +274,8 @@ namespace SymbolCollector.Server
         {
             var batch = await GetOpenBatch(batchId, token);
             batch.Symbols[symbolMetadata.DebugId] = symbolMetadata;
+            symbolMetadata.BatchIds.Add(batchId);
+
             _logger.LogDebug("Symbol {debugId} is now related to batch {batchId}.",
                 symbolMetadata.DebugId, batchId);
         }

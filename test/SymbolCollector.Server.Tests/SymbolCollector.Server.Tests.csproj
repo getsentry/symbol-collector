@@ -18,4 +18,8 @@
     <PackageReference Include="coverlet.collector" Version="1.0.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="$(ProjectDir)..\TestFiles\**" CopyToOutputDirectory="PreserveNewest" LinkBase="TestFiles\" />
+  </ItemGroup>
+  
 </Project>

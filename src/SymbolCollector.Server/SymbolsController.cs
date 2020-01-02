@@ -94,15 +94,6 @@ namespace SymbolCollector.Server
                 return BadRequest(ModelState);
             }
 
-            // if (startBatchRequestModel.BatchFriendlyName is null)
-            // {
-            //     return BadRequest("Missing Batch Friendly Name.");
-            // }
-            // if (startBatchRequestModel.BatchType == default)
-            // {
-            //     return BadRequest("Missing BatchType.");
-            // }
-
             if (await _symbolService.GetBatch(batchId, token) is {})
             {
                 return BadRequest($"Batch Id {batchId} was already used.");
@@ -128,12 +119,11 @@ namespace SymbolCollector.Server
             return NoContent();
         }
 
-        // TODO: Mark parameter as required
-        [HttpHead(Route + "/batch/{batchId}/check/{debugId}/{hash?}")]
+        [HttpHead(Route + "/batch/{batchId}/check/{debugId}/{hash}")]
         public async Task<IActionResult> IsSymbolMissing(
             [FromRoute] Guid batchId,
             [FromRoute] string debugId,
-            [FromRoute] string? hash,
+            [FromRoute] string hash,
             CancellationToken token)
         {
             await ValidateBatch(batchId, ModelState, token);
@@ -170,7 +160,7 @@ namespace SymbolCollector.Server
                 return Ok();
             }
 
-            if (!symbol.BatchIds.TryGetValue(batchId, out _))
+            if (!symbol.BatchIds.Contains(batchId))
             {
                 await _symbolService.Relate(batchId, symbol, token);
             }

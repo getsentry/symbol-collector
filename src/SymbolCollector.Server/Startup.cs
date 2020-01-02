@@ -44,7 +44,7 @@ namespace SymbolCollector.Server
                 return new GoogleCloudStorageOptions(credentials);
             });
 
-            services.AddMvcCore()
+            services.AddMvc()
                 .AddJsonOptions(options => options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
         }
 

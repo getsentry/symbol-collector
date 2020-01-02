@@ -270,7 +270,7 @@ namespace SymbolCollector.Core
             return false;
         }
 
-        private string GetHash(string file)
+        private static string GetHash(string file)
         {
             using var algorithm = SHA256.Create();
             var hashingAlgo = algorithm.ComputeHash(File.ReadAllBytes(file));
