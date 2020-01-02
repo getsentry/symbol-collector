@@ -152,7 +152,7 @@ namespace SymbolCollector.Server
                 {
                     // Return OK so that client uploads the symbol. The upload handing code
                     // will take the file "aside" for troubleshooting
-                    _logger.LogWarning(
+                    _logger.LogDebug(
                         "File with {debugId} as part of {batchId} has a conflicting hash with the existing file.",
                         debugId, batchId);
                 }
