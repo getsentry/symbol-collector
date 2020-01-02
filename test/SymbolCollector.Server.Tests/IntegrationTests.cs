@@ -192,7 +192,7 @@ namespace SymbolCollector.Server.Tests
                 });
             Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
 
-            const string testFile = "TestFiles/libqcbassboost.so";
+            var testFile = Path.Combine("TestFiles", "libqcbassboost.so");
             const string debugId = "637aa379-d34e-d455-c314-d646b8f3eaec";
             Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
 
@@ -259,7 +259,7 @@ namespace SymbolCollector.Server.Tests
             Assert.False(batch.IsClosed);
             Assert.Equal(registration.BatchFriendlyName, batch!.FriendlyName);
 
-            const string testFile = "TestFiles/libxamarin-app-arm64-v8a.so";
+            var testFile = Path.Combine("TestFiles", "libxamarin-app-arm64-v8a.so");
             const string debugId = "09752176-f337-f80b-e756-cec46b960391";
 
             resp = await client.SendAsync(
@@ -279,7 +279,7 @@ namespace SymbolCollector.Server.Tests
             Assert.Equal("5fb23797a8cb482bac325eabdcb3d7e70b89fe0ec51035010e9be3a7b76fff84", symbol.Hash);
             Assert.Equal(debugId, symbol.DebugId);
             Assert.EndsWith( Path.GetFileName(testFile), symbol.Path);
-            Assert.StartsWith($"processing/{batchId}/", symbol.Path);
+            Assert.StartsWith($"processing{Path.DirectorySeparatorChar}{batchId}{Path.DirectorySeparatorChar}", symbol.Path);
             Assert.Equal(batchId, symbol.BatchIds.Single());
 
             // TODO: Assert values once parsing is done.
@@ -311,7 +311,7 @@ namespace SymbolCollector.Server.Tests
 
             Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
 
-            const string testFile = "TestFiles/libxamarin-app.so";
+            var testFile = Path.Combine("TestFiles", "libxamarin-app.so");
             const string debugId = "df3a9df5-26a8-d63d-88ad-820f74a325b5";
             const string hash = "1a40a2db7c6b4dd59e3bcecd9b53cf3c7fc544afc311e25c41ee01bc4bb99a96";
             resp = await client.SendAsync(new HttpRequestMessage(HttpMethod.Head,
