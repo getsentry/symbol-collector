@@ -76,8 +76,13 @@ namespace SymbolCollector.Server
             _invalidChars = Path.GetInvalidFileNameChars().Concat(new[] {'/', '\\'}).ToArray();
         }
 
-        // TODO: HEAD to verify image is needed
-        // TODO: Get to give status
+        [HttpGet(Route + "/batch/{batchId}")]
+        public async Task<SymbolUploadBatch?> Get([FromRoute] Guid batchId, CancellationToken token)
+        {
+            var batch = await _symbolService.GetBatch(batchId, token);
+            return batch;
+        }
+
         [HttpPost(Route + "/batch/{batchId}/start")]
         public async Task<IActionResult> Start(
             [FromRoute] Guid batchId,

@@ -54,7 +54,19 @@ namespace SymbolCollector.Console
                 cancellation.Cancel();
             };
 
-            WriteLine("Press Ctrl+C to exit...");
+            _ = Task.Run(() =>
+            {
+                WriteLine("Press Ctrl+C to exit or 'p' to print the status.");
+                while (!cancellation.IsCancellationRequested)
+                {
+                    if (ReadKey(true).Key == ConsoleKey.P)
+                    {
+                        _metrics.Write(Out);
+                    }
+                }
+
+            }, cancellation.Token);
+
 
             // TODO: M.E.DependencyInjection/Configuration
             var logLevel = LogLevel.Warning;

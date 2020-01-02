@@ -132,6 +132,7 @@ namespace SymbolCollector.Server
     {
         private readonly ObjectFileParser _parser;
         private readonly ILogger<InMemorySymbolService> _logger;
+        private readonly Random _random = new Random();
 
         private readonly ConcurrentDictionary<Guid, SymbolUploadBatch> _batches =
             new ConcurrentDictionary<Guid, SymbolUploadBatch>();
@@ -145,7 +146,7 @@ namespace SymbolCollector.Server
 
         public Task Start(Guid batchId, string friendlyName, BatchType batchType, CancellationToken token)
         {
-            if (_batches.TryGetValue(batchId, out _))
+            if (_batches.ContainsKey(batchId))
             {
                 throw new ArgumentException($"Batch Id {batchId} was already used.");
             }
@@ -170,8 +171,6 @@ namespace SymbolCollector.Server
 
             return Task.FromResult((SymbolMetadata?)symbol);
         }
-
-        private readonly Random _random = new Random();
 
         public async Task<StoreResult> Store(Guid batchId, string fileName, Stream stream, CancellationToken token)
         {
@@ -224,7 +223,7 @@ namespace SymbolCollector.Server
                 {
                     if (symbol.BatchIds.Any(b => b == batchId))
                     {
-                        _logger.LogWarning(
+                        _logger.LogDebug(
                             "Client uploading the same file {fileName} as part of the same batch {batchId}",
                             fileName, batchId);
                     }
@@ -282,6 +281,12 @@ namespace SymbolCollector.Server
 
             var processingLocation = Path.Combine("processing", batchId.ToString());
 
+            var destination = Path.Combine("done", batchId.ToString());
+            foreach (var symbol in batch.Symbols.Values)
+            {
+                symbol.Path = symbol.Path.Replace(processingLocation, destination);
+            }
+
             await using (var file = File.OpenWrite(Path.Combine(processingLocation, "metadata.json")))
             {
                 await JsonSerializer.SerializeAsync(
@@ -290,8 +295,6 @@ namespace SymbolCollector.Server
                     cancellationToken: token,
                     options: new JsonSerializerOptions {WriteIndented = true});
             }
-
-            var destination = Path.Combine("done", batchId.ToString());
 
             Directory.Move(processingLocation, destination);
 

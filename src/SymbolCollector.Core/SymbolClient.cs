@@ -37,7 +37,7 @@ namespace SymbolCollector.Core
         Task<bool> Upload(
             Guid batchId,
             string buildId,
-            string? hash,
+            string hash,
             string fileName,
             Stream file,
             CancellationToken token);
@@ -120,7 +120,7 @@ namespace SymbolCollector.Core
         public async Task<bool> Upload(
             Guid batchId,
             string buildId,
-            string? hash,
+            string hash,
             string fileName,
             Stream file,
             CancellationToken token)
@@ -130,11 +130,7 @@ namespace SymbolCollector.Core
                 throw new ArgumentException("Invalid empty BuildId");
             }
             {
-                var checkUrl = $"{_baseAddress.AbsoluteUri}symbol/batch/{batchId}/check/{buildId}";
-                if (!string.IsNullOrWhiteSpace(hash))
-                {
-                    checkUrl = $"{checkUrl}/{hash}";
-                }
+                var checkUrl = $"{_baseAddress.AbsoluteUri}symbol/batch/{batchId}/check/{buildId}/{hash}";
                 try
                 {
                     var checkResponse =

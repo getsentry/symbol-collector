@@ -148,7 +148,7 @@ namespace SymbolCollector.Core.Tests
             else
             {
                 Assert.NotNull(actual);
-                Assert.Null(actual!.BuildId);
+                Assert.NotNull(actual!.BuildId);
                 Assert.Equal(BuildIdType.None, actual.BuildIdType);
                 Assert.Equal(2,actual.InnerFiles.Count());
                 foreach (var objectFileResult in actual.InnerFiles)

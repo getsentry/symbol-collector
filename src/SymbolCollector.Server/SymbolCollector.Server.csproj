@@ -16,8 +16,4 @@
     <PackageReference Include="Serilog.Formatting.Compact" Version="1.1.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <_ContentIncludedByDefault Remove="done\89193695-3682-49f2-a261-fbd22148ebb1\metadata.json" />
-  </ItemGroup>
-
 </Project>
