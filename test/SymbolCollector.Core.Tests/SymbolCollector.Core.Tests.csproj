@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="$(ProjectDir)TestFiles\**" CopyToOutputDirectory="PreserveNewest" LinkBase="TestFiles\" />
+    <None Include="$(ProjectDir)..\TestFiles\**" CopyToOutputDirectory="PreserveNewest" LinkBase="TestFiles\" />
   </ItemGroup>
-  
+
 </Project>

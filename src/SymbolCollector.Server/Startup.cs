@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.AspNetCore.Builder;
@@ -8,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using SymbolCollector.Core;
 using SymbolCollector.Server.Properties;
 
 namespace SymbolCollector.Server
@@ -20,6 +22,11 @@ namespace SymbolCollector.Server
 
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddSingleton<ObjectFileParser>();
+            services.AddSingleton<FatBinaryReader>();
+            services.AddTransient<ClientMetrics>();
+
+            services.AddSingleton<ISymbolService, InMemorySymbolService>();
             services.AddSingleton<ISymbolGcsWriter, SymbolGcsWriter>();
             services.AddSingleton<IStorageClientFactory, StorageClientFactory>();
 
@@ -37,7 +44,8 @@ namespace SymbolCollector.Server
                 return new GoogleCloudStorageOptions(credentials);
             });
 
-            services.AddControllers();
+            services.AddMvc()
+                .AddJsonOptions(options => options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

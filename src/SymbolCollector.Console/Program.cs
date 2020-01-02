@@ -54,7 +54,19 @@ namespace SymbolCollector.Console
                 cancellation.Cancel();
             };
 
-            WriteLine("Press Ctrl+C to exit...");
+            _ = Task.Run(() =>
+            {
+                WriteLine("Press Ctrl+C to exit or 'p' to print the status.");
+                while (!cancellation.IsCancellationRequested)
+                {
+                    if (ReadKey(true).Key == ConsoleKey.P)
+                    {
+                        _metrics.Write(Out);
+                    }
+                }
+
+            }, cancellation.Token);
+
 
             // TODO: M.E.DependencyInjection/Configuration
             var logLevel = LogLevel.Warning;
@@ -66,14 +78,20 @@ namespace SymbolCollector.Console
 
             var loggerClient = new LoggerAdapter<Client>(logLevel);
             var client = new Client(
-                endpoint,
+                new SymbolClient(endpoint, new LoggerAdapter<SymbolClient>(logLevel)),
                 parser,
                 blackListedPaths: blackListedPaths,
                 metrics: _metrics,
                 logger: loggerClient);
 
-            await client.UploadAllPathsAsync(paths, cancellation.Token);
-            _metrics.Write(Out);
+            try
+            {
+                await client.UploadAllPathsAsync(paths, cancellation.Token);
+            }
+            finally
+            {
+                _metrics.Write(Out);
+            }
         }
 
         static async Task Main(

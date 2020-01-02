@@ -4,19 +4,23 @@ namespace SymbolCollector.Core
 {
     public class ObjectFileResult
     {
-        public string? BuildId { get; }
+        public string BuildId { get; }
         public string Path { get; }
         public BuildIdType BuildIdType { get; }
-        // TODO: add hash
-        public byte[]? Hash { get; set; }
+        public FileFormat FileFormat { get; set; }
+        public Architecture Architecture { get; set; }
+        public ObjectFileType ObjectFileType { get; set; }
+        public string Hash { get; set; }
 
         public ObjectFileResult(
-            string? buildId,
+            string buildId,
             string path,
+            string hash,
             BuildIdType buildIdType)
         {
             BuildId = buildId;
             Path = path;
+            Hash = hash;
             BuildIdType = buildIdType;
         }
     }
@@ -34,11 +38,12 @@ namespace SymbolCollector.Core
         public IEnumerable<ObjectFileResult> InnerFiles { get; }
 
         public FatMachOFileResult(
-            string? buildId,
+            string buildId,
             string path,
+            string hash,
             BuildIdType buildIdType,
             IEnumerable<ObjectFileResult> innerFiles)
-            : base(buildId, path, buildIdType)
+            : base(buildId, path, hash, buildIdType)
             => InnerFiles = innerFiles;
     }
 }

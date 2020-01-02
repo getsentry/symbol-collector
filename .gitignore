@@ -4,4 +4,6 @@
 bin/
 obj/
 out/
+done/
+processing/
 TestResults/

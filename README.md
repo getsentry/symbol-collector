@@ -15,11 +15,58 @@
 This is a work in progress to collect system symbols from different devices like Android, macOS, Linux, etc.
 It involves a server that writes the symbols to Google cloud storage and a set of clients.
 
+
+## Uploading symbols
+
+### Client applications
+
 Current clients are:
 
 * Android
 * macOS
 * Linux
+
+The client applications will parse files and make sure they are valid ELF, Mach-O, Fat Binary, etc.
+Besides that, before uploading it to the server, it will make a `HEAD` request with the image _build id_ to make sure
+this file is still missing, to avoid wasting time and bandwidth uploading redundant files.
+
+Looking for system images in the filesystem and the HTTP requests happen in parallel, so to go through GBs and thousands of files takes only a few seconds.
+Finally, the client apps will upload its internal metrics to help reconcile the batch results and troubleshoot any issues.
+
+
+### cURL
+Although using the client programs is strongly recommended, it's possible to upload files via HTTP.
+
+For example, uploading a batch of Android symbols:
+
+1. Create a batch:
+
+```sh
+export batchId=$(uuidgen)
+export batchFriendlyName="Android 4.4.4 - Sony Xperia 1532"
+export batchType="Android"
+export body='{"BatchFriendlyName":"'$batchFriendlyName'","BatchType":"'$batchType'"}'
+export server=http://localhost:5000
+
+curl -sD - --header "Content-Type: application/json" --request POST \
+  --data "$body" \
+  $server/symbol/batch/$batchId/start
+```
+2. Upload files:
+
+```sh
+curl -i \
+  -F "libxamarin-app-arm64-v8a.so=@test/TestFiles/libxamarin-app-arm64-v8a.so" \
+  -F "libxamarin-app.so=@test/TestFiles/libxamarin-app.so" \
+  $server/symbol/batch/$batchId/upload
+```
+3. Close batch (without providing metrics): 
+
+```sh
+curl -sD - --header "Content-Type: application/json" --request POST \
+  --data "{}" \
+  $server/symbol/batch/$batchId/close
+```
 
 ## Why are you doing this?
 

@@ -13,43 +13,36 @@ namespace SymbolCollector.Core
 {
     public class Client : IDisposable
     {
+        private readonly ISymbolClient _symbolClient;
         private readonly ObjectFileParser _objectFileParser;
         internal int ParallelTasks { get; }
-        private readonly Uri _serviceUri;
         private readonly ILogger<Client> _logger;
-        private readonly HttpClient _client;
-        private readonly string _userAgent;
         private readonly HashSet<string>? _blackListedPaths;
 
         public ClientMetrics Metrics { get; }
 
         public Client(
-            Uri serviceUri,
+            ISymbolClient symbolClient,
             ObjectFileParser objectFileParser,
-            HttpMessageHandler? handler = null,
-            AssemblyName? assemblyName = null,
             int? parallelTasks = null,
             HashSet<string>? blackListedPaths = null,
             ClientMetrics? metrics = null,
             ILogger<Client>? logger = null)
         {
+            _symbolClient = symbolClient;
             _objectFileParser = objectFileParser;
             ParallelTasks = parallelTasks ?? 10;
 
             _blackListedPaths = blackListedPaths;
             // We only hit /image here
-            _serviceUri = new Uri(serviceUri, "image");
             _logger = logger ?? NullLogger<Client>.Instance;
-            _client = new HttpClient(handler ?? new HttpClientHandler());
-            assemblyName ??= Assembly.GetEntryAssembly()?.GetName();
-            _userAgent = $"{assemblyName?.Name ?? "SymbolCollector"}/{assemblyName?.Version.ToString() ?? "?.?.?"}";
             Metrics = metrics ?? new ClientMetrics();
         }
 
         public async Task UploadAllPathsAsync(IEnumerable<string> topLevelPaths, CancellationToken cancellationToken)
         {
             var counter = 0;
-            var batches =
+            var groups =
                 from topPath in topLevelPaths
                 from lookupDirectory in SafeGetDirectories(topPath)
                 where _blackListedPaths?.Contains(lookupDirectory) != true
@@ -58,11 +51,23 @@ namespace SymbolCollector.Core
                 into grp
                 select grp.ToList();
 
-            foreach (var batch in batches)
+            var batchId = await _symbolClient.Start("TODO", BatchType.Android, cancellationToken);
+            using var _ = _logger.BeginScope(("BatchId", batchId));
+            try
             {
-                await UploadParallel(batch, cancellationToken);
-                Metrics.BatchProcessed();
+                foreach (var group in groups)
+                {
+                    await UploadParallel(batchId, group, cancellationToken);
+                }
             }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Failed processing files for {batchId}. Rethrowing and leaving the batch open.",
+                    batchId);
+                throw;
+            }
+
+            await _symbolClient.Close(batchId, Metrics, cancellationToken);
 
             IEnumerable<string> SafeGetDirectories(string path)
             {
@@ -93,14 +98,14 @@ namespace SymbolCollector.Core
             }
         }
 
-        private async Task UploadParallel(IEnumerable<string> paths, CancellationToken cancellationToken)
+        private async Task UploadParallel(Guid batchId, IEnumerable<string> paths, CancellationToken cancellationToken)
         {
             var tasks = new List<Task>();
             foreach (var path in paths)
             {
                 if (Directory.Exists(path))
                 {
-                    tasks.Add(UploadFilesAsync(path, cancellationToken));
+                    tasks.Add(UploadFilesAsync(batchId, path, cancellationToken));
                     Metrics.JobsInFlightAdd(1);
                     _logger.LogInformation("Uploading files from: {path}", path);
                 }
@@ -136,7 +141,7 @@ namespace SymbolCollector.Core
             }
         }
 
-        private async Task UploadFilesAsync(string path, CancellationToken cancellationToken)
+        private async Task UploadFilesAsync(Guid batchId, string path, CancellationToken cancellationToken)
         {
             using var _ = _logger.BeginScope(("path", path));
             IReadOnlyCollection<string> files;
@@ -160,12 +165,12 @@ namespace SymbolCollector.Core
                     {
                         foreach (var fatMachOInnerFile in fatMachOFileResult.InnerFiles)
                         {
-                            await UploadAsync(fatMachOInnerFile, cancellationToken);
+                            await UploadAsync(batchId, fatMachOInnerFile, cancellationToken);
                         }
                     }
                     else
                     {
-                        await UploadAsync(objectFileResult, cancellationToken);
+                        await UploadAsync(batchId, objectFileResult, cancellationToken);
                     }
                 }
                 else
@@ -175,9 +180,10 @@ namespace SymbolCollector.Core
             }
         }
 
-        private async Task UploadAsync(ObjectFileResult objectFileResult, CancellationToken cancellationToken)
+        private async Task UploadAsync(Guid batchId, ObjectFileResult objectFileResult,
+            CancellationToken cancellationToken)
         {
-            if (objectFileResult.BuildId is null)
+            if (string.IsNullOrWhiteSpace(objectFileResult.BuildId))
             {
                 _logger.LogError("Cannot upload file without debug id: {file}", objectFileResult.Path);
                 return;
@@ -185,43 +191,41 @@ namespace SymbolCollector.Core
 
             using var _ = _logger.BeginScope(new Dictionary<string, string>
             {
-                {"debugId", objectFileResult.BuildId},
-                {"file", objectFileResult.Path},
-                {"User-Agent", _userAgent}
+                {"debugId", objectFileResult.BuildId}, {"file", objectFileResult.Path},
             });
 
             // Better would be if `ELF` class would expose its buffer so we don't need to read the file twice.
             // Ideally ELF would read headers as a stream which we could reset to 0 after reading heads
             // and ensuring it's what we need.
             using var fileStream = File.OpenRead(objectFileResult.Path);
-            var postResult = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Put, _serviceUri)
+            try
             {
-                Headers = {{"debug-id", objectFileResult.BuildId}, {"User-Agent", _userAgent}},
-                Content = new MultipartFormDataContent(
-                    // TODO: add a proper boundary
-                    $"Upload----WebKitFormBoundary7MA4YWxkTrZu0gW--")
-                {
-                    {new StreamContent(fileStream), objectFileResult.Path, Path.GetFileName(objectFileResult.Path)}
-                }
-            }, cancellationToken);
-            Metrics.UploadedBytesAdd(fileStream.Length);
+                var uploaded = await _symbolClient.Upload(
+                    batchId,
+                    objectFileResult.BuildId,
+                    objectFileResult.Hash,
+                    Path.GetFileName(objectFileResult.Path),
+                    fileStream,
+                    cancellationToken);
 
-            if (!postResult.IsSuccessStatusCode)
+                if (uploaded)
+                {
+                    Metrics.UploadedBytesAdd(fileStream.Length);
+                    Metrics.SuccessfulUpload();
+                }
+                else
+                {
+                    Metrics.AlreadyExisted();
+                }
+            }
+            catch (Exception e)
             {
                 Metrics.FailedToUpload();
-                var error = await postResult.Content.ReadAsStringAsync();
-                _logger.LogError("{statusCode} for file {file} with body: {body}",
-                    postResult.StatusCode,
-                    objectFileResult.Path,
-                    error);
-            }
-            else
-            {
-                Metrics.SuccessfulUpload();
-                _logger.LogInformation("Sent file: {file}", objectFileResult.Path);
+                _logger.LogError(e, "Failed to upload.");
+                throw;
             }
         }
 
-        public void Dispose() => _client.Dispose();
+        public void Dispose() => _symbolClient.Dispose();
     }
 }
