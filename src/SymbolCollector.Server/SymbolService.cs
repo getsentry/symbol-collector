@@ -369,8 +369,9 @@ namespace SymbolCollector.Server
             {
                 var invalids = Path.GetInvalidFileNameChars().Concat(" ").ToArray();
                 return string.Join("_",
-                        friendlyName.Split(invalids, StringSplitOptions.RemoveEmptyEntries))
-                    .TrimEnd('.') + _generator.Generate();
+                        friendlyName.Split(invalids, StringSplitOptions.RemoveEmptyEntries)
+                            .Append(_generator.Generate()))
+                    .TrimEnd('.');
             }
 
             // get logger factory and create a logger for symsorter
@@ -382,6 +383,7 @@ namespace SymbolCollector.Server
             var bundleId = ToBundleId(batch.FriendlyName);
             var symsorterPrefix = ToSymsorterPrefix(batch.BatchType);
             var args = $"-zz -o {symsorterOutput} --prefix {symsorterPrefix} --bundle-id {bundleId} {destination}";
+
             process.StartInfo = new ProcessStartInfo(_options.SymsorterPath, args)
             {
                 UseShellExecute = false,
@@ -389,26 +391,26 @@ namespace SymbolCollector.Server
                 CreateNoWindow = true
             };
 
+            string? lastLine = null;
+            var sw = Stopwatch.StartNew();
             if (!process.Start())
             {
                 throw new InvalidOperationException("symsorter failed to start");
             }
 
-            var sw = Stopwatch.StartNew();
-            const int waitUpToMs = 120_000;
-            process.WaitForExit(waitUpToMs);
-            sw.Stop();
-            if (!process.HasExited)
-            {
-                throw new InvalidOperationException($"Timed out waiting for {batch.BatchId}. Symsorter args: {args}");
-            }
-
-            string? lastLine = null;
             while (!process.StandardOutput.EndOfStream)
             {
                 var line = process.StandardOutput.ReadLine();
                 _logger.LogInformation(line);
                 lastLine = line;
+            }
+
+            const int waitUpToMs = 500_000;
+            process.WaitForExit(waitUpToMs);
+            sw.Stop();
+            if (!process.HasExited)
+            {
+                throw new InvalidOperationException($"Timed out waiting for {batch.BatchId}. Symsorter args: {args}");
             }
 
             lastLine ??= string.Empty;
@@ -417,8 +419,8 @@ namespace SymbolCollector.Server
             {
                 throw new InvalidOperationException($"Symsorter exit code: {process.ExitCode}. Args: {args}");
             }
-            _logger.LogInformation($"Symsorter finished in {sw.Elapsed}");
-            _logger.LogInformation("Last line: {lastLine}", lastLine);
+            _logger.LogInformation("Symsorter finished in {timespan} and logged last: {lastLine}",
+                sw.Elapsed, lastLine);
 
             var match = Regex.Match(lastLine , "Done: sorted (?<count>\\d+) debug files");
             if (!match.Success)
@@ -429,16 +431,20 @@ namespace SymbolCollector.Server
 
             _logger.LogInformation("Symsorter processed: {count}", match.Groups["count"].Value);
 
-            foreach (var symsorterItem in Directory.GetDirectories(symsorterOutput, "*", SearchOption.AllDirectories))
+            var trimDown = symsorterOutput + "/";
+            foreach (var directories in Directory.GetDirectories(symsorterOutput, "*", SearchOption.AllDirectories))
             {
-                await using var file = File.OpenRead(symsorterItem);
-                await _gcsWriter.WriteAsync(symsorterItem.Replace(symsorterOutput, string.Empty), file, token);
+                foreach (var filePath in Directory.GetFiles(directories))
+                {
+                    var destinationName = filePath.Replace(trimDown, string.Empty);
+                    await using ( var file = File.OpenRead(filePath))
+                    {
+                        await _gcsWriter.WriteAsync(destinationName, file, token);
+                    }
+
+                    File.Delete(filePath);
+                }
             }
-
-            // TODO: Write this to batch stats
-
-            // TODO: Write to GCS
-
 
             // TODO: could write file:
             // $"output/{batch.BatchType}/bundles/{batch.FriendlyName}";
