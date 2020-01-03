@@ -1,4 +1,7 @@
-﻿using System.Net;
+﻿using System;
+using System.IO;
+using System.Net;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Google.Apis.Auth.OAuth2;
@@ -29,6 +32,9 @@ namespace SymbolCollector.Server
             services.AddSingleton<ISymbolService, InMemorySymbolService>();
             services.AddSingleton<ISymbolGcsWriter, SymbolGcsWriter>();
             services.AddSingleton<IStorageClientFactory, StorageClientFactory>();
+
+            services.Configure<SymbolServiceOptions>(_configuration.GetSection("SymbolService"));
+            services.Configure<SymbolServiceOptions>(o => o.SymsorterPath = GetSymsorterPath());
 
             services.Configure<JsonCredentialParameters>(_configuration.GetSection("GoogleCloud:JsonCredentialParameters"));
             services.AddSingleton(c =>
@@ -70,5 +76,45 @@ namespace SymbolCollector.Server
                 });
             });
         }
+
+        private string GetSymsorterPath()
+        {
+            string fileName;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                fileName = "symsorter-linux";
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                fileName = "symsorter-mac";
+            }
+            else
+            {
+                throw new InvalidOperationException("No symsorter added for this platform.");
+            }
+
+            return "./" + fileName;
+            // var asm = GetType().Assembly;
+            // using var fileStream = asm.GetManifestResourceStream($"{asm.GetName().Name}.{fileName}");
+            //
+            // if (fileStream != null)
+            // {
+            //     var fullPath = Path.Combine(Directory.GetCurrentDirectory(), fileName);
+            //     using (var stream = File.Create(fullPath))
+            //     {
+            //         fileStream.CopyTo(stream);
+            //     }
+            //
+            //     return fullPath;
+            // }
+            //
+            // throw new InvalidOperationException($"Symsorter {fileName} not embedded in assembly.");
+        }
+    }
+
+    public class SymbolServiceOptions
+    {
+        public string? SymsorterPath { get; set; }
+        public string? BaseWorkingPath { get; set; }
     }
 }

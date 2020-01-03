@@ -1,13 +1,19 @@
 using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using SymbolCollector.Core;
 
 namespace SymbolCollector.Server
@@ -128,20 +134,53 @@ namespace SymbolCollector.Server
         AlreadyExisted
     }
 
-    internal class InMemorySymbolService : ISymbolService
+    internal class InMemorySymbolService : ISymbolService, IDisposable
     {
         private readonly ObjectFileParser _parser;
+        private readonly ISymbolGcsWriter _gcsWriter;
+        private readonly SymbolServiceOptions _options;
         private readonly ILogger<InMemorySymbolService> _logger;
         private readonly Random _random = new Random();
+        private readonly SuffixGenerator _generator = new SuffixGenerator();
 
         private readonly ConcurrentDictionary<Guid, SymbolUploadBatch> _batches =
             new ConcurrentDictionary<Guid, SymbolUploadBatch>();
 
-        public InMemorySymbolService(ObjectFileParser parser, ILogger<InMemorySymbolService> logger)
+        private readonly string _donePath;
+        private readonly string _processingPath;
+        private readonly string _symsorterPath;
+        private readonly string _conflictPath;
+
+        public InMemorySymbolService(ObjectFileParser parser, IOptions<SymbolServiceOptions> options, ISymbolGcsWriter gcsWriter, ILogger<InMemorySymbolService> logger)
         {
             _parser = parser;
+            _gcsWriter = gcsWriter;
+            _options = options.Value;
             _logger = logger;
-            Directory.CreateDirectory("done");
+
+            var basePath = ".";
+            if (!string.IsNullOrWhiteSpace(_options.BaseWorkingPath))
+            {
+                if (!Directory.Exists(_options.BaseWorkingPath))
+                {
+                    var info = Directory.CreateDirectory(_options.BaseWorkingPath);
+                    if (!info.Exists)
+                    {
+                        throw new InvalidOperationException("Base path configured does not exist and could not be created.");
+                    }
+                }
+
+                basePath = _options.BaseWorkingPath;
+            }
+
+            _donePath = Path.Combine(basePath, "done");
+            _processingPath = Path.Combine(basePath, "processing");
+            _symsorterPath = Path.Combine(basePath, "symsorter_output");
+            _conflictPath = Path.Combine(basePath, "conflict");
+            Directory.CreateDirectory(_donePath);
+            Directory.CreateDirectory(_processingPath);
+            Directory.CreateDirectory(_symsorterPath);
+            Directory.CreateDirectory(_conflictPath);
         }
 
         public Task Start(Guid batchId, string friendlyName, BatchType batchType, CancellationToken token)
@@ -153,7 +192,7 @@ namespace SymbolCollector.Server
 
             _batches[batchId] = new SymbolUploadBatch(batchId, friendlyName, batchType);
             var batchIdString = batchId.ToString();
-            var processingDir = Path.Combine(Directory.GetCurrentDirectory(), "processing", batchIdString);
+            var processingDir = Path.Combine(_processingPath, batchIdString);
             Directory.CreateDirectory(processingDir);
 
             _logger.LogInformation("Started batch {batchId} with friendly name {friendlyName} and type {batchType}",
@@ -178,7 +217,7 @@ namespace SymbolCollector.Server
 
             // TODO: Until parser supports Stream instead of file path, we write the file to TMP before we can validate it.
             var destination = Path.Combine(
-                "processing",
+                _processingPath,
                 batchId.ToString(),
                 // To avoid files with conflicting name from the same batch
                 _random.Next().ToString(CultureInfo.InvariantCulture),
@@ -208,9 +247,8 @@ namespace SymbolCollector.Server
                 {
                     // TODO: Unlikely case a debugId on un-matching file hash (modified file?)
                     // TODO: Store the file for debugging, raise a Sentry event attachments
-                    Directory.CreateDirectory("conflict");
                     var conflictDestination = Path.Combine(
-                        "conflict",
+                        _conflictPath,
                         batchId.ToString(),
                         // To avoid files with conflicting name from the same batch
                         _random.Next().ToString(CultureInfo.InvariantCulture),
@@ -294,9 +332,9 @@ namespace SymbolCollector.Server
             batch.ClientMetrics = clientMetrics;
             batch.Close();
 
-            var processingLocation = Path.Combine("processing", batchId.ToString());
+            var processingLocation = Path.Combine(_processingPath, batchId.ToString());
 
-            var destination = Path.Combine("done", batchId.ToString());
+            var destination = Path.Combine(_donePath, batchId.ToString());
             foreach (var symbol in batch.Symbols.Values)
             {
                 symbol.Path = symbol.Path.Replace(processingLocation, destination);
@@ -311,10 +349,96 @@ namespace SymbolCollector.Server
                     options: new JsonSerializerOptions {WriteIndented = true});
             }
 
+            Directory.CreateDirectory(Path.GetDirectoryName(destination));
             Directory.Move(processingLocation, destination);
 
             _logger.LogInformation("Batch {batchId} is now closed at {location}.",
                 batchId, destination);
+
+            static string ToSymsorterPrefix(BatchType type) =>
+                type switch
+                {
+                    BatchType.WatchOS => "watchos",
+                    BatchType.MacOS => "macos",
+                    BatchType.IOS => "ios",
+                    BatchType.Android => "android",
+                    _ => throw new InvalidOperationException($"Invalid BatchType {type}."),
+                };
+
+            string ToBundleId(string friendlyName)
+            {
+                var invalids = Path.GetInvalidFileNameChars().Concat(" ").ToArray();
+                return string.Join("_",
+                        friendlyName.Split(invalids, StringSplitOptions.RemoveEmptyEntries))
+                    .TrimEnd('.') + _generator.Generate();
+            }
+
+            // get logger factory and create a logger for symsorter
+            var process = new Process();
+            var symsorterOutput = Path.Combine(_symsorterPath, batch.BatchId.ToString());
+
+            Directory.CreateDirectory(symsorterOutput);
+
+            var bundleId = ToBundleId(batch.FriendlyName);
+            var symsorterPrefix = ToSymsorterPrefix(batch.BatchType);
+            var args = $"-zz -o {symsorterOutput} --prefix {symsorterPrefix} --bundle-id {bundleId} {destination}";
+            process.StartInfo = new ProcessStartInfo(_options.SymsorterPath, args)
+            {
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                CreateNoWindow = true
+            };
+
+            if (!process.Start())
+            {
+                throw new InvalidOperationException("symsorter failed to start");
+            }
+
+            var sw = Stopwatch.StartNew();
+            const int waitUpToMs = 120_000;
+            process.WaitForExit(waitUpToMs);
+            sw.Stop();
+            if (!process.HasExited)
+            {
+                throw new InvalidOperationException($"Timed out waiting for {batch.BatchId}. Symsorter args: {args}");
+            }
+
+            string? lastLine = null;
+            while (!process.StandardOutput.EndOfStream)
+            {
+                var line = process.StandardOutput.ReadLine();
+                _logger.LogInformation(line);
+                lastLine = line;
+            }
+
+            lastLine ??= string.Empty;
+
+            if (process.ExitCode != 0)
+            {
+                throw new InvalidOperationException($"Symsorter exit code: {process.ExitCode}. Args: {args}");
+            }
+            _logger.LogInformation($"Symsorter finished in {sw.Elapsed}");
+            _logger.LogInformation("Last line: {lastLine}", lastLine);
+
+            var match = Regex.Match(lastLine , "Done: sorted (?<count>\\d+) debug files");
+            if (!match.Success)
+            {
+                _logger.LogError("Last line didn't match success: {lastLine}", lastLine);
+                return;
+            }
+
+            _logger.LogInformation("Symsorter processed: {count}", match.Groups["count"].Value);
+
+            foreach (var symsorterItem in Directory.GetDirectories(symsorterOutput, "*", SearchOption.AllDirectories))
+            {
+                await using var file = File.OpenRead(symsorterItem);
+                await _gcsWriter.WriteAsync(symsorterItem.Replace(symsorterOutput, string.Empty), file, token);
+            }
+
+            // TODO: Write this to batch stats
+
+            // TODO: Write to GCS
+
 
             // TODO: could write file:
             // $"output/{batch.BatchType}/bundles/{batch.FriendlyName}";
@@ -349,5 +473,43 @@ namespace SymbolCollector.Server
 
             return batch;
         }
+
+        private class SuffixGenerator : IDisposable
+        {
+            private readonly RandomNumberGenerator _randomNumberGenerator;
+            private const string Characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+            public SuffixGenerator(RandomNumberGenerator? randomNumberGenerator = null)
+                => _randomNumberGenerator = randomNumberGenerator ?? new RNGCryptoServiceProvider();
+
+            public string Generate()
+            {
+                var higherBound = Characters.Length;
+
+                const int keyLength = 6;
+                Span<byte> randomBuffer = stackalloc byte[4];
+                var stringBaseBuffer = ArrayPool<char>.Shared.Rent(keyLength);
+                try
+                {
+                    for (var i = 0; i < keyLength; i++)
+                    {
+                        _randomNumberGenerator.GetBytes(randomBuffer);
+                        var generatedValue = Math.Abs(BitConverter.ToInt32(randomBuffer));
+                        var index = generatedValue % higherBound;
+                        stringBaseBuffer[i] = Characters[index];
+                    }
+
+                    return new string(stringBaseBuffer[..keyLength]);
+                }
+                finally
+                {
+                    ArrayPool<char>.Shared.Return(stringBaseBuffer);
+                }
+            }
+
+            public void Dispose() => _randomNumberGenerator.Dispose();
+        }
+
+        public void Dispose() => _generator.Dispose();
     }
 }
