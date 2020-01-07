@@ -3,9 +3,6 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Runtime.CompilerServices;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Google.Apis.Upload;
@@ -57,6 +54,15 @@ namespace SymbolCollector.Server.Tests
             }
         }
 
+        [Fact]
+        public async Task Health_Success()
+        {
+            var client = _fixture.GetClient();
+
+            var resp = await client.GetAsync("/health");
+            Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        }
+
         [Fact(Skip = "not writing to GCS atm")]
         public async Task Put_StoresFileInGcs()
         {
@@ -106,7 +112,7 @@ namespace SymbolCollector.Server.Tests
         [InlineData(BatchType.IOS, false)]
         [InlineData(BatchType.MacOS, false)]
         [InlineData(BatchType.WatchOS, false)]
-        [InlineData((BatchType)(((int)BatchType.Android) + 1), true)]
+        [InlineData((BatchType)((int)BatchType.Android + 1), true)]
         public async Task Start_BatchType_TestCase(BatchType batchType, bool validationError)
         {
             var model = new BatchStartRequestModel {BatchType = batchType};

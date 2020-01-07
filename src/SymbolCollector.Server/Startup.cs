@@ -94,21 +94,6 @@ namespace SymbolCollector.Server
             }
 
             return "./" + fileName;
-            // var asm = GetType().Assembly;
-            // using var fileStream = asm.GetManifestResourceStream($"{asm.GetName().Name}.{fileName}");
-            //
-            // if (fileStream != null)
-            // {
-            //     var fullPath = Path.Combine(Directory.GetCurrentDirectory(), fileName);
-            //     using (var stream = File.Create(fullPath))
-            //     {
-            //         fileStream.CopyTo(stream);
-            //     }
-            //
-            //     return fullPath;
-            // }
-            //
-            // throw new InvalidOperationException($"Symsorter {fileName} not embedded in assembly.");
         }
     }
 

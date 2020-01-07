@@ -26,7 +26,10 @@ namespace SymbolCollector.Core
         IOS,
 
         // android (doesn't exist yet)
-        Android
+        Android,
+
+        // linux (doesn't exist yet)
+        Linux
     }
 
     public interface ISymbolClient : IDisposable

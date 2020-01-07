@@ -362,6 +362,7 @@ namespace SymbolCollector.Server
                     BatchType.MacOS => "macos",
                     BatchType.IOS => "ios",
                     BatchType.Android => "android",
+                    BatchType.Linux => "linux",
                     _ => throw new InvalidOperationException($"Invalid BatchType {type}."),
                 };
 
