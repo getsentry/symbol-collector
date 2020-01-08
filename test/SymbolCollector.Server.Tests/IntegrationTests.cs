@@ -10,6 +10,7 @@ using Google.Cloud.Storage.V1;
 using Xunit;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using NSubstitute;
 using SymbolCollector.Core;
 
@@ -27,7 +28,7 @@ namespace SymbolCollector.Server.Tests
         private class Fixture
         {
             private readonly Action<IServiceCollection> _defaultMocks;
-            private readonly WebApplicationFactory<Startup> _factory;
+            private WebApplicationFactory<Startup> _factory;
             public Action<IServiceCollection>? ConfigureServices { get; set; }
             public StorageClient StorageClient { get; set; } = Substitute.For<StorageClient>();
             public IStorageClientFactory StorageClientFactory { get; set; } = Substitute.For<IStorageClientFactory>();
@@ -43,12 +44,16 @@ namespace SymbolCollector.Server.Tests
 
             public HttpClient GetClient()
             {
-                _factory.WithWebHostBuilder(c =>
-                    c.ConfigureServices(s =>
+                _factory = _factory.WithWebHostBuilder(c =>
                     {
-                        _defaultMocks(s);
-                        ConfigureServices?.Invoke(s);
-                    }));
+                        c.UseSetting("GoogleCloud__JsonCredentialParameters__PrivateKey", "smoke-test");
+                        var tet = c.GetSetting("GoogleCloud__JsonCredentialParameters__PrivateKey");
+                        c.ConfigureServices(s =>
+                        {
+                            _defaultMocks(s);
+                            ConfigureServices?.Invoke(s);
+                        });
+                    });
                 ServiceProvider = _factory.Services;
                 return _factory.CreateClient();
             }
@@ -285,7 +290,8 @@ namespace SymbolCollector.Server.Tests
             Assert.Equal("5fb23797a8cb482bac325eabdcb3d7e70b89fe0ec51035010e9be3a7b76fff84", symbol.Hash);
             Assert.Equal(debugId, symbol.DebugId);
             Assert.EndsWith( Path.GetFileName(testFile), symbol.Path);
-            Assert.StartsWith($"processing{Path.DirectorySeparatorChar}{batchId}{Path.DirectorySeparatorChar}", symbol.Path);
+            var baseWorking = _fixture.ServiceProvider.GetRequiredService<IOptions<SymbolServiceOptions>>().Value.BaseWorkingPath;
+            Assert.StartsWith(Path.Combine(baseWorking!, "processing", batchId.ToString()), symbol.Path);
             Assert.Equal(batchId, symbol.BatchIds.Single());
 
             // TODO: Assert values once parsing is done.
