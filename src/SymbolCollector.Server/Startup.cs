@@ -37,14 +37,16 @@ namespace SymbolCollector.Server
             services.AddSingleton<ISymbolGcsWriter, SymbolGcsWriter>();
             services.AddSingleton<IStorageClientFactory, StorageClientFactory>();
 
-            services.Configure<SymbolServiceOptions>(_configuration.GetSection("SymbolService"));
-            services.Configure<SymbolServiceOptions>(o => o.SymsorterPath = GetSymsorterPath());
-
             services.AddOptions<JsonCredentialParameters>()
                 .Configure<IConfiguration>((o, c) => c.Bind("GoogleCloud:JsonCredentialParameters", o));
 
             services.AddOptions<SymbolServiceOptions>()
-                .Configure<IConfiguration>((o, c) => c.Bind("SymbolService", o));
+                .Configure<IConfiguration>((o, c) => c.Bind("SymbolService", o))
+                .Configure(o => o.SymsorterPath = GetSymsorterPath())
+                .Validate(o => !string.IsNullOrWhiteSpace(o.SymsorterPath), "SymsorterPath is required.")
+                .Validate(o => !string.IsNullOrWhiteSpace(o.BaseWorkingPath), "BaseWorkingPath is required.")
+                .Validate(o => !Directory.Exists(o.SymsorterPath), $"SymsorterPath doesn't exist.");
+
 
             services.AddOptions<GoogleCloudStorageOptions>()
                 .Configure<IConfiguration>((o, c) => c.Bind("GoogleCloud", o))
