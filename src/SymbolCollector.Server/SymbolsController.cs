@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
-using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http.Features;
@@ -13,45 +11,10 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
-using SymbolCollector.Core;
+using SymbolCollector.Server.Models;
 
 namespace SymbolCollector.Server
 {
-    public class BatchStartRequestModel
-    {
-        [Required]
-        [StringLength(1000, ErrorMessage = "A batch friendly name can't be longer than 1000 characters.")]
-        [Display(Name = "Batch friendly name")]
-        public string BatchFriendlyName { get; set; } = default!; // model validation
-
-        [JsonConverter(typeof(JsonStringEnumConverter))]
-        [Range((int)BatchType.WatchOS, (int)BatchType.Android)]
-        public BatchType BatchType { get; set; }
-    }
-
-    public class BatchEndRequestModel
-    {
-        public ClientMetricsModel? ClientMetrics { get; set; }
-    }
-
-    public class ClientMetricsModel : IClientMetrics
-    {
-        public DateTimeOffset StartedTime { get; set; }
-        public long FilesProcessedCount { get; set; }
-        public long BatchesProcessedCount { get; set; }
-        public long JobsInFlightCount { get; set; }
-        public long FailedToUploadCount { get; set; }
-        public long SuccessfullyUploadCount { get; set; }
-        public long AlreadyExistedCount { get; set; }
-        public long MachOFileFoundCount { get; set; }
-        public long ElfFileFoundCount { get; set; }
-        public int FatMachOFileFoundCount { get; set; }
-        public long UploadedBytesCount { get; set; }
-        public int DirectoryUnauthorizedAccessCount { get; set; }
-        public int DirectoryDoesNotExistCount { get; set; }
-    }
-
-
     [Route(Route)]
     public class SymbolsController : Controller
     {

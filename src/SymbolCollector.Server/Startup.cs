@@ -25,33 +25,50 @@ namespace SymbolCollector.Server
 
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddSingleton<SuffixGenerator>();
+
+            // TODO: When replacing this to a real (external storage backed), fix lifetimes below (scoped)
+            services.AddSingleton<ISymbolService, InMemorySymbolService>();
+
             services.AddSingleton<ObjectFileParser>();
             services.AddSingleton<FatBinaryReader>();
-            services.AddTransient<ClientMetrics>();
-
-            services.AddSingleton<ISymbolService, InMemorySymbolService>();
+            services.AddSingleton<ClientMetrics>();
+            services.AddSingleton<IBatchFinalizer, SymsorterBatchFinalizer>();
             services.AddSingleton<ISymbolGcsWriter, SymbolGcsWriter>();
             services.AddSingleton<IStorageClientFactory, StorageClientFactory>();
 
             services.Configure<SymbolServiceOptions>(_configuration.GetSection("SymbolService"));
             services.Configure<SymbolServiceOptions>(o => o.SymsorterPath = GetSymsorterPath());
 
-            services.Configure<JsonCredentialParameters>(_configuration.GetSection("GoogleCloud:JsonCredentialParameters"));
-            services.AddSingleton(c =>
-            {
-                // Massive hack because the Google SDK config system doesn't play well with ASP.NET Core's
-                var jsonCredentials = c.GetRequiredService<IOptions<JsonCredentialParameters>>().Value;
-                if (jsonCredentials.PrivateKey == "smoke-test")
+            services.AddOptions<JsonCredentialParameters>()
+                .Configure<IConfiguration>((o, c) => c.Bind("GoogleCloud:JsonCredentialParameters", o));
+
+            services.AddOptions<SymbolServiceOptions>()
+                .Configure<IConfiguration>((o, c) => c.Bind("SymbolService", o));
+
+            services.AddOptions<GoogleCloudStorageOptions>()
+                .Configure<IConfiguration>((o, c) => c.Bind("GoogleCloud", o))
+                .Configure<IOptions<JsonCredentialParameters>>((g, o) =>
                 {
-                    jsonCredentials.PrivateKey = SmokeTest.SamplePrivateKey;
-                }
-                var json = JsonConvert.SerializeObject(jsonCredentials, Formatting.Indented);
-                var credentials = GoogleCredential.FromJson(json);
-                return new GoogleCloudStorageOptions(credentials);
-            });
+                    // Massive hack because the Google SDK config system doesn't play well with ASP.NET Core's
+                    var jsonCredentials = o.Value;
+                    if (jsonCredentials.PrivateKey == "smoke-test")
+                    {
+                        jsonCredentials.PrivateKey = SmokeTest.SamplePrivateKey;
+                    }
+
+                    var json = JsonConvert.SerializeObject(jsonCredentials, Formatting.Indented);
+                    var credentials = GoogleCredential.FromJson(json);
+                    g.Credential = credentials;
+                })
+                .Validate(o => !string.IsNullOrWhiteSpace(o.BucketName), "The GCS Bucket name is required.");
+
+            services.AddSingleton(c => c.GetRequiredService<IOptions<GoogleCloudStorageOptions>>().Value);
 
             services.AddMvc()
-                .AddJsonOptions(options => options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
+                .AddJsonOptions(options =>
+                    options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
+            var a = _configuration.GetSection("GoogleCloud:JsonCredentialParameters");
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -59,6 +76,12 @@ namespace SymbolCollector.Server
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
+            }
+
+            // Make sure this resolves.
+            using (var s = app.ApplicationServices.CreateScope())
+            {
+                _ = s.ServiceProvider.GetRequiredService<ISymbolService>();
             }
 
             app.UseRouting();
@@ -71,7 +94,7 @@ namespace SymbolCollector.Server
                 endpoints.Map("/health", context =>
                 {
                     // TODO: Proper health check
-                    context.Response.StatusCode = (int) HttpStatusCode.OK;
+                    context.Response.StatusCode = (int)HttpStatusCode.OK;
                     return Task.CompletedTask;
                 });
             });
@@ -95,11 +118,5 @@ namespace SymbolCollector.Server
 
             return "./" + fileName;
         }
-    }
-
-    public class SymbolServiceOptions
-    {
-        public string? SymsorterPath { get; set; }
-        public string? BaseWorkingPath { get; set; }
     }
 }

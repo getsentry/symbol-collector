@@ -15,108 +15,10 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SymbolCollector.Core;
+using SymbolCollector.Server.Models;
 
 namespace SymbolCollector.Server
 {
-    public class SymbolUploadBatch
-    {
-        public Guid BatchId { get; }
-        public DateTimeOffset StartTime { get; }
-        public DateTimeOffset? EndTime { get; private set; }
-
-        // Will be used as BundleId (caller doesn't need to worry about it being unique).
-        public string FriendlyName { get; }
-
-        public BatchType BatchType { get; }
-
-        public ConcurrentDictionary<string, SymbolMetadata> Symbols { get; } =
-            new ConcurrentDictionary<string, SymbolMetadata>();
-
-        public IClientMetrics? ClientMetrics { get; set; }
-
-        public bool IsClosed => EndTime.HasValue;
-
-        public SymbolUploadBatch(Guid batchId, string friendlyName, BatchType batchType)
-        {
-            if (batchId == default)
-            {
-                throw new ArgumentException("Empty Batch Id.");
-            }
-
-            if (string.IsNullOrWhiteSpace(friendlyName))
-            {
-                throw new ArgumentException("Friendly name is required.");
-            }
-
-            if (batchType == BatchType.Unknown)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(batchType),
-                    batchType,
-                    "A batch type is required.");
-            }
-
-            BatchId = batchId;
-            FriendlyName = friendlyName;
-            BatchType = batchType;
-            StartTime = DateTimeOffset.UtcNow;
-        }
-
-        public void Close()
-        {
-            if (EndTime.HasValue)
-            {
-                throw new InvalidOperationException(
-                    $"Can't close batch '{BatchId}'. It was already closed at {EndTime}.");
-            }
-
-            EndTime = DateTimeOffset.UtcNow;
-        }
-    }
-
-    // https://github.com/getsentry/symbolicator/blob/cd545b3bdbb7c3a0869de20c387740baced2be5c/symsorter/src/app.rs
-    public class SymbolMetadata
-    {
-        public string DebugId { get; set; }
-        public string? Hash { get; set; }
-        public string Path { get; set; }
-
-        // Symsorter uses this to name the file
-        public ObjectFileType ObjectFileType { get; set; }
-
-        // /refs
-        // name=
-        public string Name { get; set; }
-
-        // arch= arm, arm64, x86, x86_64
-        public Architecture Arch { get; set; }
-
-        // file_format= elf, macho
-        public FileFormat FileFormat { get; set; }
-
-        public HashSet<Guid> BatchIds { get; }
-
-        public SymbolMetadata(
-            string debugId,
-            string? hash,
-            string path,
-            ObjectFileType objectFileType,
-            string name,
-            Architecture arch,
-            FileFormat fileFormat,
-            HashSet<Guid> batchIds)
-        {
-            DebugId = debugId;
-            Hash = hash;
-            Path = path;
-            ObjectFileType = objectFileType;
-            Name = name;
-            Arch = arch;
-            FileFormat = fileFormat;
-            BatchIds = batchIds;
-        }
-    }
-
     public interface ISymbolService
     {
         Task Start(Guid batchId, string friendlyName, BatchType batchType, CancellationToken token);
@@ -134,52 +36,70 @@ namespace SymbolCollector.Server
         AlreadyExisted
     }
 
+    public class SymbolServiceOptions
+    {
+        public string SymsorterPath { get; set; } = null!; // Either bound via configuration or thrown early
+
+        private string _baseWorkingPath = null!; // Either bound via configuration or thrown early
+
+        public string BaseWorkingPath
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(_baseWorkingPath))
+                {
+                    return _baseWorkingPath;
+                }
+
+                if (Directory.Exists(_baseWorkingPath))
+                {
+                    return _baseWorkingPath;
+                }
+
+                var info = Directory.CreateDirectory(_baseWorkingPath);
+                if (!info.Exists)
+                {
+                    throw new InvalidOperationException(
+                        "Base path configured does not exist and could not be created.");
+                }
+
+                return _baseWorkingPath;
+            }
+            set => _baseWorkingPath = value;
+        }
+    }
+
     internal class InMemorySymbolService : ISymbolService, IDisposable
     {
         private readonly ObjectFileParser _parser;
-        private readonly ISymbolGcsWriter _gcsWriter;
+        private readonly IBatchFinalizer _batchFinalizer;
         private readonly SymbolServiceOptions _options;
         private readonly ILogger<InMemorySymbolService> _logger;
         private readonly Random _random = new Random();
-        private readonly SuffixGenerator _generator = new SuffixGenerator();
 
         private readonly ConcurrentDictionary<Guid, SymbolUploadBatch> _batches =
             new ConcurrentDictionary<Guid, SymbolUploadBatch>();
 
         private readonly string _donePath;
         private readonly string _processingPath;
-        private readonly string _symsorterPath;
         private readonly string _conflictPath;
 
-        public InMemorySymbolService(ObjectFileParser parser, IOptions<SymbolServiceOptions> options, ISymbolGcsWriter gcsWriter, ILogger<InMemorySymbolService> logger)
+        public InMemorySymbolService(
+            ObjectFileParser parser,
+            IBatchFinalizer batchFinalizer,
+            IOptions<SymbolServiceOptions> options,
+            ILogger<InMemorySymbolService> logger)
         {
             _parser = parser;
-            _gcsWriter = gcsWriter;
+            _batchFinalizer = batchFinalizer;
             _options = options.Value;
             _logger = logger;
 
-            var basePath = ".";
-            if (!string.IsNullOrWhiteSpace(_options.BaseWorkingPath))
-            {
-                if (!Directory.Exists(_options.BaseWorkingPath))
-                {
-                    var info = Directory.CreateDirectory(_options.BaseWorkingPath);
-                    if (!info.Exists)
-                    {
-                        throw new InvalidOperationException("Base path configured does not exist and could not be created.");
-                    }
-                }
-
-                basePath = _options.BaseWorkingPath;
-            }
-
-            _donePath = Path.Combine(basePath, "done");
-            _processingPath = Path.Combine(basePath, "processing");
-            _symsorterPath = Path.Combine(basePath, "symsorter_output");
-            _conflictPath = Path.Combine(basePath, "conflict");
+            _donePath = Path.Combine(_options.BaseWorkingPath, "done");
+            _processingPath = Path.Combine(_options.BaseWorkingPath, "processing");
+            _conflictPath = Path.Combine(_options.BaseWorkingPath, "conflict");
             Directory.CreateDirectory(_donePath);
             Directory.CreateDirectory(_processingPath);
-            Directory.CreateDirectory(_symsorterPath);
             Directory.CreateDirectory(_conflictPath);
         }
 
@@ -355,115 +275,9 @@ namespace SymbolCollector.Server
             _logger.LogInformation("Batch {batchId} is now closed at {location}.",
                 batchId, destination);
 
-            static string ToSymsorterPrefix(BatchType type) =>
-                type switch
-                {
-                    BatchType.WatchOS => "watchos",
-                    BatchType.MacOS => "macos",
-                    BatchType.IOS => "ios",
-                    BatchType.Android => "android",
-                    BatchType.Linux => "linux",
-                    _ => throw new InvalidOperationException($"Invalid BatchType {type}."),
-                };
-
-            string ToBundleId(string friendlyName)
-            {
-                var invalids = Path.GetInvalidFileNameChars().Concat(" ").ToArray();
-                return string.Join("_",
-                        friendlyName.Split(invalids, StringSplitOptions.RemoveEmptyEntries)
-                            .Append(_generator.Generate()))
-                    .TrimEnd('.');
-            }
-
-            // get logger factory and create a logger for symsorter
-            var process = new Process();
-            var symsorterOutput = Path.Combine(_symsorterPath, batch.BatchId.ToString());
-
-            Directory.CreateDirectory(symsorterOutput);
-
-            var bundleId = ToBundleId(batch.FriendlyName);
-            var symsorterPrefix = ToSymsorterPrefix(batch.BatchType);
-            var args = $"-zz -o {symsorterOutput} --prefix {symsorterPrefix} --bundle-id {bundleId} {destination}";
-
-            process.StartInfo = new ProcessStartInfo(_options.SymsorterPath, args)
-            {
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                CreateNoWindow = true
-            };
-
-            string? lastLine = null;
-            var sw = Stopwatch.StartNew();
-            if (!process.Start())
-            {
-                throw new InvalidOperationException("symsorter failed to start");
-            }
-
-            while (!process.StandardOutput.EndOfStream)
-            {
-                var line = process.StandardOutput.ReadLine();
-                _logger.LogInformation(line);
-                lastLine = line;
-            }
-
-            const int waitUpToMs = 500_000;
-            process.WaitForExit(waitUpToMs);
-            sw.Stop();
-            if (!process.HasExited)
-            {
-                throw new InvalidOperationException($"Timed out waiting for {batch.BatchId}. Symsorter args: {args}");
-            }
-
-            lastLine ??= string.Empty;
-
-            if (process.ExitCode != 0)
-            {
-                throw new InvalidOperationException($"Symsorter exit code: {process.ExitCode}. Args: {args}");
-            }
-            _logger.LogInformation("Symsorter finished in {timespan} and logged last: {lastLine}",
-                sw.Elapsed, lastLine);
-
-            var match = Regex.Match(lastLine , "Done: sorted (?<count>\\d+) debug files");
-            if (!match.Success)
-            {
-                _logger.LogError("Last line didn't match success: {lastLine}", lastLine);
-                return;
-            }
-
-            _logger.LogInformation("Symsorter processed: {count}", match.Groups["count"].Value);
-
-            var trimDown = symsorterOutput + "/";
-            foreach (var directories in Directory.GetDirectories(symsorterOutput, "*", SearchOption.AllDirectories))
-            {
-                foreach (var filePath in Directory.GetFiles(directories))
-                {
-                    var destinationName = filePath.Replace(trimDown, string.Empty);
-                    await using ( var file = File.OpenRead(filePath))
-                    {
-                        await _gcsWriter.WriteAsync(destinationName, file, token);
-                    }
-
-                    File.Delete(filePath);
-                }
-            }
-
-            // TODO: could write file:
-            // $"output/{batch.BatchType}/bundles/{batch.FriendlyName}";
-            // Format correct output i.e: output/ios/bundles/10.3_ABCD
-
-            // With contents in the format:
-            // $"{\"name\":"{batch.FriendlyName},\"timestamp\":\"{batchId.StartTime}\",\"debug_ids\":[ ... ]}";
-            // Matching format i.e: {"name":"10.3_ABCD","timestamp":"2019-12-27T12:43:27.955330Z","debug_ids":[
-            // BatchId has no dashes
-
-            // And for each file, write:
-            // output/{batch.BatchType}/10/8f1100326466498e655588e72a3e1e/
-            // zstd compressed.
-            // Name the file {symbol.SymbolType.ToLower()}
-            // file named: meta
-            // {"name":"System.Net.Http.Native.dylib","arch":"x86_64","file_format":"macho"}
-            // folder called /refs/ with an empty file named batch.FriendlyName
+            await _batchFinalizer.CloseBatch(destination, batch, token);
         }
+
 
         private async Task<SymbolUploadBatch> GetOpenBatch(Guid batchId, CancellationToken token)
         {
@@ -481,42 +295,6 @@ namespace SymbolCollector.Server
             return batch;
         }
 
-        private class SuffixGenerator : IDisposable
-        {
-            private readonly RandomNumberGenerator _randomNumberGenerator;
-            private const string Characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-            public SuffixGenerator(RandomNumberGenerator? randomNumberGenerator = null)
-                => _randomNumberGenerator = randomNumberGenerator ?? new RNGCryptoServiceProvider();
-
-            public string Generate()
-            {
-                var higherBound = Characters.Length;
-
-                const int keyLength = 6;
-                Span<byte> randomBuffer = stackalloc byte[4];
-                var stringBaseBuffer = ArrayPool<char>.Shared.Rent(keyLength);
-                try
-                {
-                    for (var i = 0; i < keyLength; i++)
-                    {
-                        _randomNumberGenerator.GetBytes(randomBuffer);
-                        var generatedValue = Math.Abs(BitConverter.ToInt32(randomBuffer));
-                        var index = generatedValue % higherBound;
-                        stringBaseBuffer[i] = Characters[index];
-                    }
-
-                    return new string(stringBaseBuffer[..keyLength]);
-                }
-                finally
-                {
-                    ArrayPool<char>.Shared.Return(stringBaseBuffer);
-                }
-            }
-
-            public void Dispose() => _randomNumberGenerator.Dispose();
-        }
-
-        public void Dispose() => _generator.Dispose();
+        public void Dispose() => (_batchFinalizer as IDisposable)?.Dispose();
     }
 }

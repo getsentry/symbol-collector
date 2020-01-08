@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 using SymbolCollector.Core;
+using SymbolCollector.Server.Models;
 
 namespace SymbolCollector.Server.Tests
 {
@@ -32,6 +33,7 @@ namespace SymbolCollector.Server.Tests
             public Action<IServiceCollection>? ConfigureServices { get; set; }
             public StorageClient StorageClient { get; set; } = Substitute.For<StorageClient>();
             public IStorageClientFactory StorageClientFactory { get; set; } = Substitute.For<IStorageClientFactory>();
+            public IBatchFinalizer BatchFinalizer { get; set; } = Substitute.For<IBatchFinalizer>();
 
             public IServiceProvider? ServiceProvider { get; set; }
 
@@ -39,21 +41,20 @@ namespace SymbolCollector.Server.Tests
             {
                 _factory = factory;
                 StorageClientFactory.Create().Returns(Task.FromResult(StorageClient));
-                _defaultMocks = c => c.AddSingleton(StorageClientFactory);
+                _defaultMocks = c =>
+                {
+                    c.AddSingleton(StorageClientFactory);
+                    c.AddSingleton(BatchFinalizer);
+                };
             }
 
             public HttpClient GetClient()
             {
-                _factory = _factory.WithWebHostBuilder(c =>
-                    {
-                        c.UseSetting("GoogleCloud__JsonCredentialParameters__PrivateKey", "smoke-test");
-                        var tet = c.GetSetting("GoogleCloud__JsonCredentialParameters__PrivateKey");
-                        c.ConfigureServices(s =>
-                        {
-                            _defaultMocks(s);
-                            ConfigureServices?.Invoke(s);
-                        });
-                    });
+                _factory = _factory.WithWebHostBuilder(c => c.ConfigureServices(s =>
+                {
+                    _defaultMocks(s);
+                    ConfigureServices?.Invoke(s);
+                }));
                 ServiceProvider = _factory.Services;
                 return _factory.CreateClient();
             }
