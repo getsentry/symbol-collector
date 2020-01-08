@@ -16,4 +16,15 @@
     <PackageReference Include="Serilog.Formatting.Compact" Version="1.1.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="symsorter-mac">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+    <None Include="symsorter-linux">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

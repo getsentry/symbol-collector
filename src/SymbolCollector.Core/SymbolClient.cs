@@ -26,7 +26,10 @@ namespace SymbolCollector.Core
         IOS,
 
         // android (doesn't exist yet)
-        Android
+        Android,
+
+        // linux (doesn't exist yet)
+        Linux
     }
 
     public interface ISymbolClient : IDisposable
@@ -55,7 +58,10 @@ namespace SymbolCollector.Core
             HttpMessageHandler? handler = null,
             AssemblyName? assemblyName = null)
         {
-            _httpClient = new HttpClient(handler ?? new HttpClientHandler());
+            _httpClient = new HttpClient(handler ?? new HttpClientHandler())
+            {
+                Timeout = TimeSpan.FromMinutes(10)
+            };
             assemblyName ??= Assembly.GetEntryAssembly()?.GetName();
             _httpClient.DefaultRequestHeaders.Add(
                 "User-Agent",

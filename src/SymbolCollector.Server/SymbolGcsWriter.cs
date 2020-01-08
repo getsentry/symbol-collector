@@ -8,6 +8,27 @@ using Microsoft.Extensions.Logging;
 
 namespace SymbolCollector.Server
 {
+    public class GoogleCloudStorageOptions
+    {
+        public GoogleCredential Credential { get; set; } = null!; // Filled and validated by the Configuration system
+        public string BucketName { get; set; } = null!;
+    }
+
+    public class StorageClientFactory : IStorageClientFactory
+    {
+        private readonly GoogleCloudStorageOptions _options;
+
+        public StorageClientFactory(GoogleCloudStorageOptions options) =>
+            _options = options ?? throw new ArgumentNullException(nameof(options));
+
+        public Task<StorageClient> Create() => StorageClient.CreateAsync(_options.Credential);
+    }
+
+    public interface IStorageClientFactory
+    {
+        Task<StorageClient> Create();
+    }
+
     public interface ISymbolGcsWriter
     {
         Task WriteAsync(string name, Stream data, CancellationToken cancellationToken);
@@ -49,27 +70,5 @@ namespace SymbolCollector.Server
 
             _logger.LogInformation("Symbol {name} with {length} length stored {link}", name, data.Length, obj.MediaLink);
         }
-    }
-
-    public class GoogleCloudStorageOptions
-    {
-        public GoogleCredential Credential { get; }
-
-        public GoogleCloudStorageOptions(GoogleCredential googleCredentials) => Credential = googleCredentials;
-    }
-
-    public class StorageClientFactory : IStorageClientFactory
-    {
-        private readonly GoogleCloudStorageOptions _options;
-
-        public StorageClientFactory(GoogleCloudStorageOptions options) =>
-            _options = options ?? throw new ArgumentNullException(nameof(options));
-
-        public Task<StorageClient> Create() => StorageClient.CreateAsync(_options.Credential);
-    }
-
-    public interface IStorageClientFactory
-    {
-        Task<StorageClient> Create();
     }
 }

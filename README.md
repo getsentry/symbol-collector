@@ -43,7 +43,7 @@ For example, uploading a batch of Android symbols:
 
 ```sh
 export batchId=$(uuidgen)
-export batchFriendlyName="Android 4.4.4 - Sony Xperia 1532"
+export batchFriendlyName="Android 4.4.4 - Sony Xperia"
 export batchType="Android"
 export body='{"BatchFriendlyName":"'$batchFriendlyName'","BatchType":"'$batchType'"}'
 export server=http://localhost:5000

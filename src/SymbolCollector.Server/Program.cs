@@ -33,13 +33,15 @@ namespace SymbolCollector.Server
                 Serilog.Debugging.SelfLog.Enable(Console.Error);
             }
 
+            Console.WriteLine($"Environment: {Environment}");
+
             Log.Logger = new LoggerConfiguration()
                 .ReadFrom.Configuration(Configuration)
                 .CreateLogger();
 
             try
             {
-                Log.Information("Starting.");
+                Log.Information("Starting with {environment}", Environment);
 
                 using var host = CreateHostBuilder(args).Build();
 
@@ -63,7 +65,6 @@ namespace SymbolCollector.Server
             {
                 Log.CloseAndFlush();
             }
-
         }
 
         private static IHostBuilder CreateHostBuilder(string[] args) =>
@@ -102,7 +103,7 @@ namespace SymbolCollector.Server
 
             if (response.IsSuccessStatusCode)
             {
-                Console.WriteLine("Health check passed.");
+                Log.Information("Health check passed.");
                 cancellationTokenSource.Cancel(); // Stops the host, graceful shutdown.
             }
             else

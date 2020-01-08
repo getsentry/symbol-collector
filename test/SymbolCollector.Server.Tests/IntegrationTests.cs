@@ -3,9 +3,6 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Runtime.CompilerServices;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Google.Apis.Upload;
@@ -13,8 +10,10 @@ using Google.Cloud.Storage.V1;
 using Xunit;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using NSubstitute;
 using SymbolCollector.Core;
+using SymbolCollector.Server.Models;
 
 namespace SymbolCollector.Server.Tests
 {
@@ -30,10 +29,11 @@ namespace SymbolCollector.Server.Tests
         private class Fixture
         {
             private readonly Action<IServiceCollection> _defaultMocks;
-            private readonly WebApplicationFactory<Startup> _factory;
+            private WebApplicationFactory<Startup> _factory;
             public Action<IServiceCollection>? ConfigureServices { get; set; }
             public StorageClient StorageClient { get; set; } = Substitute.For<StorageClient>();
             public IStorageClientFactory StorageClientFactory { get; set; } = Substitute.For<IStorageClientFactory>();
+            public IBatchFinalizer BatchFinalizer { get; set; } = Substitute.For<IBatchFinalizer>();
 
             public IServiceProvider? ServiceProvider { get; set; }
 
@@ -41,20 +41,32 @@ namespace SymbolCollector.Server.Tests
             {
                 _factory = factory;
                 StorageClientFactory.Create().Returns(Task.FromResult(StorageClient));
-                _defaultMocks = c => c.AddSingleton(StorageClientFactory);
+                _defaultMocks = c =>
+                {
+                    c.AddSingleton(StorageClientFactory);
+                    c.AddSingleton(BatchFinalizer);
+                };
             }
 
             public HttpClient GetClient()
             {
-                _factory.WithWebHostBuilder(c =>
-                    c.ConfigureServices(s =>
-                    {
-                        _defaultMocks(s);
-                        ConfigureServices?.Invoke(s);
-                    }));
+                _factory = _factory.WithWebHostBuilder(c => c.ConfigureServices(s =>
+                {
+                    _defaultMocks(s);
+                    ConfigureServices?.Invoke(s);
+                }));
                 ServiceProvider = _factory.Services;
                 return _factory.CreateClient();
             }
+        }
+
+        [Fact]
+        public async Task Health_Success()
+        {
+            var client = _fixture.GetClient();
+
+            var resp = await client.GetAsync("/health");
+            resp.AssertStatusCode(HttpStatusCode.OK);
         }
 
         [Fact(Skip = "not writing to GCS atm")]
@@ -92,7 +104,7 @@ namespace SymbolCollector.Server.Tests
                     Content = new JsonContent(new { })
                 });
 
-            Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+            resp.AssertStatusCode(HttpStatusCode.BadRequest);
             var responseModel = await resp.Content.ToJsonElement();
             Assert.Equal("The field BatchType must be between 1 and 4.",
                 responseModel.GetProperty("BatchType")[0].GetString());
@@ -106,7 +118,7 @@ namespace SymbolCollector.Server.Tests
         [InlineData(BatchType.IOS, false)]
         [InlineData(BatchType.MacOS, false)]
         [InlineData(BatchType.WatchOS, false)]
-        [InlineData((BatchType)(((int)BatchType.Android) + 1), true)]
+        [InlineData((BatchType)((int)BatchType.Android + 1), true)]
         public async Task Start_BatchType_TestCase(BatchType batchType, bool validationError)
         {
             var model = new BatchStartRequestModel {BatchType = batchType};
@@ -118,7 +130,7 @@ namespace SymbolCollector.Server.Tests
                     Content = new JsonContent(model)
                 });
 
-            Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+            resp.AssertStatusCode(HttpStatusCode.BadRequest);
             var responseModel = await resp.Content.ToJsonElement();
             if (validationError)
             {
@@ -146,7 +158,7 @@ namespace SymbolCollector.Server.Tests
                     Content = new JsonContent(model)
                 });
 
-            Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+            resp.AssertStatusCode(HttpStatusCode.BadRequest);
             var responseModel = await resp.Content.ToJsonElement();
             Assert.Equal("A batch friendly name can't be longer than 1000 characters.",
                 responseModel.GetProperty("BatchFriendlyName")[0].GetString());
@@ -162,7 +174,7 @@ namespace SymbolCollector.Server.Tests
                 {
                     Content = new MultipartFormDataContent()
                 });
-            Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+            resp.AssertStatusCode(HttpStatusCode.BadRequest);
             var responseModel = await resp.Content.ToJsonElement();
             Assert.Equal($"Batch Id {batchId} does not exist.", responseModel.GetProperty("Batch")[0].GetString());
         }
@@ -181,7 +193,7 @@ namespace SymbolCollector.Server.Tests
                         BatchFriendlyName = "Test batch 1", BatchType = BatchType.Android
                     })
                 });
-            Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+            resp.AssertStatusCode(HttpStatusCode.OK);
             resp = await client.SendAsync(
                 new HttpRequestMessage(HttpMethod.Post, SymbolsController.Route + $"/batch/{batchId2}/start")
                 {
@@ -190,11 +202,11 @@ namespace SymbolCollector.Server.Tests
                         BatchFriendlyName = "Test batch 1", BatchType = BatchType.Android
                     })
                 });
-            Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+            resp.AssertStatusCode(HttpStatusCode.OK);
 
             var testFile = Path.Combine("TestFiles", "libqcbassboost.so");
             const string debugId = "637aa379-d34e-d455-c314-d646b8f3eaec";
-            Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+            resp.AssertStatusCode(HttpStatusCode.OK);
 
             resp = await client.SendAsync(
                 new HttpRequestMessage(HttpMethod.Post, SymbolsController.Route + $"/batch/{batchId1}/upload/")
@@ -206,7 +218,7 @@ namespace SymbolCollector.Server.Tests
                         }
                     }
                 });
-            Assert.Equal(HttpStatusCode.Created, resp.StatusCode);
+            resp.AssertStatusCode(HttpStatusCode.Created);
 
             resp = await client.SendAsync(
                 new HttpRequestMessage(HttpMethod.Post, SymbolsController.Route + $"/batch/{batchId2}/upload/")
@@ -218,7 +230,7 @@ namespace SymbolCollector.Server.Tests
                         }
                     }
                 });
-            Assert.Equal(HttpStatusCode.AlreadyReported, resp.StatusCode);
+            resp.AssertStatusCode(HttpStatusCode.AlreadyReported);
 
             var symbolService = _fixture.ServiceProvider.GetRequiredService<ISymbolService>();
             var symbol = await symbolService.GetSymbol(debugId, CancellationToken.None);
@@ -250,7 +262,7 @@ namespace SymbolCollector.Server.Tests
                     Content = new JsonContent(registration)
                 });
 
-            Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+            resp.AssertStatusCode(HttpStatusCode.OK);
             var symbolService = _fixture.ServiceProvider.GetRequiredService<ISymbolService>();
             var batch = await symbolService.GetBatch(batchId, CancellationToken.None);
             Assert.Equal(batchId, batch!.BatchId);
@@ -272,14 +284,15 @@ namespace SymbolCollector.Server.Tests
                         }
                     }
                 });
-            Assert.Equal(HttpStatusCode.Created, resp.StatusCode);
+            resp.AssertStatusCode(HttpStatusCode.Created);
 
             var symbol = await symbolService.GetSymbol(debugId, CancellationToken.None);
             Assert.Equal(Path.GetFileName(testFile), symbol!.Name);
             Assert.Equal("5fb23797a8cb482bac325eabdcb3d7e70b89fe0ec51035010e9be3a7b76fff84", symbol.Hash);
             Assert.Equal(debugId, symbol.DebugId);
             Assert.EndsWith( Path.GetFileName(testFile), symbol.Path);
-            Assert.StartsWith($"processing{Path.DirectorySeparatorChar}{batchId}{Path.DirectorySeparatorChar}", symbol.Path);
+            var baseWorking = _fixture.ServiceProvider.GetRequiredService<IOptions<SymbolServiceOptions>>().Value.BaseWorkingPath;
+            Assert.StartsWith(Path.Combine(baseWorking!, "processing", batchId.ToString()), symbol.Path);
             Assert.Equal(batchId, symbol.BatchIds.Single());
 
             // TODO: Assert values once parsing is done.
@@ -309,14 +322,14 @@ namespace SymbolCollector.Server.Tests
                     Content = new JsonContent(registration)
                 });
 
-            Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+            resp.AssertStatusCode(HttpStatusCode.OK);
 
             var testFile = Path.Combine("TestFiles", "libxamarin-app.so");
             const string debugId = "df3a9df5-26a8-d63d-88ad-820f74a325b5";
             const string hash = "1a40a2db7c6b4dd59e3bcecd9b53cf3c7fc544afc311e25c41ee01bc4bb99a96";
             resp = await client.SendAsync(new HttpRequestMessage(HttpMethod.Head,
                 SymbolsController.Route + $"/batch/{batchId}/check/{debugId}/{hash}"));
-            Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+            resp.AssertStatusCode(HttpStatusCode.OK);
 
             resp = await client.SendAsync(
                 new HttpRequestMessage(HttpMethod.Post, SymbolsController.Route + $"/batch/{batchId}/upload/")
@@ -329,7 +342,7 @@ namespace SymbolCollector.Server.Tests
                     }
                 });
 
-            Assert.Equal(HttpStatusCode.Created, resp.StatusCode);
+            resp.AssertStatusCode(HttpStatusCode.Created);
 
             var responseModel = await resp.Content.ToJsonElement();
             Assert.Equal(1, responseModel.GetProperty("filesCreated").GetInt32());
@@ -337,12 +350,12 @@ namespace SymbolCollector.Server.Tests
             // Check again if needed.
             resp = await client.SendAsync(new HttpRequestMessage(HttpMethod.Head,
                 SymbolsController.Route + $"/batch/{batchId}/check/{debugId}/{hash}"));
-            Assert.Equal(HttpStatusCode.Conflict, resp.StatusCode);
+            resp.AssertStatusCode(HttpStatusCode.Conflict);
 
             // Check again if with a different hash. API returns OK hoping the client uploads the file.
             resp = await client.SendAsync(new HttpRequestMessage(HttpMethod.Head,
                 SymbolsController.Route + $"/batch/{batchId}/check/{debugId}/{hash + "-wrong"}"));
-            Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+            resp.AssertStatusCode(HttpStatusCode.OK);
 
             resp = await client.SendAsync(
                 new HttpRequestMessage(HttpMethod.Post, SymbolsController.Route + $"/batch/{batchId}/upload/")
@@ -357,7 +370,7 @@ namespace SymbolCollector.Server.Tests
 
             responseModel = await resp.Content.ToJsonElement();
             Assert.Equal(0, responseModel.GetProperty("filesCreated").GetInt32());
-            Assert.Equal(HttpStatusCode.AlreadyReported, resp.StatusCode);
+            resp.AssertStatusCode(HttpStatusCode.AlreadyReported);
 
             var metrics = new ClientMetricsModel
             {
@@ -374,7 +387,7 @@ namespace SymbolCollector.Server.Tests
                     Content = new JsonContent(new BatchEndRequestModel {ClientMetrics = metrics})
                 });
 
-            Assert.Equal(HttpStatusCode.NoContent, resp.StatusCode);
+            resp.AssertStatusCode(HttpStatusCode.NoContent);
 
             var symbolService = _fixture.ServiceProvider.GetRequiredService<ISymbolService>();
             var batch = await symbolService.GetBatch(batchId, CancellationToken.None);

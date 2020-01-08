@@ -1,116 +1,24 @@
 using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using SymbolCollector.Core;
+using SymbolCollector.Server.Models;
 
 namespace SymbolCollector.Server
 {
-    public class SymbolUploadBatch
-    {
-        public Guid BatchId { get; }
-        public DateTimeOffset StartTime { get; }
-        public DateTimeOffset? EndTime { get; private set; }
-
-        // Will be used as BundleId (caller doesn't need to worry about it being unique).
-        public string FriendlyName { get; }
-
-        public BatchType BatchType { get; }
-
-        public ConcurrentDictionary<string, SymbolMetadata> Symbols { get; } =
-            new ConcurrentDictionary<string, SymbolMetadata>();
-
-        public IClientMetrics? ClientMetrics { get; set; }
-
-        public bool IsClosed => EndTime.HasValue;
-
-        public SymbolUploadBatch(Guid batchId, string friendlyName, BatchType batchType)
-        {
-            if (batchId == default)
-            {
-                throw new ArgumentException("Empty Batch Id.");
-            }
-
-            if (string.IsNullOrWhiteSpace(friendlyName))
-            {
-                throw new ArgumentException("Friendly name is required.");
-            }
-
-            if (batchType == BatchType.Unknown)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(batchType),
-                    batchType,
-                    "A batch type is required.");
-            }
-
-            BatchId = batchId;
-            FriendlyName = friendlyName;
-            BatchType = batchType;
-            StartTime = DateTimeOffset.UtcNow;
-        }
-
-        public void Close()
-        {
-            if (EndTime.HasValue)
-            {
-                throw new InvalidOperationException(
-                    $"Can't close batch '{BatchId}'. It was already closed at {EndTime}.");
-            }
-
-            EndTime = DateTimeOffset.UtcNow;
-        }
-    }
-
-    // https://github.com/getsentry/symbolicator/blob/cd545b3bdbb7c3a0869de20c387740baced2be5c/symsorter/src/app.rs
-    public class SymbolMetadata
-    {
-        public string DebugId { get; set; }
-        public string? Hash { get; set; }
-        public string Path { get; set; }
-
-        // Symsorter uses this to name the file
-        public ObjectFileType ObjectFileType { get; set; }
-
-        // /refs
-        // name=
-        public string Name { get; set; }
-
-        // arch= arm, arm64, x86, x86_64
-        public Architecture Arch { get; set; }
-
-        // file_format= elf, macho
-        public FileFormat FileFormat { get; set; }
-
-        public HashSet<Guid> BatchIds { get; }
-
-        public SymbolMetadata(
-            string debugId,
-            string? hash,
-            string path,
-            ObjectFileType objectFileType,
-            string name,
-            Architecture arch,
-            FileFormat fileFormat,
-            HashSet<Guid> batchIds)
-        {
-            DebugId = debugId;
-            Hash = hash;
-            Path = path;
-            ObjectFileType = objectFileType;
-            Name = name;
-            Arch = arch;
-            FileFormat = fileFormat;
-            BatchIds = batchIds;
-        }
-    }
-
     public interface ISymbolService
     {
         Task Start(Guid batchId, string friendlyName, BatchType batchType, CancellationToken token);
@@ -128,20 +36,71 @@ namespace SymbolCollector.Server
         AlreadyExisted
     }
 
-    internal class InMemorySymbolService : ISymbolService
+    public class SymbolServiceOptions
+    {
+        public string SymsorterPath { get; set; } = null!; // Either bound via configuration or thrown early
+
+        private string _baseWorkingPath = null!; // Either bound via configuration or thrown early
+
+        public string BaseWorkingPath
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(_baseWorkingPath))
+                {
+                    return _baseWorkingPath;
+                }
+
+                if (Directory.Exists(_baseWorkingPath))
+                {
+                    return _baseWorkingPath;
+                }
+
+                var info = Directory.CreateDirectory(_baseWorkingPath);
+                if (!info.Exists)
+                {
+                    throw new InvalidOperationException(
+                        "Base path configured does not exist and could not be created.");
+                }
+
+                return _baseWorkingPath;
+            }
+            set => _baseWorkingPath = value;
+        }
+    }
+
+    internal class InMemorySymbolService : ISymbolService, IDisposable
     {
         private readonly ObjectFileParser _parser;
+        private readonly IBatchFinalizer _batchFinalizer;
+        private readonly SymbolServiceOptions _options;
         private readonly ILogger<InMemorySymbolService> _logger;
         private readonly Random _random = new Random();
 
         private readonly ConcurrentDictionary<Guid, SymbolUploadBatch> _batches =
             new ConcurrentDictionary<Guid, SymbolUploadBatch>();
 
-        public InMemorySymbolService(ObjectFileParser parser, ILogger<InMemorySymbolService> logger)
+        private readonly string _donePath;
+        private readonly string _processingPath;
+        private readonly string _conflictPath;
+
+        public InMemorySymbolService(
+            ObjectFileParser parser,
+            IBatchFinalizer batchFinalizer,
+            IOptions<SymbolServiceOptions> options,
+            ILogger<InMemorySymbolService> logger)
         {
             _parser = parser;
+            _batchFinalizer = batchFinalizer;
+            _options = options.Value;
             _logger = logger;
-            Directory.CreateDirectory("done");
+
+            _donePath = Path.Combine(_options.BaseWorkingPath, "done");
+            _processingPath = Path.Combine(_options.BaseWorkingPath, "processing");
+            _conflictPath = Path.Combine(_options.BaseWorkingPath, "conflict");
+            Directory.CreateDirectory(_donePath);
+            Directory.CreateDirectory(_processingPath);
+            Directory.CreateDirectory(_conflictPath);
         }
 
         public Task Start(Guid batchId, string friendlyName, BatchType batchType, CancellationToken token)
@@ -153,7 +112,7 @@ namespace SymbolCollector.Server
 
             _batches[batchId] = new SymbolUploadBatch(batchId, friendlyName, batchType);
             var batchIdString = batchId.ToString();
-            var processingDir = Path.Combine(Directory.GetCurrentDirectory(), "processing", batchIdString);
+            var processingDir = Path.Combine(_processingPath, batchIdString);
             Directory.CreateDirectory(processingDir);
 
             _logger.LogInformation("Started batch {batchId} with friendly name {friendlyName} and type {batchType}",
@@ -178,7 +137,7 @@ namespace SymbolCollector.Server
 
             // TODO: Until parser supports Stream instead of file path, we write the file to TMP before we can validate it.
             var destination = Path.Combine(
-                "processing",
+                _processingPath,
                 batchId.ToString(),
                 // To avoid files with conflicting name from the same batch
                 _random.Next().ToString(CultureInfo.InvariantCulture),
@@ -208,9 +167,8 @@ namespace SymbolCollector.Server
                 {
                     // TODO: Unlikely case a debugId on un-matching file hash (modified file?)
                     // TODO: Store the file for debugging, raise a Sentry event attachments
-                    Directory.CreateDirectory("conflict");
                     var conflictDestination = Path.Combine(
-                        "conflict",
+                        _conflictPath,
                         batchId.ToString(),
                         // To avoid files with conflicting name from the same batch
                         _random.Next().ToString(CultureInfo.InvariantCulture),
@@ -294,9 +252,9 @@ namespace SymbolCollector.Server
             batch.ClientMetrics = clientMetrics;
             batch.Close();
 
-            var processingLocation = Path.Combine("processing", batchId.ToString());
+            var processingLocation = Path.Combine(_processingPath, batchId.ToString());
 
-            var destination = Path.Combine("done", batchId.ToString());
+            var destination = Path.Combine(_donePath, batchId.ToString());
             foreach (var symbol in batch.Symbols.Values)
             {
                 symbol.Path = symbol.Path.Replace(processingLocation, destination);
@@ -311,28 +269,15 @@ namespace SymbolCollector.Server
                     options: new JsonSerializerOptions {WriteIndented = true});
             }
 
+            Directory.CreateDirectory(Path.GetDirectoryName(destination));
             Directory.Move(processingLocation, destination);
 
             _logger.LogInformation("Batch {batchId} is now closed at {location}.",
                 batchId, destination);
 
-            // TODO: could write file:
-            // $"output/{batch.BatchType}/bundles/{batch.FriendlyName}";
-            // Format correct output i.e: output/ios/bundles/10.3_ABCD
-
-            // With contents in the format:
-            // $"{\"name\":"{batch.FriendlyName},\"timestamp\":\"{batchId.StartTime}\",\"debug_ids\":[ ... ]}";
-            // Matching format i.e: {"name":"10.3_ABCD","timestamp":"2019-12-27T12:43:27.955330Z","debug_ids":[
-            // BatchId has no dashes
-
-            // And for each file, write:
-            // output/{batch.BatchType}/10/8f1100326466498e655588e72a3e1e/
-            // zstd compressed.
-            // Name the file {symbol.SymbolType.ToLower()}
-            // file named: meta
-            // {"name":"System.Net.Http.Native.dylib","arch":"x86_64","file_format":"macho"}
-            // folder called /refs/ with an empty file named batch.FriendlyName
+            await _batchFinalizer.CloseBatch(destination, batch, token);
         }
+
 
         private async Task<SymbolUploadBatch> GetOpenBatch(Guid batchId, CancellationToken token)
         {
@@ -349,5 +294,7 @@ namespace SymbolCollector.Server
 
             return batch;
         }
+
+        public void Dispose() => (_batchFinalizer as IDisposable)?.Dispose();
     }
 }
