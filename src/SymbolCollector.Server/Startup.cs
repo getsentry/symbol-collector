@@ -68,7 +68,6 @@ namespace SymbolCollector.Server
             services.AddMvc()
                 .AddJsonOptions(options =>
                     options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
-            var a = _configuration.GetSection("GoogleCloud:JsonCredentialParameters");
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
