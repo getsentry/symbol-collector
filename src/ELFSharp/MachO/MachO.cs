@@ -14,7 +14,7 @@ namespace ELFSharp.MachO
             {
                 reader.ReadBytes(4); // header, already checked
                 Machine = (Machine)reader.ReadInt32();
-                reader.ReadBytes(4); // we don't support the cpu subtype now
+                CpuSubType = (CpuSubType)reader.ReadUInt32();
                 FileType = (FileType)reader.ReadUInt32();
                 var noOfCommands = reader.ReadInt32();
                 reader.ReadInt32(); // size of commands
@@ -34,6 +34,9 @@ namespace ELFSharp.MachO
         }
 
         public Machine Machine { get; private set; }
+        // uint CPU_SUBTYPE_MASK = 0xff00_0000;
+        // Flag to remove CPU capabilities: CpuSubType & !CPU_SUBTYPE_MASK
+        public CpuSubType CpuSubType { get; private set; }
 
         public FileType FileType { get; private set; }
 
@@ -81,6 +84,7 @@ namespace ELFSharp.MachO
         private readonly Command[] commands;
 
         internal const int Architecture64 = 0x1000000;
+        internal const int Architecture6432 = 0x0200_0000;
     }
 }
 
