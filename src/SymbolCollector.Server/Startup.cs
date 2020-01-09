@@ -112,6 +112,10 @@ namespace SymbolCollector.Server
             {
                 fileName = "symsorter-mac";
             }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                fileName = "symsorter.exe";
+            }
             else
             {
                 throw new InvalidOperationException("No symsorter added for this platform.");
