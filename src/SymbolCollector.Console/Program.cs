@@ -64,7 +64,6 @@ namespace SymbolCollector.Console
                         _metrics.Write(Out);
                     }
                 }
-
             }, cancellation.Token);
 
 
@@ -98,6 +97,8 @@ namespace SymbolCollector.Console
             string? upload = null,
             string? check = null,
             string? package = null,
+            string? symsorter = null,
+            string? bundleId = null,
             Uri? serverEndpoint = null)
         {
             SentrySdk.Init(o =>
@@ -138,6 +139,14 @@ namespace SymbolCollector.Console
                         break;
                 }
 
+                // TODO: M.E.DependencyInjection/Configuration
+                var logLevel = LogLevel.Warning;
+                var loggerFatBinaryReader = new LoggerAdapter<FatBinaryReader>(logLevel);
+                var parser = new ObjectFileParser(
+                    new FatBinaryReader(loggerFatBinaryReader),
+                    _metrics,
+                    new LoggerAdapter<ObjectFileParser>(logLevel));
+
                 if (check is { } checkLib)
                 {
                     if (!File.Exists(check))
@@ -145,37 +154,27 @@ namespace SymbolCollector.Console
                         WriteLine($"File to check '{checkLib}' doesn't exist.");
                         return;
                     }
-                    else
+
+                    WriteLine($"Checking '{checkLib}'.");
+                    if (parser.TryParse(checkLib, out var result) && result is {})
                     {
-                        WriteLine($"Checking '{checkLib}'.");
-
-                        // TODO: M.E.DependencyInjection/Configuration
-                        var logLevel = LogLevel.Warning;
-                        var loggerFatBinaryReader = new LoggerAdapter<FatBinaryReader>(logLevel);
-                        var parser = new ObjectFileParser(
-                            new FatBinaryReader(loggerFatBinaryReader),
-                            _metrics,
-                            new LoggerAdapter<ObjectFileParser>(logLevel));
-
-                        if (parser.TryParse(checkLib, out var result) && result is {})
+                        if (result is FatMachOFileResult fatMachOFileResult)
                         {
-                            if (result is FatMachOFileResult fatMachOFileResult)
+                            WriteLine($"Fat Mach-O File:");
+                            Print(fatMachOFileResult);
+                            foreach (var innerFile in fatMachOFileResult.InnerFiles)
                             {
-                                WriteLine($"Fat Mach-O File:");
-                                Print(fatMachOFileResult);
-                                foreach (var innerFile in fatMachOFileResult.InnerFiles)
-                                {
-                                    WriteLine("Inner file:");
-                                    Print(innerFile);
-                                }
+                                WriteLine("Inner file:");
+                                Print(innerFile);
                             }
-                            else
-                            {
-                                Print(result);
-                            }
+                        }
+                        else
+                        {
+                            Print(result);
+                        }
 
-                            static void Print(ObjectFileResult r)
-                                => WriteLine($@"
+                        static void Print(ObjectFileResult r)
+                            => WriteLine($@"
 Path: {r.Path}
 BuildId: {r.BuildId}
 BuildIdType: {r.BuildIdType}
@@ -184,14 +183,55 @@ File Format: {r.FileFormat}
 Architecture: {r.Architecture}
 ObjectKind: {r.ObjectKind}
 ");
-                        }
-                        else
-                        {
-                            WriteLine($"Failed to parse {checkLib}.");
-                        }
+                    }
+                    else
+                    {
+                        WriteLine($"Failed to parse {checkLib}.");
+                    }
 
+                    return;
+                }
+
+                if (symsorter is { })
+                {
+                    if (string.IsNullOrWhiteSpace(bundleId))
+                    {
+                        WriteLine("Missing bundle Id");
                         return;
                     }
+
+                    if (!Directory.Exists(symsorter))
+                    {
+                        WriteLine($"Directory '{symsorter}' doesn't exist.");
+                        return;
+                    }
+
+                    foreach (var file in Directory.GetFiles(symsorter, "*", SearchOption.AllDirectories))
+                    {
+                        if (parser.TryParse(file, out var result) && result is {})
+                        {
+                            if (result is FatMachOFileResult fatMachOFileResult)
+                            {
+                                foreach (var innerFile in fatMachOFileResult.InnerFiles)
+                                {
+                                    WriteLine($"{innerFile.DebugId[..2]}/{innerFile.DebugId[2..].Replace("-", "")}");
+                                }
+                            }
+                            else
+                            {
+                                if (result.FileFormat == FileFormat.Elf)
+                                {
+                                    WriteLine($"{result.CodeId[..2]}/{result.CodeId[2..].Replace("-", "")}");
+                                }
+                                else
+                                {
+                                    WriteLine($"{result.DebugId[..2]}/{result.DebugId[2..].Replace("-", "")}");
+                                }
+                            }
+                        }
+                    }
+
+                    return;
                 }
 
                 WriteLine(@"Parameters:

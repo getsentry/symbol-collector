@@ -95,7 +95,14 @@ namespace SymbolCollector.Core
         {
             if (TryGetMachOFilesFromFatFile(file, out var files))
             {
-                result = new FatMachOFileResult(string.Empty, file, GetHash(file), BuildIdType.None, files);
+                result = new FatMachOFileResult(
+                    string.Empty,
+                    string.Empty,
+                    string.Empty,
+                    file,
+                    GetHash(file),
+                    BuildIdType.None,
+                    files);
                 return true;
             }
 
@@ -176,17 +183,19 @@ namespace SymbolCollector.Core
                         else
                         {
                             // TODO ns2.1: get a slice
-                            desc = desc.Take(16).ToArray();
-                            if (desc.Length != 16)
+                            var desc16bytes = desc.Take(16).ToArray();
+                            if (desc16bytes.Length != 16)
                             {
                                 // TODO: Throw?
                                 _logger.LogError("build-id exists but bytes (desc) length is unexpected {bytes}.",
-                                    desc.Length);
+                                    desc16bytes.Length);
                             }
                             else
                             {
                                 result = new ObjectFileResult(
-                                    new Guid(desc).ToString(),
+                                    new Guid(desc16bytes).ToString(),
+                                    new Guid(desc16bytes).ToString(),
+                                    BitConverter.ToString(desc).Replace("-","").ToLower(),
                                     file,
                                     GetHash(file),
                                     BuildIdType.GnuBuildId,
@@ -208,6 +217,8 @@ namespace SymbolCollector.Core
                                 {
                                     result = new ObjectFileResult(
                                         fallbackDebugId,
+                                        fallbackDebugId,
+                                        fallbackDebugId, // TODO: prob needs NT_GNU_BUILD_ID here
                                         file,
                                         GetHash(file),
                                         BuildIdType.TextSectionHash,
@@ -277,8 +288,16 @@ namespace SymbolCollector.Core
                         buildId = uuid.Id.ToString();
                     }
 
-                    result = new ObjectFileResult(buildId, file, GetHash(file), BuildIdType.Uuid, objectKind,
-                        FileFormat.MachO, arch);
+                    result = new ObjectFileResult(
+                        buildId,
+                        buildId,
+                        buildId + "0",
+                        file,
+                        GetHash(file),
+                        BuildIdType.Uuid,
+                        objectKind,
+                        FileFormat.MachO,
+                        arch);
                     return true;
                 }
 
