@@ -180,6 +180,9 @@ Path: {r.Path}
 BuildId: {r.BuildId}
 BuildIdType: {r.BuildIdType}
 File hash: {r.Hash}
+File Format: {r.FileFormat}
+Architecture: {r.Architecture}
+ObjectKind: {r.ObjectKind}
 ");
                         }
                         else
