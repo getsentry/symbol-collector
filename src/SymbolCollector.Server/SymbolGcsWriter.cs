@@ -34,6 +34,11 @@ namespace SymbolCollector.Server
         Task WriteAsync(string name, Stream data, CancellationToken cancellationToken);
     }
 
+    public class NoOpSymbolGcsWriter : ISymbolGcsWriter
+    {
+        public Task WriteAsync(string name, Stream data, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
     public class SymbolGcsWriter : ISymbolGcsWriter
     {
         private readonly IStorageClientFactory _storageClientFactory;

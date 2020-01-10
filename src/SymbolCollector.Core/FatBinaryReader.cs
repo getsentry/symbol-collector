@@ -67,7 +67,7 @@ namespace SymbolCollector.Core
             }
 
             var filesToDelete = new List<string>();
-            fatMachO = new FatMachO(true)
+            fatMachO = new FatMachO()
             {
                 Header = header.Value,
                 FilesToDelete = filesToDelete,

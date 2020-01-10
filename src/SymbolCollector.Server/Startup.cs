@@ -34,7 +34,7 @@ namespace SymbolCollector.Server
             services.AddSingleton<FatBinaryReader>();
             services.AddSingleton<ClientMetrics>();
             services.AddSingleton<IBatchFinalizer, SymsorterBatchFinalizer>();
-            services.AddSingleton<ISymbolGcsWriter, SymbolGcsWriter>();
+            services.AddSingleton<ISymbolGcsWriter, NoOpSymbolGcsWriter>();
             services.AddSingleton<IStorageClientFactory, StorageClientFactory>();
 
             services.AddOptions<JsonCredentialParameters>()
