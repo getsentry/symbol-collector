@@ -32,6 +32,20 @@ namespace SymbolCollector.Core
         Linux
     }
 
+    public static class BatchTypeExtensions
+    {
+        public static string ToSymsorterPrefix(this BatchType type) =>
+            type switch
+            {
+                BatchType.WatchOS => "watchos",
+                BatchType.MacOS => "macos",
+                BatchType.IOS => "ios",
+                BatchType.Android => "android",
+                BatchType.Linux => "linux",
+                _ => throw new InvalidOperationException($"Invalid BatchType {type}."),
+            };
+    }
+
     public interface ISymbolClient : IDisposable
     {
         Task<Guid> Start(string friendlyName, BatchType batchType, CancellationToken token);
@@ -39,7 +53,7 @@ namespace SymbolCollector.Core
 
         Task<bool> Upload(
             Guid batchId,
-            string buildId,
+            string unifiedId,
             string hash,
             string fileName,
             Stream file,
@@ -125,18 +139,18 @@ namespace SymbolCollector.Core
 
         public async Task<bool> Upload(
             Guid batchId,
-            string buildId,
+            string unifiedId,
             string hash,
             string fileName,
             Stream file,
             CancellationToken token)
         {
-            if (string.IsNullOrWhiteSpace(buildId))
+            if (string.IsNullOrWhiteSpace(unifiedId))
             {
                 throw new ArgumentException("Invalid empty BuildId");
             }
             {
-                var checkUrl = $"{_baseAddress.AbsoluteUri}symbol/batch/{batchId}/check/{buildId}/{hash}";
+                var checkUrl = $"{_baseAddress.AbsoluteUri}symbol/batch/{batchId}/check/{unifiedId}/{hash}";
                 try
                 {
                     var checkResponse =
@@ -145,7 +159,7 @@ namespace SymbolCollector.Core
                     if (checkResponse.StatusCode == HttpStatusCode.Conflict)
                     {
                         _logger.LogDebug("Server returns {statusCode} for {buildId}",
-                            checkResponse.StatusCode, buildId);
+                            checkResponse.StatusCode, unifiedId);
                         return false;
                     }
 
@@ -154,7 +168,7 @@ namespace SymbolCollector.Core
                 catch (Exception e)
                 {
                     using var _ = _logger.BeginScope(("url", checkUrl));
-                    _logger.LogError(e, "Failed to check for debugid through {url}", checkUrl);
+                    _logger.LogError(e, "Failed to check for unifiedId through {url}", checkUrl);
                     throw;
                 }
             }

@@ -183,7 +183,7 @@ namespace SymbolCollector.Core
         private async Task UploadAsync(Guid batchId, ObjectFileResult objectFileResult,
             CancellationToken cancellationToken)
         {
-            if (string.IsNullOrWhiteSpace(objectFileResult.BuildId))
+            if (string.IsNullOrWhiteSpace(objectFileResult.UnifiedId))
             {
                 _logger.LogError("Cannot upload file without debug id: {file}", objectFileResult.Path);
                 return;
@@ -191,7 +191,7 @@ namespace SymbolCollector.Core
 
             using var _ = _logger.BeginScope(new Dictionary<string, string>
             {
-                {"debugId", objectFileResult.BuildId}, {"file", objectFileResult.Path},
+                {"unified-id", objectFileResult.UnifiedId}, {"file", objectFileResult.Path},
             });
 
             // Better would be if `ELF` class would expose its buffer so we don't need to read the file twice.
@@ -202,7 +202,7 @@ namespace SymbolCollector.Core
             {
                 var uploaded = await _symbolClient.Upload(
                     batchId,
-                    objectFileResult.BuildId,
+                    objectFileResult.UnifiedId,
                     objectFileResult.Hash,
                     Path.GetFileName(objectFileResult.Path),
                     fileStream,

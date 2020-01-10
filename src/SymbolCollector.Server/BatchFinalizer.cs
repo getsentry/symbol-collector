@@ -78,7 +78,7 @@ namespace SymbolCollector.Server
             Directory.CreateDirectory(symsorterOutput);
 
             var bundleId = ToBundleId(batch.FriendlyName);
-            var symsorterPrefix = ToSymsorterPrefix(batch.BatchType);
+            var symsorterPrefix = batch.BatchType.ToSymsorterPrefix();
 
             var args = $"-zz -o {symsorterOutput} --prefix {symsorterPrefix} --bundle-id {bundleId} {batchLocation}";
 
@@ -147,17 +147,6 @@ namespace SymbolCollector.Server
                     File.Delete(filePath);
                 }
             }
-
-            static string ToSymsorterPrefix(BatchType type) =>
-                type switch
-                {
-                    BatchType.WatchOS => "watchos",
-                    BatchType.MacOS => "macos",
-                    BatchType.IOS => "ios",
-                    BatchType.Android => "android",
-                    BatchType.Linux => "linux",
-                    _ => throw new InvalidOperationException($"Invalid BatchType {type}."),
-                };
 
             string ToBundleId(string friendlyName)
             {

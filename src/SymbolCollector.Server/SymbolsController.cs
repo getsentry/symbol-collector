@@ -82,10 +82,10 @@ namespace SymbolCollector.Server
             return NoContent();
         }
 
-        [HttpHead(Route + "/batch/{batchId}/check/{debugId}/{hash}")]
+        [HttpHead(Route + "/batch/{batchId}/check/{unifiedId}/{hash}")]
         public async Task<IActionResult> IsSymbolMissing(
             [FromRoute] Guid batchId,
-            [FromRoute] string debugId,
+            [FromRoute] string unifiedId,
             [FromRoute] string hash,
             CancellationToken token)
         {
@@ -96,11 +96,11 @@ namespace SymbolCollector.Server
                 return BadRequest(ModelState);
             }
 
-            var symbol = await _symbolService.GetSymbol(debugId, token);
+            var symbol = await _symbolService.GetSymbol(unifiedId, token);
             if (symbol is null)
             {
-                _logger.LogDebug("{batchId} looked for {debugId} and {hash} which is a missing symbol.",
-                    batchId, debugId, hash);
+                _logger.LogDebug("{batchId} looked for {unifiedId} and {hash} which is a missing symbol.",
+                    batchId, unifiedId, hash);
                 return Ok();
             }
 
@@ -116,8 +116,8 @@ namespace SymbolCollector.Server
                     // Return OK so that client uploads the symbol. The upload handing code
                     // will take the file "aside" for troubleshooting
                     _logger.LogDebug(
-                        "File with {debugId} as part of {batchId} has a conflicting hash with the existing file.",
-                        debugId, batchId);
+                        "File with {unifiedId} as part of {batchId} has a conflicting hash with the existing file.",
+                        unifiedId, batchId);
                 }
 
                 return Ok();

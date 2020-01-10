@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -29,6 +30,10 @@ namespace SymbolCollector.Core.Tests
             public ISymbolClient SymbolClient { get; set; } = Substitute.For<ISymbolClient>();
             public ILogger<Client>? Logger { get; set; }
 
+            public Fixture() =>
+                HttpMessageHandler = new TestMessageHandler((message, token) =>
+                    Task.FromResult(new HttpResponseMessage(HttpStatusCode.Created)));
+
             public Client GetSut() =>
                 new Client(
                     SymbolClient,
@@ -52,6 +57,7 @@ namespace SymbolCollector.Core.Tests
                 {
                     Interlocked.Increment(ref counter);
                 }
+
                 return Task.FromResult(new HttpResponseMessage(HttpStatusCode.Created));
             });
             _fixture.SymbolClient = new SymbolClient(
@@ -61,8 +67,39 @@ namespace SymbolCollector.Core.Tests
 
             var sut = _fixture.GetSut();
             await sut.UploadAllPathsAsync(new[] {"TestFiles"}, CancellationToken.None);
+
+            // number of valid test files in TestFiles
             Assert.Equal(12, counter);
-            // TODO: Match exact files and their debug ids.
+        }
+
+        [Fact]
+        public async Task UploadAllPathsAsync_TestFilesDirectory_FileCorrectlySent()
+        {
+            _fixture.ObjectFileParser = new ObjectFileParser(new FatBinaryReader());
+
+            var sut = _fixture.GetSut();
+            await sut.UploadAllPathsAsync(new[] {"TestFiles"}, CancellationToken.None);
+
+            // Make sure all valid test files were picked up
+            var testFiles = new ObjectFileResultTestCases()
+                .Select(c => c[0])
+                .OfType<ObjectFileResultTestCase>()
+                .Where(c => c.Expected is {})
+                .SelectMany(c => c.Expected is FatMachOFileResult fatMachOFileResult
+                    ? fatMachOFileResult.InnerFiles
+                    : new List<ObjectFileResult> {c.Expected!})
+                .ToList();
+
+            foreach (var testFile in testFiles)
+            {
+                await _fixture.SymbolClient.Received(1).Upload(
+                    Arg.Any<Guid>(),
+                    testFile.UnifiedId,
+                    testFile.Hash,
+                    Path.GetFileName(testFile.Path),
+                    Arg.Any<Stream>(),
+                    Arg.Any<CancellationToken>());
+            }
         }
 
         [Fact]
