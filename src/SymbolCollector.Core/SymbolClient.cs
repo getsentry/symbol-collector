@@ -32,6 +32,20 @@ namespace SymbolCollector.Core
         Linux
     }
 
+    public static class BatchTypeExtensions
+    {
+        public static string ToSymsorterPrefix(this BatchType type) =>
+            type switch
+            {
+                BatchType.WatchOS => "watchos",
+                BatchType.MacOS => "macos",
+                BatchType.IOS => "ios",
+                BatchType.Android => "android",
+                BatchType.Linux => "linux",
+                _ => throw new InvalidOperationException($"Invalid BatchType {type}."),
+            };
+    }
+
     public interface ISymbolClient : IDisposable
     {
         Task<Guid> Start(string friendlyName, BatchType batchType, CancellationToken token);

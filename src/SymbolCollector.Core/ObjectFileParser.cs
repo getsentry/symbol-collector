@@ -101,7 +101,6 @@ namespace SymbolCollector.Core
                     string.Empty,
                     file,
                     GetHash(file),
-                    BuildIdType.None,
                     files);
                 return true;
             }
