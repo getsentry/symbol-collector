@@ -176,6 +176,8 @@ namespace SymbolCollector.Console
                         static void Print(ObjectFileResult r)
                             => WriteLine($@"
 Path: {r.Path}
+CodeId: {r.CodeId}
+DebugId: {r.DebugId}
 BuildId: {r.BuildId}
 BuildIdType: {r.BuildIdType}
 File hash: {r.Hash}

@@ -192,9 +192,10 @@ namespace SymbolCollector.Core
                             }
                             else
                             {
+                                var debugId = new Guid(desc16bytes).ToString();
                                 result = new ObjectFileResult(
-                                    new Guid(desc16bytes).ToString(),
-                                    new Guid(desc16bytes).ToString(),
+                                    debugId,
+                                    debugId,
                                     BitConverter.ToString(desc).Replace("-","").ToLower(),
                                     file,
                                     GetHash(file),
@@ -270,18 +271,18 @@ namespace SymbolCollector.Core
             try
             {
                 // TODO: find an async API if this is used by the server
-                if (MachOReader.TryLoad(file, out var mach0) == MachOResult.OK)
+                if (MachOReader.TryLoad(file, out var machO) == MachOResult.OK)
                 {
                     Metrics.MachOFileFound();
                     _logger.LogDebug("Mach-O found {file}", file);
 
                     // https://github.com/getsentry/symbolic/blob/d951dd683a62d32595cc232e93843bffe5bd6a17/debuginfo/src/macho.rs#L112-L127
-                    var objectKind = GetObjectKing(mach0);
+                    var objectKind = GetObjectKind(machO);
 
-                    var arch = GetArchitecture(mach0);
+                    var arch = GetArchitecture(machO);
 
                     var buildId = string.Empty;
-                    var uuid = mach0.GetCommandsOfType<Uuid?>().FirstOrDefault();
+                    var uuid = machO.GetCommandsOfType<Uuid?>().FirstOrDefault();
                     if (!(uuid is null))
                     {
                         // TODO: Verify this is coming out correctly. Endianess not verified!!!
@@ -414,10 +415,9 @@ namespace SymbolCollector.Core
             return objectKind;
         }
 
-
-        private static ObjectKind GetObjectKing(MachO mach0)
+        private static ObjectKind GetObjectKind(MachO machO)
         {
-            return mach0.FileType switch
+            return machO.FileType switch
             {
                 ELFSharp.MachO.FileType.Object => ObjectKind.Relocatable, // MH_OBJECT
                 ELFSharp.MachO.FileType.Executable => ObjectKind.Executable, // MH_EXECUTE
