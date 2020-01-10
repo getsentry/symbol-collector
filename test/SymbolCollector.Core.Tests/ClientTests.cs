@@ -66,7 +66,7 @@ namespace SymbolCollector.Core.Tests
                 _fixture.HttpMessageHandler);
 
             var sut = _fixture.GetSut();
-            await sut.UploadAllPathsAsync(new[] {"TestFiles"}, CancellationToken.None);
+            await sut.UploadAllPathsAsync("friendly name", BatchType.IOS, new[] {"TestFiles"}, CancellationToken.None);
 
             // number of valid test files in TestFiles
             Assert.Equal(12, counter);
@@ -78,7 +78,7 @@ namespace SymbolCollector.Core.Tests
             _fixture.ObjectFileParser = new ObjectFileParser(new FatBinaryReader());
 
             var sut = _fixture.GetSut();
-            await sut.UploadAllPathsAsync(new[] {"TestFiles"}, CancellationToken.None);
+            await sut.UploadAllPathsAsync("friendly name", BatchType.IOS, new[] {"TestFiles"}, CancellationToken.None);
 
             // Make sure all valid test files were picked up
             var testFiles = new ObjectFileResultTestCases()

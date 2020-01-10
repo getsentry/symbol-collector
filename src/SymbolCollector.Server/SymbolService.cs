@@ -112,7 +112,7 @@ namespace SymbolCollector.Server
 
             _batches[batchId] = new SymbolUploadBatch(batchId, friendlyName, batchType);
             var batchIdString = batchId.ToString();
-            var processingDir = Path.Combine(_processingPath, batchIdString);
+            var processingDir = Path.Combine(_processingPath, batchType.ToSymsorterPrefix(), batchIdString);
             Directory.CreateDirectory(processingDir);
 
             _logger.LogInformation("Started batch {batchId} with friendly name {friendlyName} and type {batchType}",
@@ -138,6 +138,7 @@ namespace SymbolCollector.Server
             // TODO: Until parser supports Stream instead of file path, we write the file to TMP before we can validate it.
             var destination = Path.Combine(
                 _processingPath,
+                batch.BatchType.ToSymsorterPrefix(),
                 batchId.ToString(),
                 // To avoid files with conflicting name from the same batch
                 _random.Next().ToString(CultureInfo.InvariantCulture),
@@ -252,9 +253,9 @@ namespace SymbolCollector.Server
             batch.ClientMetrics = clientMetrics;
             batch.Close();
 
-            var processingLocation = Path.Combine(_processingPath, batchId.ToString());
+            var processingLocation = Path.Combine(_processingPath, batch.BatchType.ToSymsorterPrefix(), batchId.ToString());
 
-            var destination = Path.Combine(_donePath, batchId.ToString());
+            var destination = Path.Combine(_donePath, batch.BatchType.ToSymsorterPrefix(), batchId.ToString());
             foreach (var symbol in batch.Symbols.Values)
             {
                 symbol.Path = symbol.Path.Replace(processingLocation, destination);

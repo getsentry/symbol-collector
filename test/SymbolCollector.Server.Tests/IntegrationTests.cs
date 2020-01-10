@@ -292,7 +292,7 @@ namespace SymbolCollector.Server.Tests
             Assert.Equal(unifiedId, symbol.UnifiedId);
             Assert.EndsWith( Path.GetFileName(testFile), symbol.Path);
             var baseWorking = _fixture.ServiceProvider.GetRequiredService<IOptions<SymbolServiceOptions>>().Value.BaseWorkingPath;
-            Assert.StartsWith(Path.Combine(baseWorking!, "processing", batchId.ToString()), symbol.Path);
+            Assert.StartsWith(Path.Combine(baseWorking!, "processing", batch.BatchType.ToSymsorterPrefix(), batchId.ToString()), symbol.Path);
             Assert.Equal(batchId, symbol.BatchIds.Single());
 
             Assert.Equal(FileFormat.Elf, symbol.FileFormat);

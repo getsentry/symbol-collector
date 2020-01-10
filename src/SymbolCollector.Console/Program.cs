@@ -18,7 +18,7 @@ namespace SymbolCollector.Console
 
         private static readonly ClientMetrics _metrics = new ClientMetrics();
 
-        private static async Task UploadSymbols(Uri endpoint)
+        private static async Task UploadSymbols(Uri endpoint, BatchType type, string bundleId)
         {
             SentrySdk.ConfigureScope(s =>
             {
@@ -85,7 +85,7 @@ namespace SymbolCollector.Console
 
             try
             {
-                await client.UploadAllPathsAsync(paths, cancellation.Token);
+                await client.UploadAllPathsAsync(bundleId, type, paths, cancellation.Token);
             }
             finally
             {
@@ -99,6 +99,7 @@ namespace SymbolCollector.Console
             string? package = null,
             string? symsorter = null,
             string? bundleId = null,
+            string? batchType = null,
             Uri? serverEndpoint = null)
         {
             SentrySdk.Init(o =>
@@ -124,13 +125,22 @@ namespace SymbolCollector.Console
                 switch (upload)
                 {
                     case "device":
+                        if (bundleId is null)
+                        {
+                            WriteLine("A 'bundleId' is required to upload symbols from this device.");
+                            return;
+                        }
+
                         WriteLine("Uploading images from this device.");
-                        await UploadSymbols(serverEndpoint);
+                        await UploadSymbols(serverEndpoint, DeviceBatchType(), bundleId);
                         return;
                     case "package":
-                        if (package is null)
+                        if (package is null || batchType is null || bundleId is null)
                         {
-                            WriteLine("Package not defined. Define which one with: --package path/to/package.dmg");
+                            WriteLine(@"Missing required parameters:
+--bundle-id MacOS_15.11
+--batch-type macos
+--package path/to/package.dmg");
                             return;
                         }
 
@@ -237,8 +247,9 @@ ObjectKind: {r.ObjectKind}
                 }
 
                 WriteLine(@"Parameters:
---upload device
---upload package --package ~/location
+--upload device --bundle-id id
+--upload package --bundle-id id --batch-type type --package ~/location
+    Valid Batch Types are: android, macos, ios, watchos, android
 --check file-to-check");
             }
             catch (Exception e)
@@ -249,6 +260,21 @@ ObjectKind: {r.ObjectKind}
             finally
             {
                 await SentrySdk.FlushAsync(TimeSpan.FromSeconds(2));
+            }
+
+            static BatchType DeviceBatchType()
+            {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                {
+                    return BatchType.Linux;
+                }
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    return BatchType.MacOS;
+                }
+
+                throw new InvalidOperationException("No BatchType available for the current device.");
             }
         }
     }

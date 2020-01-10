@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Android.App;
 using Android.OS;
 using Android.Support.V7.App;
+using Android.Systems;
 using Android.Util;
 using Java.Lang;
 using SymbolCollector.Core;
@@ -43,7 +44,9 @@ namespace SymbolCollector.Android
                     logger: new LoggerAdapter<Client>());
                 try
                 {
-                    await client.UploadAllPathsAsync(paths, CancellationToken.None);
+                    // TODO: Create a friendly name based on this Android model/version
+                    var friendlyName = "Android: " + Os.Uname();
+                    await client.UploadAllPathsAsync(friendlyName, BatchType.Android, paths, CancellationToken.None);
                 }
                 catch (Exception e)
                 {
