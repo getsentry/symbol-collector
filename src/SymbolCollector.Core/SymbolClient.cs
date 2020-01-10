@@ -53,7 +53,7 @@ namespace SymbolCollector.Core
 
         Task<bool> Upload(
             Guid batchId,
-            string debugId,
+            string unifiedId,
             string hash,
             string fileName,
             Stream file,
@@ -139,18 +139,18 @@ namespace SymbolCollector.Core
 
         public async Task<bool> Upload(
             Guid batchId,
-            string debugId,
+            string unifiedId,
             string hash,
             string fileName,
             Stream file,
             CancellationToken token)
         {
-            if (string.IsNullOrWhiteSpace(debugId))
+            if (string.IsNullOrWhiteSpace(unifiedId))
             {
                 throw new ArgumentException("Invalid empty BuildId");
             }
             {
-                var checkUrl = $"{_baseAddress.AbsoluteUri}symbol/batch/{batchId}/check/{debugId}/{hash}";
+                var checkUrl = $"{_baseAddress.AbsoluteUri}symbol/batch/{batchId}/check/{unifiedId}/{hash}";
                 try
                 {
                     var checkResponse =
@@ -159,7 +159,7 @@ namespace SymbolCollector.Core
                     if (checkResponse.StatusCode == HttpStatusCode.Conflict)
                     {
                         _logger.LogDebug("Server returns {statusCode} for {buildId}",
-                            checkResponse.StatusCode, debugId);
+                            checkResponse.StatusCode, unifiedId);
                         return false;
                     }
 
@@ -168,7 +168,7 @@ namespace SymbolCollector.Core
                 catch (Exception e)
                 {
                     using var _ = _logger.BeginScope(("url", checkUrl));
-                    _logger.LogError(e, "Failed to check for debugid through {url}", checkUrl);
+                    _logger.LogError(e, "Failed to check for unifiedId through {url}", checkUrl);
                     throw;
                 }
             }
