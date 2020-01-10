@@ -98,9 +98,8 @@ namespace SymbolCollector.Core
                 result = new FatMachOFileResult(
                     string.Empty,
                     string.Empty,
-                    string.Empty,
                     file,
-                    GetHash(file),
+                    GetSha256Hash(file),
                     files);
                 return true;
             }
@@ -194,10 +193,9 @@ namespace SymbolCollector.Core
                                 var debugId = new Guid(desc16bytes).ToString();
                                 result = new ObjectFileResult(
                                     debugId,
-                                    debugId,
                                     BitConverter.ToString(desc).Replace("-","").ToLower(),
                                     file,
-                                    GetHash(file),
+                                    GetSha256Hash(file),
                                     BuildIdType.GnuBuildId,
                                     objectKind,
                                     FileFormat.Elf,
@@ -217,10 +215,9 @@ namespace SymbolCollector.Core
                                 {
                                     result = new ObjectFileResult(
                                         fallbackDebugId,
-                                        fallbackDebugId,
-                                        fallbackDebugId, // TODO: prob needs NT_GNU_BUILD_ID here
+                                        fallbackDebugId.Replace("-", string.Empty).ToLower(), // TODO: prob needs NT_GNU_BUILD_ID here
                                         file,
-                                        GetHash(file),
+                                        GetSha256Hash(file),
                                         BuildIdType.TextSectionHash,
                                         objectKind,
                                         FileFormat.Elf,
@@ -280,20 +277,19 @@ namespace SymbolCollector.Core
 
                     var arch = GetArchitecture(machO);
 
-                    var buildId = string.Empty;
+                    var debugId = string.Empty;
                     var uuid = machO.GetCommandsOfType<Uuid?>().FirstOrDefault();
                     if (!(uuid is null))
                     {
                         // TODO: Verify this is coming out correctly. Endianess not verified!!!
-                        buildId = uuid.Id.ToString();
+                        debugId = uuid.Id.ToString();
                     }
 
                     result = new ObjectFileResult(
-                        buildId,
-                        buildId,
-                        buildId + "0",
+                        debugId,
+                        debugId.Replace("-", string.Empty).ToLower(), // TODO: Figure out when to append + "0",
                         file,
-                        GetHash(file),
+                        GetSha256Hash(file),
                         BuildIdType.Uuid,
                         objectKind,
                         FileFormat.MachO,
@@ -433,7 +429,7 @@ namespace SymbolCollector.Core
             };
         }
 
-        private static string GetHash(string file)
+        private static string GetSha256Hash(string file)
         {
             using var algorithm = SHA256.Create();
             var hashingAlgo = algorithm.ComputeHash(File.ReadAllBytes(file));

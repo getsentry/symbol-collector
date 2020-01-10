@@ -205,7 +205,7 @@ namespace SymbolCollector.Server.Tests
             resp.AssertStatusCode(HttpStatusCode.OK);
 
             var testFile = Path.Combine("TestFiles", "libqcbassboost.so");
-            const string debugId = "637aa379-d34e-d455-c314-d646b8f3eaec";
+            const string unifiedId = "637aa379d34ed455c314d646b8f3eaec";
             resp.AssertStatusCode(HttpStatusCode.OK);
 
             resp = await client.SendAsync(
@@ -233,16 +233,16 @@ namespace SymbolCollector.Server.Tests
             resp.AssertStatusCode(HttpStatusCode.AlreadyReported);
 
             var symbolService = _fixture.ServiceProvider.GetRequiredService<ISymbolService>();
-            var symbol = await symbolService.GetSymbol(debugId, CancellationToken.None);
+            var symbol = await symbolService.GetSymbol(unifiedId, CancellationToken.None);
 
             var batch1 = await symbolService.GetBatch(batchId1, CancellationToken.None);
             var storedSymbol = Assert.Single(batch1!.Symbols).Value!;
-            Assert.Equal(symbol!.DebugId, storedSymbol.DebugId);
+            Assert.Equal(symbol!.UnifiedId, storedSymbol.UnifiedId);
             Assert.Equal(symbol!.Hash, storedSymbol.Hash);
 
             var batch2 = await symbolService.GetBatch(batchId1, CancellationToken.None);
             storedSymbol = Assert.Single(batch2!.Symbols).Value;
-            Assert.Equal(symbol!.DebugId, storedSymbol.DebugId);
+            Assert.Equal(symbol!.UnifiedId, storedSymbol.UnifiedId);
             Assert.Equal(symbol!.Hash, storedSymbol.Hash);
         }
 
@@ -272,7 +272,7 @@ namespace SymbolCollector.Server.Tests
             Assert.Equal(registration.BatchFriendlyName, batch!.FriendlyName);
 
             var testFile = Path.Combine("TestFiles", "libxamarin-app-arm64-v8a.so");
-            const string debugId = "09752176-f337-f80b-e756-cec46b960391";
+            const string unifiedId = "7621750937f30bf8e756cec46b960391f9f57b26";
 
             resp = await client.SendAsync(
                 new HttpRequestMessage(HttpMethod.Post, SymbolsController.Route + $"/batch/{batchId}/upload/")
@@ -286,23 +286,23 @@ namespace SymbolCollector.Server.Tests
                 });
             resp.AssertStatusCode(HttpStatusCode.Created);
 
-            var symbol = await symbolService.GetSymbol(debugId, CancellationToken.None);
+            var symbol = await symbolService.GetSymbol(unifiedId, CancellationToken.None);
             Assert.Equal(Path.GetFileName(testFile), symbol!.Name);
             Assert.Equal("5fb23797a8cb482bac325eabdcb3d7e70b89fe0ec51035010e9be3a7b76fff84", symbol.Hash);
-            Assert.Equal(debugId, symbol.DebugId);
+            Assert.Equal(unifiedId, symbol.UnifiedId);
             Assert.EndsWith( Path.GetFileName(testFile), symbol.Path);
             var baseWorking = _fixture.ServiceProvider.GetRequiredService<IOptions<SymbolServiceOptions>>().Value.BaseWorkingPath;
             Assert.StartsWith(Path.Combine(baseWorking!, "processing", batchId.ToString()), symbol.Path);
             Assert.Equal(batchId, symbol.BatchIds.Single());
 
-            // TODO: Assert values once parsing is done.
-            // Assert.Equal(FileFormat.Elf, symbol.FileFormat);
-            // Assert.Equal(ObjectFileType.Executable, symbol.ObjectFileType);
-            // Assert.Equal("x86", symbol.Arch);
+            Assert.Equal(FileFormat.Elf, symbol.FileFormat);
+            // TODO: Add the other info
+            // Assert.Equal(BuildIdType.GnuBuildId, symbol.BuildIdType);
+            Assert.Equal(Architecture.Arm64, symbol.Arch);
 
             batch = await symbolService.GetBatch(batchId, CancellationToken.None);
             var storedSymbol = Assert.Single(batch!.Symbols).Value;
-            Assert.Equal(symbol.DebugId, storedSymbol.DebugId);
+            Assert.Equal(symbol.UnifiedId, storedSymbol.UnifiedId);
             Assert.Equal(symbol.Hash, storedSymbol.Hash);
         }
 
@@ -325,10 +325,10 @@ namespace SymbolCollector.Server.Tests
             resp.AssertStatusCode(HttpStatusCode.OK);
 
             var testFile = Path.Combine("TestFiles", "libxamarin-app.so");
-            const string debugId = "df3a9df5-26a8-d63d-88ad-820f74a325b5";
+            const string unifiedId = "f59d3adfa8263dd688ad820f74a325b540dcf6b4"; // CodeId
             const string hash = "1a40a2db7c6b4dd59e3bcecd9b53cf3c7fc544afc311e25c41ee01bc4bb99a96";
             resp = await client.SendAsync(new HttpRequestMessage(HttpMethod.Head,
-                SymbolsController.Route + $"/batch/{batchId}/check/{debugId}/{hash}"));
+                SymbolsController.Route + $"/batch/{batchId}/check/{unifiedId}/{hash}"));
             resp.AssertStatusCode(HttpStatusCode.OK);
 
             resp = await client.SendAsync(
@@ -349,12 +349,12 @@ namespace SymbolCollector.Server.Tests
 
             // Check again if needed.
             resp = await client.SendAsync(new HttpRequestMessage(HttpMethod.Head,
-                SymbolsController.Route + $"/batch/{batchId}/check/{debugId}/{hash}"));
+                SymbolsController.Route + $"/batch/{batchId}/check/{unifiedId}/{hash}"));
             resp.AssertStatusCode(HttpStatusCode.Conflict);
 
             // Check again if with a different hash. API returns OK hoping the client uploads the file.
             resp = await client.SendAsync(new HttpRequestMessage(HttpMethod.Head,
-                SymbolsController.Route + $"/batch/{batchId}/check/{debugId}/{hash + "-wrong"}"));
+                SymbolsController.Route + $"/batch/{batchId}/check/{unifiedId}/{hash + "-wrong"}"));
             resp.AssertStatusCode(HttpStatusCode.OK);
 
             resp = await client.SendAsync(

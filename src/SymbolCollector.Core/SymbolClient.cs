@@ -53,7 +53,7 @@ namespace SymbolCollector.Core
 
         Task<bool> Upload(
             Guid batchId,
-            string buildId,
+            string debugId,
             string hash,
             string fileName,
             Stream file,
@@ -139,18 +139,18 @@ namespace SymbolCollector.Core
 
         public async Task<bool> Upload(
             Guid batchId,
-            string buildId,
+            string debugId,
             string hash,
             string fileName,
             Stream file,
             CancellationToken token)
         {
-            if (string.IsNullOrWhiteSpace(buildId))
+            if (string.IsNullOrWhiteSpace(debugId))
             {
                 throw new ArgumentException("Invalid empty BuildId");
             }
             {
-                var checkUrl = $"{_baseAddress.AbsoluteUri}symbol/batch/{batchId}/check/{buildId}/{hash}";
+                var checkUrl = $"{_baseAddress.AbsoluteUri}symbol/batch/{batchId}/check/{debugId}/{hash}";
                 try
                 {
                     var checkResponse =
@@ -159,7 +159,7 @@ namespace SymbolCollector.Core
                     if (checkResponse.StatusCode == HttpStatusCode.Conflict)
                     {
                         _logger.LogDebug("Server returns {statusCode} for {buildId}",
-                            checkResponse.StatusCode, buildId);
+                            checkResponse.StatusCode, debugId);
                         return false;
                     }
 

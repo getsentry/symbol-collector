@@ -178,7 +178,7 @@ namespace SymbolCollector.Console
 Path: {r.Path}
 CodeId: {r.CodeId}
 DebugId: {r.DebugId}
-BuildId: {r.BuildId}
+BuildId: {r.UnifiedId}
 BuildIdType: {r.BuildIdType}
 File hash: {r.Hash}
 File Format: {r.FileFormat}

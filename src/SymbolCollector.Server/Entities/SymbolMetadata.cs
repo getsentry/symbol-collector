@@ -6,7 +6,7 @@ namespace SymbolCollector.Server.Models
 {
     public class SymbolMetadata
     {
-        public string DebugId { get; set; }
+        public string UnifiedId { get; set; }
         public string? Hash { get; set; }
         public string Path { get; set; }
 
@@ -26,7 +26,7 @@ namespace SymbolCollector.Server.Models
         public HashSet<Guid> BatchIds { get; }
 
         public SymbolMetadata(
-            string debugId,
+            string unifiedId,
             string? hash,
             string path,
             ObjectKind objectKind,
@@ -35,7 +35,7 @@ namespace SymbolCollector.Server.Models
             FileFormat fileFormat,
             HashSet<Guid> batchIds)
         {
-            DebugId = debugId;
+            UnifiedId = unifiedId;
             Hash = hash;
             Path = path;
             ObjectKind = objectKind;

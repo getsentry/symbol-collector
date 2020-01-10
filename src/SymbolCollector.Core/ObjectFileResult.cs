@@ -4,8 +4,8 @@ namespace SymbolCollector.Core
 {
     public class ObjectFileResult
     {
-        // TODO: Delete this
-        public string BuildId { get; }
+        // https://github.com/getsentry/symbolicator/blob/c68091f0b52f88cee72eb70d2275737227667aaa/symsorter/src/app.rs#L71-L77
+        public string UnifiedId => string.IsNullOrWhiteSpace(CodeId) ? DebugId : CodeId; // TODO: DebugId in 'breakpad format', lowercase
 
         /// <summary>
         /// The original platform-specific identifier
@@ -32,15 +32,14 @@ namespace SymbolCollector.Core
         /// <see href="https://github.com/getsentry/symbolicator/blob/c5813650a3866de05a40af87366e6e0448f11e18/docs/advanced/symbol-server-compatibility.md#identifiers"/>
         public string CodeId { get; }
 
-        public string Path { get; }
+        public string Path { get; internal set; } // settable for testing
         public BuildIdType BuildIdType { get; }
         public FileFormat FileFormat { get; }
         public Architecture Architecture { get; }
         public ObjectKind ObjectKind { get; }
-        public string Hash { get; set; }
+        public string Hash { get; }
 
         public ObjectFileResult(
-            string buildId,
             string debugId,
             string codeId,
             string path,
@@ -50,7 +49,6 @@ namespace SymbolCollector.Core
             FileFormat fileFormat,
             Architecture architecture)
         {
-            BuildId = buildId;
             DebugId = debugId;
             CodeId = codeId;
             Path = path;
@@ -62,7 +60,7 @@ namespace SymbolCollector.Core
         }
 
         public override string ToString() =>
-             $"{nameof(BuildId)}: {BuildId}, " +
+             $"{nameof(UnifiedId)}: {UnifiedId}, " +
              $"{nameof(DebugId)}: {DebugId}, " +
              $"{nameof(CodeId)}: {CodeId}, " +
              $"{nameof(Path)}: {Path}, " +
@@ -86,14 +84,12 @@ namespace SymbolCollector.Core
         public IEnumerable<ObjectFileResult> InnerFiles { get; }
 
         public FatMachOFileResult(
-            string buildId,
             string debugId,
             string codeId,
             string path,
             string hash,
             IEnumerable<ObjectFileResult> innerFiles)
             : base(
-                buildId,
                 debugId,
                 codeId,
                 path,

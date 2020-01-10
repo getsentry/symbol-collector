@@ -23,7 +23,7 @@ namespace SymbolCollector.Server
     {
         Task Start(Guid batchId, string friendlyName, BatchType batchType, CancellationToken token);
         Task<SymbolUploadBatch?> GetBatch(Guid batchId, CancellationToken token);
-        Task<SymbolMetadata?> GetSymbol(string debugId, CancellationToken token);
+        Task<SymbolMetadata?> GetSymbol(string unifiedId, CancellationToken token);
         Task Relate(Guid batchId, SymbolMetadata symbolMetadata, CancellationToken token);
         Task Finish(Guid batchId, IClientMetrics? clientMetrics, CancellationToken token);
         Task<StoreResult> Store(Guid batchId, string fileName, Stream stream, CancellationToken token);
@@ -121,12 +121,12 @@ namespace SymbolCollector.Server
             return Task.CompletedTask;
         }
 
-        public Task<SymbolMetadata?> GetSymbol(string debugId, CancellationToken token)
+        public Task<SymbolMetadata?> GetSymbol(string unifiedId, CancellationToken token)
         {
             var symbol =
                 _batches.Values.SelectMany(b => b.Symbols)
                     .Select(s => s.Value)
-                    .FirstOrDefault(s => s.DebugId == debugId);
+                    .FirstOrDefault(s => s.UnifiedId == unifiedId);
 
             return Task.FromResult((SymbolMetadata?)symbol);
         }
@@ -157,8 +157,8 @@ namespace SymbolCollector.Server
                 return StoreResult.Invalid;
             }
 
-            _logger.LogInformation("Parsed file with {buildId}", fileResult.BuildId);
-            var symbol = await GetSymbol(fileResult.BuildId, token);
+            _logger.LogInformation("Parsed file with {UnifiedId}", fileResult.UnifiedId);
+            var symbol = await GetSymbol(fileResult.UnifiedId, token);
             if (symbol is {})
             {
                 if (fileResult.Hash is {}
@@ -204,13 +204,13 @@ namespace SymbolCollector.Server
                     }
                 }
 
-                _logger.LogDebug("Symbol {debugId} already exists.", symbol.DebugId);
+                _logger.LogDebug("Symbol {debugId} already exists.", symbol.UnifiedId);
 
                 return StoreResult.AlreadyExisted;
             }
 
             var metadata = new SymbolMetadata(
-                fileResult.BuildId,
+                fileResult.UnifiedId,
                 fileResult.Hash,
                 destination,
                 fileResult.ObjectKind,
@@ -219,7 +219,7 @@ namespace SymbolCollector.Server
                 fileResult.FileFormat,
                 new HashSet<Guid> {batchId});
 
-            batch.Symbols[metadata.DebugId] = metadata;
+            batch.Symbols[metadata.UnifiedId] = metadata;
 
             Directory.CreateDirectory(Path.GetDirectoryName(destination));
             File.Move(tempDestination, destination);
@@ -232,11 +232,11 @@ namespace SymbolCollector.Server
         public async Task Relate(Guid batchId, SymbolMetadata symbolMetadata, CancellationToken token)
         {
             var batch = await GetOpenBatch(batchId, token);
-            batch.Symbols[symbolMetadata.DebugId] = symbolMetadata;
+            batch.Symbols[symbolMetadata.UnifiedId] = symbolMetadata;
             symbolMetadata.BatchIds.Add(batchId);
 
             _logger.LogDebug("Symbol {debugId} is now related to batch {batchId}.",
-                symbolMetadata.DebugId, batchId);
+                symbolMetadata.UnifiedId, batchId);
         }
 
         public Task<SymbolUploadBatch?> GetBatch(Guid batchId, CancellationToken token) =>
