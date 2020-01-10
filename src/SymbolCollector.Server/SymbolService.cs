@@ -213,7 +213,7 @@ namespace SymbolCollector.Server
                 fileResult.BuildId,
                 fileResult.Hash,
                 destination,
-                fileResult.ObjectFileType,
+                fileResult.ObjectKind,
                 fileName,
                 fileResult.Architecture,
                 fileResult.FileFormat,

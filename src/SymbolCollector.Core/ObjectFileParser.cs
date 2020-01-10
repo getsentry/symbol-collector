@@ -7,9 +7,13 @@ using System.Security.Cryptography;
 using System.Text;
 using ELFSharp.ELF;
 using ELFSharp.ELF.Sections;
+using ELFSharp.ELF.Segments;
 using ELFSharp.MachO;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using FileType = ELFSharp.ELF.FileType;
+using ELFMachine = ELFSharp.ELF.Machine;
+using MachOMachine = ELFSharp.MachO.Machine;
 
 namespace SymbolCollector.Core
 {
@@ -91,7 +95,14 @@ namespace SymbolCollector.Core
         {
             if (TryGetMachOFilesFromFatFile(file, out var files))
             {
-                result = new FatMachOFileResult(string.Empty, file, GetHash(file), BuildIdType.None, files);
+                result = new FatMachOFileResult(
+                    string.Empty,
+                    string.Empty,
+                    string.Empty,
+                    file,
+                    GetHash(file),
+                    BuildIdType.None,
+                    files);
                 return true;
             }
 
@@ -150,8 +161,11 @@ namespace SymbolCollector.Core
                     var hasUnwindingInfo = elf.TryGetSection(".eh_frame", out _);
                     var hasDwarfDebugInfo = elf.TryGetSection(".debug_frame", out _);
 
+                    var objectKind = GetObjectKind(elf);
+
                     _logger.LogDebug("Contains unwinding info: {hasUnwindingInfo}", hasUnwindingInfo);
                     _logger.LogDebug("Contains DWARF debug info: {hasDwarfDebugInfo}", hasDwarfDebugInfo);
+                    var arch = GetArchitecture(elf);
 
                     var hasBuildId = elf.TryGetSection(".note.gnu.build-id", out var buildId);
                     if (hasBuildId)
@@ -169,20 +183,26 @@ namespace SymbolCollector.Core
                         else
                         {
                             // TODO ns2.1: get a slice
-                            desc = desc.Take(16).ToArray();
-                            if (desc.Length != 16)
+                            var desc16bytes = desc.Take(16).ToArray();
+                            if (desc16bytes.Length != 16)
                             {
                                 // TODO: Throw?
                                 _logger.LogError("build-id exists but bytes (desc) length is unexpected {bytes}.",
-                                    desc.Length);
+                                    desc16bytes.Length);
                             }
                             else
                             {
+                                var debugId = new Guid(desc16bytes).ToString();
                                 result = new ObjectFileResult(
-                                    new Guid(desc).ToString(),
+                                    debugId,
+                                    debugId,
+                                    BitConverter.ToString(desc).Replace("-","").ToLower(),
                                     file,
                                     GetHash(file),
-                                    BuildIdType.GnuBuildId);
+                                    BuildIdType.GnuBuildId,
+                                    objectKind,
+                                    FileFormat.Elf,
+                                    arch);
                                 return true;
                             }
                         }
@@ -198,16 +218,26 @@ namespace SymbolCollector.Core
                                 {
                                     result = new ObjectFileResult(
                                         fallbackDebugId,
+                                        fallbackDebugId,
+                                        fallbackDebugId, // TODO: prob needs NT_GNU_BUILD_ID here
                                         file,
                                         GetHash(file),
-                                        BuildIdType.TextSectionHash);
+                                        BuildIdType.TextSectionHash,
+                                        objectKind,
+                                        FileFormat.Elf,
+                                        arch);
                                     return true;
                                 }
-                                _logger.LogDebug("Could not compute fallback id with textSection {textSection} from file {file}", textSection, file);
+
+                                _logger.LogDebug(
+                                    "Could not compute fallback id with textSection {textSection} from file {file}",
+                                    textSection, file);
                             }
                             catch (Exception e)
                             {
-                                _logger.LogError(e, "Failed to compute fallback id with textSection {textSection} from file {file}", textSection, file);
+                                _logger.LogError(e,
+                                    "Failed to compute fallback id with textSection {textSection} from file {file}",
+                                    textSection, file);
                             }
                         }
                         else
@@ -241,20 +271,34 @@ namespace SymbolCollector.Core
             try
             {
                 // TODO: find an async API if this is used by the server
-                if (MachOReader.TryLoad(file, out var mach0) == MachOResult.OK)
+                if (MachOReader.TryLoad(file, out var machO) == MachOResult.OK)
                 {
                     Metrics.MachOFileFound();
                     _logger.LogDebug("Mach-O found {file}", file);
 
+                    // https://github.com/getsentry/symbolic/blob/d951dd683a62d32595cc232e93843bffe5bd6a17/debuginfo/src/macho.rs#L112-L127
+                    var objectKind = GetObjectKind(machO);
+
+                    var arch = GetArchitecture(machO);
+
                     var buildId = string.Empty;
-                    var uuid = mach0.GetCommandsOfType<Uuid?>().FirstOrDefault();
+                    var uuid = machO.GetCommandsOfType<Uuid?>().FirstOrDefault();
                     if (!(uuid is null))
                     {
                         // TODO: Verify this is coming out correctly. Endianess not verified!!!
                         buildId = uuid.Id.ToString();
                     }
 
-                    result = new ObjectFileResult(buildId, file, GetHash(file), BuildIdType.Uuid);
+                    result = new ObjectFileResult(
+                        buildId,
+                        buildId,
+                        buildId + "0",
+                        file,
+                        GetHash(file),
+                        BuildIdType.Uuid,
+                        objectKind,
+                        FileFormat.MachO,
+                        arch);
                     return true;
                 }
 
@@ -268,6 +312,126 @@ namespace SymbolCollector.Core
 
             result = null;
             return false;
+        }
+
+        // https://github.com/getsentry/symbolic/blob/d951dd683a62d32595cc232e93843bffe5bd6a17/debuginfo/src/elf.rs#L116
+        private static Architecture GetArchitecture(IELF elf)
+        {
+            // O32 ABI extended for 64-bit architecture.
+            const uint EF_MIPS_ABI_O64 = 0x0000_2000;
+            // EABI in 64 bit mode.
+            const uint EF_MIPS_ABI_EABI64 = 0x0000_4000;
+            const uint MIPS_64_FLAGS = EF_MIPS_ABI_O64 | EF_MIPS_ABI_EABI64;
+
+            var arch = elf.Machine switch
+            {
+                ELFMachine.Intel386 => Architecture.X86, // Intel386
+                ELFMachine.AMD64 => Architecture.Amd64, // EM_X86_64
+                ELFMachine.AArch64 => Architecture.Arm64, // EM_AARCH64
+                // NOTE: This could actually be any of the other 32bit ARMs. Since we don't need this
+                // information, we use the generic Architecture.Arm. By reading CPU_arch and FP_arch attributes
+                // from the SHT_ARM_ATTRIBUTES section it would be possible to distinguish the ARM arch
+                // version and infer hard/soft FP.
+                //
+                // For more information, see:
+                // http://code.metager.de/source/xref/gnu/src/binutils/readelf.c#11282
+                // https://stackoverflow.com/a/20556156/4228225
+                ELFMachine.ARM => Architecture.Arm, // ARM
+                ELFMachine.PPC => Architecture.Ppc, // EM_PPC
+                ELFMachine.PPC64 => Architecture.Ppc64, // EM_PPC64
+                var m when m == ELFMachine.MIPS || m == ELFMachine.MIPSRS3LE =>
+                    (elf switch {
+                        ELF<uint> @uint => @uint.MachineFlags,
+                        ELF<ulong> @ulong => @ulong.MachineFlags,
+                        _ => 0u
+                    } & MIPS_64_FLAGS) != 0 ? Architecture.Mips64 : Architecture.Mips,
+                _ => Architecture.Unknown
+            };
+            return arch;
+        }
+
+        // https://github.com/getsentry/symbolic/blob/d951dd683a62d32595cc232e93843bffe5bd6a17/debuginfo/src/macho.rs#L79
+        private static Architecture GetArchitecture(MachO mach0) =>
+            (mach0.Machine, mach0.CpuSubType) switch
+            {
+                (MachOMachine.I386, CpuSubType.I386All) => Architecture.X86,
+                (MachOMachine.I386, _) => Architecture.X86Unknown,
+                (MachOMachine.X86_64, CpuSubType.X8664All) => Architecture.Amd64,
+                (MachOMachine.X86_64, CpuSubType.X8664H) => Architecture.Amd64h,
+                (MachOMachine.X86_64, _) => Architecture.Amd64Unknown,
+                (MachOMachine.ARM64, CpuSubType.Arm64All) => Architecture.Arm64,
+                (MachOMachine.ARM64, CpuSubType.Arm64V8) => Architecture.Arm64V8,
+                (MachOMachine.ARM64, CpuSubType.Arm64E) => Architecture.Arm64e,
+                (MachOMachine.ARM64, _) => Architecture.Arm64Unknown,
+                (MachOMachine.ARM64_32, CpuSubType.Arm6432All) => Architecture.Arm6432,
+                (MachOMachine.ARM64_32, CpuSubType.Arm6432V8) => Architecture.Arm6432V8,
+                (MachOMachine.ARM64_32, _) => Architecture.Arm6432Unknown,
+                (MachOMachine.ARM, CpuSubType.ArmAll) => Architecture.Arm,
+                (MachOMachine.ARM, CpuSubType.Armv5Tej) => Architecture.ArmV5,
+                (MachOMachine.ARM, CpuSubType.ArmV6) => Architecture.ArmV6,
+                (MachOMachine.ARM, CpuSubType.ArmV6m) => Architecture.ArmV6m,
+                (MachOMachine.ARM, CpuSubType.ArmV7) => Architecture.ArmV7,
+                (MachOMachine.ARM, CpuSubType.ArmV7f) => Architecture.ArmV7f,
+                (MachOMachine.ARM, CpuSubType.ArmV7s) => Architecture.ArmV7s,
+                (MachOMachine.ARM, CpuSubType.ArmV7k) => Architecture.ArmV7k,
+                (MachOMachine.ARM, CpuSubType.ArmV7m) => Architecture.ArmV7m,
+                (MachOMachine.ARM, CpuSubType.ArmV7Em) => Architecture.ArmV7em,
+                (MachOMachine.ARM, _) => Architecture.ArmUnknown,
+                (MachOMachine.PowerPC, CpuSubType.PowerPCAll) => Architecture.Ppc,
+                (MachOMachine.PowerPC64, CpuSubType.PowerPCAll) => Architecture.Ppc64,
+                (_, _) => Architecture.Unknown
+            };
+
+        // Ported from: https://github.com/getsentry/symbolic/blob/d951dd683a62d32595cc232e93843bffe5bd6a17/debuginfo/src/elf.rs#L144-L171
+        private static ObjectKind GetObjectKind(IELF elf)
+        {
+            var objectKind = elf.Type switch
+            {
+                FileType.None => ObjectKind.None,
+                FileType.Relocatable => ObjectKind.Relocatable,
+                FileType.Executable => ObjectKind.Executable,
+                FileType.SharedObject => ObjectKind.Library,
+                FileType.Core => ObjectKind.Other, // TODO: Clarify
+                _ => ObjectKind.Other
+            };
+
+            if (objectKind == ObjectKind.Executable && elf.Segments.All(s => s.Type != SegmentType.Interpreter))
+            {
+                // When stripping debug information into a separate file with objcopy,
+                // the eh_type field still reads ET_EXEC. However, the interpreter is
+                // removed. Since an executable without interpreter does not make any
+                // sense, we assume ``Debug`` in this case.
+                objectKind = ObjectKind.Debug;
+            }
+            else if (objectKind == ObjectKind.Library && !elf.TryGetSection(".text", out _))
+            {
+                // The same happens for libraries. However, here we can only check for
+                // a missing text section. If this still yields too many false positives,
+                // we will have to check either the size or offset of that section in
+                // the future.
+                objectKind = ObjectKind.Debug;
+            }
+
+            return objectKind;
+        }
+
+        private static ObjectKind GetObjectKind(MachO machO)
+        {
+            return machO.FileType switch
+            {
+                ELFSharp.MachO.FileType.Object => ObjectKind.Relocatable, // MH_OBJECT
+                ELFSharp.MachO.FileType.Executable => ObjectKind.Executable, // MH_EXECUTE
+                ELFSharp.MachO.FileType.FixedVM => ObjectKind.Library, // MH_FVMLIB
+                ELFSharp.MachO.FileType.Core => ObjectKind.Dump, // MH_CORE
+                ELFSharp.MachO.FileType.Preload => ObjectKind.Executable, // MH_PRELOAD
+                ELFSharp.MachO.FileType.DynamicLibrary => ObjectKind.Library, // MH_DYLIB
+                ELFSharp.MachO.FileType.DynamicLinker => ObjectKind.Executable, // MH_DYLINKER
+                ELFSharp.MachO.FileType.Bundle => ObjectKind.Library, // MH_BUNDLE
+                ELFSharp.MachO.FileType.DynamicLibraryStub => ObjectKind.Other, // MH_DYLIB_STUB
+                ELFSharp.MachO.FileType.Debug => ObjectKind.Debug, // MH_DSYM
+                ELFSharp.MachO.FileType.Kext => ObjectKind.Library, // MH_KEXT_BUNDLE
+                _ => ObjectKind.Other
+            };
         }
 
         private static string GetHash(string file)

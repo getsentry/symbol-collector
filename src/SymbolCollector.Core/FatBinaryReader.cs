@@ -46,8 +46,8 @@ namespace SymbolCollector.Core
         {
             try
             {
-                var file = File.ReadAllBytes(path);
-                return TryLoad(file, out fatMachO);
+                var fileBytes = File.ReadAllBytes(path);
+                return TryLoad(Path.GetFileName(path), fileBytes, out fatMachO);
             }
             catch (Exception e)
             {
@@ -57,7 +57,7 @@ namespace SymbolCollector.Core
             }
         }
 
-        public static bool TryLoad(byte[] bytes, out FatMachO? fatMachO)
+        private static bool TryLoad(string fileName, byte[] bytes, out FatMachO? fatMachO)
         {
             fatMachO = null;
             var header = ParseHeader(bytes);
@@ -82,10 +82,12 @@ namespace SymbolCollector.Core
                         Buffer.BlockCopy(bytes, (int)arch.StartOffset, buffer, 0, (int)arch.Size);
 
                         // blocking I/O
-                        var file = Path.GetTempFileName();
-                        filesToDelete.Add(file);
-                        File.WriteAllBytes(file, buffer);
-                        return file;
+                        var newTempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+                        Directory.CreateDirectory(newTempDir);
+                        var originalNameTempPath = Path.Combine(newTempDir, fileName);
+                        filesToDelete.Add(originalNameTempPath);
+                        File.WriteAllBytes(originalNameTempPath, buffer);
+                        return originalNameTempPath;
                     })
             };
             return true;

@@ -11,7 +11,7 @@ namespace SymbolCollector.Server.Models
         public string Path { get; set; }
 
         // Symsorter uses this to name the file
-        public ObjectFileType ObjectFileType { get; set; }
+        public ObjectKind ObjectKind { get; set; }
 
         // /refs
         // name=
@@ -29,7 +29,7 @@ namespace SymbolCollector.Server.Models
             string debugId,
             string? hash,
             string path,
-            ObjectFileType objectFileType,
+            ObjectKind objectKind,
             string name,
             Architecture arch,
             FileFormat fileFormat,
@@ -38,7 +38,7 @@ namespace SymbolCollector.Server.Models
             DebugId = debugId;
             Hash = hash;
             Path = path;
-            ObjectFileType = objectFileType;
+            ObjectKind = objectKind;
             Name = name;
             Arch = arch;
             FileFormat = fileFormat;
