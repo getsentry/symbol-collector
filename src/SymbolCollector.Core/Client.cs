@@ -39,7 +39,11 @@ namespace SymbolCollector.Core
             Metrics = metrics ?? new ClientMetrics();
         }
 
-        public async Task UploadAllPathsAsync(IEnumerable<string> topLevelPaths, CancellationToken cancellationToken)
+        public async Task UploadAllPathsAsync(
+            string friendlyName,
+            BatchType type,
+            IEnumerable<string> topLevelPaths,
+            CancellationToken cancellationToken)
         {
             var counter = 0;
             var groups =
@@ -51,7 +55,7 @@ namespace SymbolCollector.Core
                 into grp
                 select grp.ToList();
 
-            var batchId = await _symbolClient.Start("TODO", BatchType.Android, cancellationToken);
+            var batchId = await _symbolClient.Start(friendlyName, type, cancellationToken);
             using var _ = _logger.BeginScope(("BatchId", batchId));
             try
             {
