@@ -42,6 +42,14 @@ namespace SymbolCollector.Server
 
         private string _baseWorkingPath = null!; // Either bound via configuration or thrown early
 
+        /// <summary>
+        ///  Whether a copy of the first file collected with a id/hash should be copied next to the new conflicting file.
+        /// </summary>
+        /// <remarks>
+        /// This helps debugging since both files can be found under the /conflict directory.
+        /// </remarks>
+        public bool CopyBaseFileToConflictFolder { get; set; } = false;
+
         public string BaseWorkingPath
         {
             get
@@ -169,14 +177,17 @@ namespace SymbolCollector.Server
                     var conflictDestination = Path.Combine(
                         _conflictPath,
                         fileResult.UnifiedId);
-                    Directory.CreateDirectory(Path.GetDirectoryName(conflictDestination));
-                    await using (var conflictingFile = File.OpenRead(symbol.Path))
+                    if (_options.CopyBaseFileToConflictFolder)
                     {
-                        await using var file = File.OpenWrite(Path.Combine(conflictDestination, symbol.Name));
-                        await conflictingFile.CopyToAsync(file, token);
+                        Directory.CreateDirectory(conflictDestination);
+                        await using (var conflictingFile = File.OpenRead(symbol.Path))
+                        {
+                            await using var file = File.OpenWrite(Path.Combine(conflictDestination, symbol.Name));
+                            await conflictingFile.CopyToAsync(file, token);
+                        }
                     }
 
-                    conflictDestination = Path.Combine(batchId.ToString(),
+                    conflictDestination = Path.Combine(conflictDestination, batchId.ToString(),
                         // To avoid files with conflicting name from the same batch
                         _random.Next().ToString(CultureInfo.InvariantCulture),
                         fileName);

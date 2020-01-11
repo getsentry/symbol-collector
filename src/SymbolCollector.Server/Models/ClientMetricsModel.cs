@@ -10,6 +10,7 @@ namespace SymbolCollector.Server.Models
         public long BatchesProcessedCount { get; set; }
         public long JobsInFlightCount { get; set; }
         public long FailedToUploadCount { get; set; }
+        public long FailedToParseCount { get; set; }
         public long SuccessfullyUploadCount { get; set; }
         public long AlreadyExistedCount { get; set; }
         public long MachOFileFoundCount { get; set; }
