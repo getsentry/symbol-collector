@@ -53,7 +53,7 @@ namespace SymbolCollector.Core
             if (fileStream != null)
             {
                 // var fullPath = Path.Combine(FileSystem.AppDataDirectory, fileName);
-                var fullPath = Path.Combine(Directory.GetCurrentDirectory(), fileName);
+                var fullPath = Path.Combine(Path.GetTempPath(), fileName);
                 using var stream = File.Create(fullPath);
                 fileStream.CopyTo(stream);
                 return fullPath;
