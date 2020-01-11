@@ -10,7 +10,7 @@ using static System.Console;
 
 namespace SymbolCollector.Console
 {
-    public class ConsoleUploader
+    internal class ConsoleUploader
     {
         private readonly Client _client;
         private readonly ClientMetrics _metrics;

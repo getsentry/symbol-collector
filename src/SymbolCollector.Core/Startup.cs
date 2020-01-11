@@ -14,7 +14,6 @@ namespace SymbolCollector.Core
         public static IHost Init(Action<IServiceCollection> configureServices)
         {
             var host = new HostBuilder()
-                // TODO: check dir works:
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .ConfigureHostConfiguration(c => c.AddJsonFile(GetAppSettingsFilePath()))
                 .ConfigureServices((hostBuilderContext, services) =>
@@ -56,7 +55,6 @@ namespace SymbolCollector.Core
 
             if (fileStream != null)
             {
-                // var fullPath = Path.Combine(FileSystem.AppDataDirectory, fileName);
                 var fullPath = Path.Combine(Path.GetTempPath(), fileName);
                 using var stream = File.Create(fullPath);
                 fileStream.CopyTo(stream);
