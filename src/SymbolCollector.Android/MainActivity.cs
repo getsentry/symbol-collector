@@ -42,24 +42,23 @@ namespace SymbolCollector.Android
             {
                 var paths = new[] {"/system/lib", "/system/lib64", "/system/", "/vendor/lib"};
 
-                var blacklistedPaths = new[]
-                {
-                    "/system/build.prop", "/system/vendor/bin/netstat", "/system/vendor/bin/swapoff"
-                };
-
                 var clientOptions = new SymbolClientOptions
                 {
                     BaseAddress = new Uri(url),
                     // TODO: get version
-                    UserAgent = "Android/0.0.0"
+                    UserAgent = "Android/0.0.0",
+                    BlackListedPaths = new[]
+                    {
+                        "/system/build.prop", "/system/vendor/bin/netstat", "/system/vendor/bin/swapoff"
+                    }.ToHashSet()
                 };
 
                 var client = new Client(
                     new SymbolClient(clientOptions, new LoggerAdapter<SymbolClient>()),
                     new ObjectFileParser(logger: new LoggerAdapter<ObjectFileParser>()),
-                    blackListedPaths: blacklistedPaths.ToHashSet(),
+                    clientOptions,
+                    new ClientMetrics(),
                     logger: new LoggerAdapter<Client>());
-
 
                 _logger.LogInformation("Using friendly name: {friendlyName}", _friendlyName);
 

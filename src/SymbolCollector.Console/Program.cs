@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Sentry;
 using SymbolCollector.Core;
@@ -15,89 +13,9 @@ namespace SymbolCollector.Console
     internal class Program
     {
         private const string Dsn = "https://02619ad38bcb40d0be5167e1fb335954@sentry.io/1847454";
-        private const string SymbolCollectorServiceUrl = "http://sentry.garcia.in/";
 
         private static readonly ClientMetrics _metrics = new ClientMetrics();
 
-        private static async Task UploadSymbols(Uri endpoint, BatchType type, string bundleId)
-        {
-            SentrySdk.ConfigureScope(s =>
-            {
-                s.AddEventProcessor(@event =>
-                {
-                    var uploadMetrics = new Dictionary<string, object>();
-                    @event.Contexts["metrics"] = uploadMetrics;
-                    _metrics.Write(uploadMetrics);
-                    return @event;
-                });
-            });
-
-            // TODO: Get the paths via parameter or config file/env var?
-            var paths = new List<string> {"/usr/lib/", "/usr/local/lib/"};
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                // TODO: Add per OS paths
-                paths.Add("/System/Library/Frameworks/");
-            }
-            else
-            {
-                paths.Add("/lib/");
-            }
-
-            var blackListedPaths = new HashSet<string> {"/usr/lib/cron/tabs"};
-
-            var cancellation = new CancellationTokenSource();
-            CancelKeyPress += (s, ev) =>
-            {
-                _metrics.Write(Out);
-                WriteLine("Shutting down.");
-                ev.Cancel = false;
-                cancellation.Cancel();
-            };
-
-            _ = Task.Run(() =>
-            {
-                WriteLine("Press Ctrl+C to exit or 'p' to print the status.");
-                while (!cancellation.IsCancellationRequested)
-                {
-                    if (ReadKey(true).Key == ConsoleKey.P)
-                    {
-                        _metrics.Write(Out);
-                    }
-                }
-            }, cancellation.Token);
-
-
-            // TODO: M.E.DependencyInjection/Configuration
-            var logLevel = LogLevel.Warning;
-            var loggerFatBinaryReader = new LoggerAdapter<FatBinaryReader>(logLevel);
-            var parser = new ObjectFileParser(
-                new FatBinaryReader(loggerFatBinaryReader),
-                _metrics,
-                new LoggerAdapter<ObjectFileParser>(logLevel));
-
-            var clientOptions = new SymbolClientOptions
-            {
-                BaseAddress = endpoint,
-                UserAgent = $"Console/{Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? "0.0.0"}"
-            };
-
-            var client = new Client(
-                new SymbolClient(clientOptions, new LoggerAdapter<SymbolClient>(logLevel)),
-                parser,
-                blackListedPaths: blackListedPaths,
-                metrics: _metrics,
-                logger: new LoggerAdapter<Client>(logLevel));
-
-            try
-            {
-                await client.UploadAllPathsAsync(bundleId, type, paths, cancellation.Token);
-            }
-            finally
-            {
-                _metrics.Write(Out);
-            }
-        }
 
         static async Task Main(
             string? upload = null,
@@ -116,18 +34,47 @@ namespace SymbolCollector.Console
                 o.Dsn = new Dsn(Dsn);
             });
             {
-                var capturedEndpoint = serverEndpoint;
                 SentrySdk.ConfigureScope(s =>
                 {
                     s.SetTag("app", typeof(Program).Assembly.GetName().Name);
-                    s.SetExtra("parameters", new {upload, check, package, endpoint = capturedEndpoint});
+                    s.SetExtra("parameters", new
+                    {
+                        upload,
+                        check,
+                        package,
+                        symsorter,
+                        bundleId,
+                        batchType,
+                        endpoint = serverEndpoint
+                    });
                 });
             }
 
-            serverEndpoint ??= new Uri(SymbolCollectorServiceUrl);
+            var cancellation = new CancellationTokenSource();
+            CancelKeyPress += (s, ev) =>
+            {
+                _metrics.Write(Out);
+                WriteLine("Shutting down.");
+                ev.Cancel = false;
+                cancellation.Cancel();
+            };
 
             try
             {
+                using var host = Startup.Init(s =>
+                {
+                    if (serverEndpoint != null)
+                    {
+                        s.AddOptions()
+                            .PostConfigure<SymbolClientOptions>(o => o.BaseAddress = serverEndpoint);
+                    }
+
+                    s.AddSingleton(_metrics);
+                    s.AddSingleton<ConsoleUploader>();
+                });
+
+                var logger = host.Services.GetRequiredService<ILogger<Program>>();
+
                 switch (upload)
                 {
                     case "device":
@@ -137,8 +84,9 @@ namespace SymbolCollector.Console
                             return;
                         }
 
-                        WriteLine("Uploading images from this device.");
-                        await UploadSymbols(serverEndpoint, DeviceBatchType(), bundleId);
+                        logger.LogInformation("Uploading images from this device.");
+                        var uploader = host.Services.GetRequiredService<ConsoleUploader>();
+                        await uploader.StartUploadSymbols(bundleId, cancellation.Token);
                         return;
                     case "package":
                         if (package is null || batchType is null || bundleId is null)
@@ -150,18 +98,12 @@ namespace SymbolCollector.Console
                             return;
                         }
 
-                        WriteLine($"Uploading stuff from package: '{package}'.");
+                        logger.LogInformation("Uploading stuff from package: '{package}'.", package);
                         // TODO:
                         break;
                 }
 
-                // TODO: M.E.DependencyInjection/Configuration
-                var logLevel = LogLevel.Warning;
-                var loggerFatBinaryReader = new LoggerAdapter<FatBinaryReader>(logLevel);
-                var parser = new ObjectFileParser(
-                    new FatBinaryReader(loggerFatBinaryReader),
-                    _metrics,
-                    new LoggerAdapter<ObjectFileParser>(logLevel));
+                var parser = host.Services.GetRequiredService<ObjectFileParser>();
 
                 if (check is { } checkLib)
                 {
@@ -171,7 +113,7 @@ namespace SymbolCollector.Console
                         return;
                     }
 
-                    WriteLine($"Checking '{checkLib}'.");
+                    logger.LogInformation("Checking '{checkLib}'.", checkLib);
                     if (parser.TryParse(checkLib, out var result) && result is {})
                     {
                         if (result is FatMachOFileResult fatMachOFileResult)
@@ -266,21 +208,6 @@ ObjectKind: {r.ObjectKind}
             finally
             {
                 await SentrySdk.FlushAsync(TimeSpan.FromSeconds(2));
-            }
-
-            static BatchType DeviceBatchType()
-            {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                {
-                    return BatchType.Linux;
-                }
-
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                {
-                    return BatchType.MacOS;
-                }
-
-                throw new InvalidOperationException("No BatchType available for the current device.");
             }
         }
     }

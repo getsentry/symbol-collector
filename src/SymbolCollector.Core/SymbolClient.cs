@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -13,7 +14,12 @@ namespace SymbolCollector.Core
     public class SymbolClientOptions
     {
         public Uri BaseAddress { get; set; } = null!;
-        public string UserAgent { get; set; } = null!;
+
+        // Big batches take ages to close
+        public TimeSpan HttpClientTimeout { get; set; } = TimeSpan.FromMinutes(2);
+        public string UserAgent { get; set; } = "SymbolCollector/0.0.0";
+        public int ParallelTasks { get; set; } = 10;
+        public HashSet<string> BlackListedPaths { get; set; } = new HashSet<string>();
     }
 
     // prefix to final structure: ios, watchos, macos, android
@@ -76,14 +82,9 @@ namespace SymbolCollector.Core
             ILogger<SymbolClient> logger,
             HttpMessageHandler? handler = null)
         {
-            _httpClient = new HttpClient(handler ?? new HttpClientHandler())
-            {
-                Timeout = TimeSpan.FromMinutes(10)
-            };
+            _httpClient = new HttpClient(handler ?? new HttpClientHandler()) {Timeout = options.HttpClientTimeout};
             _httpClient.DefaultRequestHeaders.Add("User-Agent", options.UserAgent);
-
             _baseAddress = options.BaseAddress;
-
             _logger = logger;
         }
 
@@ -150,6 +151,7 @@ namespace SymbolCollector.Core
             {
                 throw new ArgumentException("Invalid empty BuildId");
             }
+
             {
                 var checkUrl = $"{_baseAddress.AbsoluteUri}symbol/batch/{batchId}/check/{unifiedId}/{hash}";
                 try

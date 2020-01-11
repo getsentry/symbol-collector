@@ -24,19 +24,17 @@ namespace SymbolCollector.Core
         public Client(
             ISymbolClient symbolClient,
             ObjectFileParser objectFileParser,
-            int? parallelTasks = null,
-            HashSet<string>? blackListedPaths = null,
-            ClientMetrics? metrics = null,
-            ILogger<Client>? logger = null)
+            SymbolClientOptions options,
+            ClientMetrics metrics,
+            ILogger<Client> logger)
         {
+            Metrics = metrics;
             _symbolClient = symbolClient;
             _objectFileParser = objectFileParser;
-            ParallelTasks = parallelTasks ?? 20;
+            _logger = logger;
 
-            _blackListedPaths = blackListedPaths;
-            // We only hit /image here
-            _logger = logger ?? NullLogger<Client>.Instance;
-            Metrics = metrics ?? new ClientMetrics();
+            ParallelTasks = options.ParallelTasks;
+            _blackListedPaths = options.BlackListedPaths;
         }
 
         public async Task UploadAllPathsAsync(
