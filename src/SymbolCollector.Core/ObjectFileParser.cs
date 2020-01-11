@@ -44,10 +44,37 @@ namespace SymbolCollector.Core
         public bool TryParse(string file, out ObjectFileResult? result)
         {
             var parsed = false;
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            try
             {
-                // On macOS look for Mach-O first
-                if (TryParseMachOFile(file, out var machO) && machO is {})
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    // On macOS look for Mach-O first
+                    if (TryParseMachOFile(file, out var machO) && machO is {})
+                    {
+                        result = machO;
+                        parsed = true;
+                    }
+                    else if (TryParseFatMachO(file, out var fatMachO) && fatMachO is {})
+                    {
+                        result = fatMachO;
+                        parsed = true;
+                    }
+                    else if (TryParseElfFile(file, out var elf) && elf is {})
+                    {
+                        result = elf;
+                        parsed = true;
+                    }
+                    else
+                    {
+                        result = null;
+                    }
+                }
+                else if (TryParseElfFile(file, out var elf) && elf is {})
+                {
+                    result = elf;
+                    parsed = true;
+                }
+                else if (TryParseMachOFile(file, out var machO) && machO is {})
                 {
                     result = machO;
                     parsed = true;
@@ -57,41 +84,24 @@ namespace SymbolCollector.Core
                     result = fatMachO;
                     parsed = true;
                 }
-                else if (TryParseElfFile(file, out var elf) && elf is {})
-                {
-                    result = elf;
-                    parsed = true;
-                }
                 else
                 {
                     result = null;
                 }
             }
-            else if (TryParseElfFile(file, out var elf) && elf is {})
-            {
-                result = elf;
-                parsed = true;
-            }
-            else if (TryParseMachOFile(file, out var machO) && machO is {})
-            {
-                result = machO;
-                parsed = true;
-            }
-            else if (TryParseFatMachO(file, out var fatMachO) && fatMachO is {})
-            {
-                result = fatMachO;
-                parsed = true;
-            }
-            else
+            catch (Exception e)
             {
                 result = null;
+                Metrics.FailedToParse();
+                // You would expect TryLoad doesn't throw but that's not the case
+                _logger.LogError(e, "Failed processing file {file}.", file);
             }
 
             Metrics.FileProcessed();
             return parsed;
         }
 
-        internal bool TryParseFatMachO(string file, out FatMachOFileResult? result)
+        private bool TryParseFatMachO(string file, out FatMachOFileResult? result)
         {
             if (TryGetMachOFilesFromFatFile(file, out var files))
             {
@@ -108,7 +118,7 @@ namespace SymbolCollector.Core
             return false;
         }
 
-        internal bool TryGetMachOFilesFromFatFile(string file, out IEnumerable<ObjectFileResult> result)
+        private bool TryGetMachOFilesFromFatFile(string file, out IEnumerable<ObjectFileResult> result)
         {
             // Check if it's a Fat Mach-O
             FatMachO? load = null;
@@ -146,7 +156,7 @@ namespace SymbolCollector.Core
             return false;
         }
 
-        internal bool TryParseElfFile(string file, out ObjectFileResult? result)
+        private bool TryParseElfFile(string file, out ObjectFileResult? result)
         {
             IELF? elf = null;
             try
@@ -193,7 +203,7 @@ namespace SymbolCollector.Core
                                 var debugId = new Guid(desc16bytes).ToString();
                                 result = new ObjectFileResult(
                                     debugId,
-                                    BitConverter.ToString(desc).Replace("-","").ToLower(),
+                                    BitConverter.ToString(desc).Replace("-", "").ToLower(),
                                     file,
                                     GetSha256Hash(file),
                                     BuildIdType.GnuBuildId,
@@ -215,7 +225,8 @@ namespace SymbolCollector.Core
                                 {
                                     result = new ObjectFileResult(
                                         fallbackDebugId,
-                                        fallbackDebugId.Replace("-", string.Empty).ToLower(), // TODO: prob needs NT_GNU_BUILD_ID here
+                                        fallbackDebugId.Replace("-", string.Empty)
+                                            .ToLower(), // TODO: prob needs NT_GNU_BUILD_ID here
                                         file,
                                         GetSha256Hash(file),
                                         BuildIdType.TextSectionHash,
@@ -247,12 +258,6 @@ namespace SymbolCollector.Core
                     _logger.LogDebug("Couldn't load': {file} with ELF reader.", file);
                 }
             }
-            catch (Exception e)
-            {
-                // You would expect TryLoad doesn't throw but that's not the case
-                _logger.LogError(e, "Failed processing file {file}.", file);
-            }
-
             finally
             {
                 elf?.Dispose();
@@ -262,7 +267,7 @@ namespace SymbolCollector.Core
             return false;
         }
 
-        internal bool TryParseMachOFile(string file, out ObjectFileResult? result)
+        private bool TryParseMachOFile(string file, out ObjectFileResult? result)
         {
             try
             {
@@ -335,11 +340,14 @@ namespace SymbolCollector.Core
                 ELFMachine.PPC => Architecture.Ppc, // EM_PPC
                 ELFMachine.PPC64 => Architecture.Ppc64, // EM_PPC64
                 var m when m == ELFMachine.MIPS || m == ELFMachine.MIPSRS3LE =>
-                    (elf switch {
-                        ELF<uint> @uint => @uint.MachineFlags,
-                        ELF<ulong> @ulong => @ulong.MachineFlags,
-                        _ => 0u
-                    } & MIPS_64_FLAGS) != 0 ? Architecture.Mips64 : Architecture.Mips,
+                (elf switch
+                {
+                    ELF<uint> @uint => @uint.MachineFlags,
+                    ELF<ulong> @ulong => @ulong.MachineFlags,
+                    _ => 0u
+                } & MIPS_64_FLAGS) != 0
+                    ? Architecture.Mips64
+                    : Architecture.Mips,
                 _ => Architecture.Unknown
             };
             return arch;
@@ -443,7 +451,7 @@ namespace SymbolCollector.Core
             return hash;
         }
 
-        internal string? GetFallbackDebugId(byte[] textSection)
+        private string? GetFallbackDebugId(byte[] textSection)
         {
             if (textSection is null)
             {
@@ -458,11 +466,11 @@ namespace SymbolCollector.Core
             }
 
             var length = Math.Min(4096, textSection.Length);
-            var UUID_SIZE = 16;
-            var hash = new byte[UUID_SIZE];
+            var uuidSize = 16;
+            var hash = new byte[uuidSize];
             for (var i = 0; i < length; i++)
             {
-                hash[i % UUID_SIZE] ^= textSection[i];
+                hash[i % uuidSize] ^= textSection[i];
             }
 
             var hashId = new Guid(hash).ToString();

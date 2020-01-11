@@ -8,6 +8,7 @@ namespace SymbolCollector.Core
         long FilesProcessedCount { get; }
         long JobsInFlightCount { get; }
         long FailedToUploadCount { get; }
+        long FailedToParseCount { get; }
         long SuccessfullyUploadCount { get; }
         long AlreadyExistedCount { get; }
         long MachOFileFoundCount { get; }
