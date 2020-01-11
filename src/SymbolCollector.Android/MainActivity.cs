@@ -1,26 +1,25 @@
 ﻿using System;
-using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using Android.App;
 using Android.OS;
 using Android.Runtime;
 using Android.Support.V7.App;
 using Android.Systems;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Sentry;
 using Sentry.Extensibility;
 using SymbolCollector.Core;
-using Exception = System.Exception;
 
 namespace SymbolCollector.Android
 {
     [Activity(Label = "@string/app_name", Theme = "@style/AppTheme", MainLauncher = true)]
     public class MainActivity : AppCompatActivity
     {
-        private readonly ILogger<MainActivity> _logger;
         private readonly IDisposable _sentry;
         private readonly string _friendlyName;
+        private readonly IHost _host;
+        private readonly IServiceProvider _serviceProvider;
 
         protected override void OnCreate(Bundle savedInstanceState)
         {
@@ -28,45 +27,9 @@ namespace SymbolCollector.Android
             // Set our view from the "main" layout resource
             SetContentView(Resource.Layout.activity_main);
 
-            _ = StartUpload();
-        }
-
-        private Task StartUpload()
-        {
-            var bundle = PackageManager
-                .GetApplicationInfo(PackageName, global::Android.Content.PM.PackageInfoFlags.MetaData).MetaData;
-            var url = bundle.GetString("io.sentry.symbol-collector");
-            _logger.LogInformation("Using Symbol Collector endpoint: {url}", url);
-
-            return Task.Run(async () =>
-            {
-                var paths = new[] {"/system/lib", "/system/lib64", "/system/", "/vendor/lib"};
-
-                var blacklistedPaths = new[]
-                {
-                    "/system/build.prop", "/system/vendor/bin/netstat", "/system/vendor/bin/swapoff"
-                };
-                var client = new Client(
-                    new SymbolClient(new Uri(url), new LoggerAdapter<SymbolClient>(),
-                        assemblyName: GetType().Assembly.GetName()),
-                    new ObjectFileParser(logger: new LoggerAdapter<ObjectFileParser>()),
-                    blackListedPaths: blacklistedPaths.ToHashSet(),
-                    logger: new LoggerAdapter<Client>());
-
-
-                _logger.LogInformation("Using friendly name: {friendlyName}", _friendlyName);
-
-                try
-                {
-                    await SentrySdk.FlushAsync(TimeSpan.FromSeconds(10));
-                    await client.UploadAllPathsAsync(_friendlyName, BatchType.Android, paths, CancellationToken.None);
-                }
-                catch (Exception e)
-                {
-                    _logger.LogError(e, "Failed uploading {friendlyName} paths: {paths}",
-                        _friendlyName, paths);
-                }
-            });
+            var uploader = _serviceProvider.GetRequiredService<AndroidUploader>();
+            // Won't async void here, just discarding the task instead
+            _ = uploader.StartUpload(_friendlyName, CancellationToken.None);
         }
 
         public MainActivity()
@@ -84,7 +47,6 @@ namespace SymbolCollector.Android
                 // Java.Lang.NoClassDefFoundError: android/system/Os ---> Java.Lang.ClassNotFoundException: Didn't find class "android.system.Os" on path: DexPathList[[zip file "/data/app/SymbolCollector.Android.SymbolCollector.Android-1.apk"],nativeLibraryDirectories=[/data/app-lib/SymbolCollector.Android.SymbolCollector.Android-1, /vendor/lib, /system/lib]]
             }
 
-            _logger = new LoggerAdapter<MainActivity>();
             _sentry = SentrySdk.Init(o =>
             {
                 o.Debug = true;
@@ -153,11 +115,25 @@ namespace SymbolCollector.Android
                     SentrySdk.Close();
                 }
             };
+            _host = Startup.Init(c =>
+            {
+                c.AddSingleton<AndroidUploader>();
+                c.AddOptions().Configure<SymbolClientOptions>(o =>
+                {
+                    // TODO: Get proper version
+                    o.UserAgent = "Android/0.0.0";
+                    o.BlackListedPaths.Add("/system/build.prop");
+                    o.BlackListedPaths.Add("/system/vendor/bin/netstat");
+                    o.BlackListedPaths.Add("/system/vendor/bin/swapoff");
+                });
+            });
+            _serviceProvider = _host.Services;
         }
 
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
+            _host.Dispose();
             _sentry.Dispose();
         }
     }

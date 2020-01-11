@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -23,12 +22,15 @@ namespace SymbolCollector.Core.Tests
                 new ObjectFileParser(logger: Substitute.For<ILogger<ObjectFileParser>>());
 
             public HttpMessageHandler? HttpMessageHandler { get; set; }
-            public AssemblyName? AssemblyName { get; set; }
-            public int? ParallelTasks { get; set; }
-            public HashSet<string>? BlackListedPaths { get; set; }
-            public ClientMetrics? Metrics { get; set; }
+            public ClientMetrics Metrics { get; set; } = new ClientMetrics();
             public ISymbolClient SymbolClient { get; set; } = Substitute.For<ISymbolClient>();
-            public ILogger<Client>? Logger { get; set; }
+
+            public SymbolClientOptions SymbolClientOptions { get; set; } = new SymbolClientOptions
+            {
+                BaseAddress = new Uri("https://test.sentry/"),
+            };
+
+            public ILogger<Client> Logger { get; set; } = Substitute.For<ILogger<Client>>();
 
             public Fixture() =>
                 HttpMessageHandler = new TestMessageHandler((message, token) =>
@@ -38,8 +40,7 @@ namespace SymbolCollector.Core.Tests
                 new Client(
                     SymbolClient,
                     ObjectFileParser,
-                    ParallelTasks,
-                    BlackListedPaths,
+                    SymbolClientOptions,
                     Metrics,
                     Logger);
         }
@@ -61,7 +62,7 @@ namespace SymbolCollector.Core.Tests
                 return Task.FromResult(new HttpResponseMessage(HttpStatusCode.Created));
             });
             _fixture.SymbolClient = new SymbolClient(
-                _fixture.ServiceUri,
+                new SymbolClientOptions {BaseAddress = _fixture.ServiceUri, UserAgent = "UnitTest/0.0.0"},
                 Substitute.For<ILogger<SymbolClient>>(),
                 _fixture.HttpMessageHandler);
 
@@ -106,7 +107,7 @@ namespace SymbolCollector.Core.Tests
         public void ParallelTasks_DefaultValue_Ten()
         {
             var sut = _fixture.GetSut();
-            Assert.Equal(20, sut.ParallelTasks);
+            Assert.Equal(10, sut.ParallelTasks);
         }
 
         private class TestMessageHandler : HttpMessageHandler

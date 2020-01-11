@@ -1,9 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Reflection;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,6 +11,17 @@ using Microsoft.Extensions.Logging;
 
 namespace SymbolCollector.Core
 {
+    public class SymbolClientOptions
+    {
+        public Uri BaseAddress { get; set; } = null!;
+
+        // Big batches take ages to close
+        public TimeSpan HttpClientTimeout { get; set; } = TimeSpan.FromMinutes(2);
+        public string UserAgent { get; set; } = "SymbolCollector/0.0.0";
+        public int ParallelTasks { get; set; } = 10;
+        public HashSet<string> BlackListedPaths { get; set; } = new HashSet<string>();
+    }
+
     // prefix to final structure: ios, watchos, macos, android
     public enum BatchType
     {
@@ -67,22 +78,13 @@ namespace SymbolCollector.Core
         private readonly HttpClient _httpClient;
 
         public SymbolClient(
-            Uri baseAddress,
+            SymbolClientOptions options,
             ILogger<SymbolClient> logger,
-            HttpMessageHandler? handler = null,
-            AssemblyName? assemblyName = null)
+            HttpMessageHandler? handler = null)
         {
-            _httpClient = new HttpClient(handler ?? new HttpClientHandler())
-            {
-                Timeout = TimeSpan.FromMinutes(10)
-            };
-            assemblyName ??= Assembly.GetEntryAssembly()?.GetName();
-            _httpClient.DefaultRequestHeaders.Add(
-                "User-Agent",
-                $"{assemblyName?.Name ?? "SymbolCollector"}/{assemblyName?.Version?.ToString() ?? "0.0.0"}");
-
-            _baseAddress = baseAddress;
-
+            _httpClient = new HttpClient(handler ?? new HttpClientHandler()) {Timeout = options.HttpClientTimeout};
+            _httpClient.DefaultRequestHeaders.Add("User-Agent", options.UserAgent);
+            _baseAddress = options.BaseAddress;
             _logger = logger;
         }
 
@@ -149,6 +151,7 @@ namespace SymbolCollector.Core
             {
                 throw new ArgumentException("Invalid empty BuildId");
             }
+
             {
                 var checkUrl = $"{_baseAddress.AbsoluteUri}symbol/batch/{batchId}/check/{unifiedId}/{hash}";
                 try

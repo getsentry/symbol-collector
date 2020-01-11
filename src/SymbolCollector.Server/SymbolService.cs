@@ -1,15 +1,10 @@
 using System;
-using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -202,7 +197,7 @@ namespace SymbolCollector.Server
                     }))
                     {
                         Directory.CreateDirectory(Path.GetDirectoryName(conflictDestination));
-                        _logger.LogError(
+                        _logger.LogInformation(
                             "File with the same debug id and un-matching hashes. File stored at: {path}",
                             conflictDestination);
                         File.Move(tempDestination, conflictDestination);
