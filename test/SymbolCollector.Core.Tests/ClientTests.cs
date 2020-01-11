@@ -61,7 +61,11 @@ namespace SymbolCollector.Core.Tests
                 return Task.FromResult(new HttpResponseMessage(HttpStatusCode.Created));
             });
             _fixture.SymbolClient = new SymbolClient(
-                _fixture.ServiceUri,
+                new SymbolClientOptions
+                {
+                    BaseAddress = _fixture.ServiceUri,
+                    UserAgent = "UnitTest/0.0.0"
+                },
                 Substitute.For<ILogger<SymbolClient>>(),
                 _fixture.HttpMessageHandler);
 

@@ -202,7 +202,7 @@ namespace SymbolCollector.Server
                     }))
                     {
                         Directory.CreateDirectory(Path.GetDirectoryName(conflictDestination));
-                        _logger.LogError(
+                        _logger.LogInformation(
                             "File with the same debug id and un-matching hashes. File stored at: {path}",
                             conflictDestination);
                         File.Move(tempDestination, conflictDestination);

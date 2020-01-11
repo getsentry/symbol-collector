@@ -46,9 +46,16 @@ namespace SymbolCollector.Android
                 {
                     "/system/build.prop", "/system/vendor/bin/netstat", "/system/vendor/bin/swapoff"
                 };
+
+                var clientOptions = new SymbolClientOptions
+                {
+                    BaseAddress = new Uri(url),
+                    // TODO: get version
+                    UserAgent = "Android/0.0.0"
+                };
+
                 var client = new Client(
-                    new SymbolClient(new Uri(url), new LoggerAdapter<SymbolClient>(),
-                        assemblyName: GetType().Assembly.GetName()),
+                    new SymbolClient(clientOptions, new LoggerAdapter<SymbolClient>()),
                     new ObjectFileParser(logger: new LoggerAdapter<ObjectFileParser>()),
                     blackListedPaths: blacklistedPaths.ToHashSet(),
                     logger: new LoggerAdapter<Client>());
