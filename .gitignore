@@ -4,8 +4,6 @@
 bin/
 obj/
 out/
-done/
-processing/
-conflict/
 TestResults/
 *.user
+dev-data/

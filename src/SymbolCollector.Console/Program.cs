@@ -14,7 +14,7 @@ namespace SymbolCollector.Console
     internal class Program
     {
         private const string Dsn = "https://02619ad38bcb40d0be5167e1fb335954@sentry.io/1847454";
-        private const string SymbolCollectorServiceUrl = "http://localhost:5000";
+        private const string SymbolCollectorServiceUrl = "http://sentry.garcia.in/";
 
         private static readonly ClientMetrics _metrics = new ClientMetrics();
 
