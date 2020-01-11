@@ -22,7 +22,11 @@ namespace SymbolCollector.Core
                     ConfigureServices(hostBuilderContext, services);
                     configureServices?.Invoke(services);
                 })
-                .ConfigureLogging(l => l.AddConsole(o => o.DisableColors = true))
+                .ConfigureLogging(l =>
+                {
+                    l.AddSentry(o => o.InitializeSdk = false);
+                    l.AddConsole(o => o.DisableColors = true);
+                })
                 .Build();
 
             return host;

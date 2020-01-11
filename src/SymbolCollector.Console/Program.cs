@@ -26,7 +26,7 @@ namespace SymbolCollector.Console
             string? batchType = null,
             Uri? serverEndpoint = null)
         {
-            SentrySdk.Init(o =>
+            using var _ = SentrySdk.Init(o =>
             {
                 o.Debug = true;
                 o.DiagnosticsLevel = Sentry.Protocol.SentryLevel.Warning;
