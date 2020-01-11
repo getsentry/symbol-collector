@@ -1,6 +1,7 @@
 using System;
 using Android.Util;
 using Microsoft.Extensions.Logging;
+using Sentry;
 using AndroidLog = Android.Util.Log;
 
 namespace SymbolCollector.Android
@@ -24,6 +25,16 @@ namespace SymbolCollector.Android
                           ?? state?.ToString()
                           ?? eventId.ToString();
 
+            // TODO: Use Sentry.Extensions.Logging instead
+            SentrySdk.AddBreadcrumb(formatted, Tag);
+            if (logLevel >= LogLevel.Error)
+            {
+                SentrySdk.CaptureEvent(new SentryEvent(exception)
+                {
+                    Message = formatter?.Invoke(state, exception!),
+                    Logger = typeof(Logger<T>).Name
+                });
+            }
             AndroidLog.WriteLine(logLevel.ToLogPriority(), Tag, formatted);
         }
 
@@ -40,19 +51,17 @@ namespace SymbolCollector.Android
 
     internal static class LevelAdapter
     {
-        public static LogPriority ToLogPriority(this LogLevel level)
-        {
-            switch (level)
+        public static LogPriority ToLogPriority(this LogLevel level) =>
+            level switch
             {
-                case LogLevel.Trace: return LogPriority.Verbose;
-                case LogLevel.Debug: return LogPriority.Debug;
-                case LogLevel.Information: return LogPriority.Info;
-                case LogLevel.Warning: return LogPriority.Warn;
-                case LogLevel.Error: return LogPriority.Error;
-                case LogLevel.Critical: return LogPriority.Error;
-                case LogLevel.None: return (LogPriority)(-1);
-                default: return (LogPriority)level;
-            }
-        }
+                LogLevel.Trace => LogPriority.Verbose,
+                LogLevel.Debug => LogPriority.Debug,
+                LogLevel.Information => LogPriority.Info,
+                LogLevel.Warning => LogPriority.Warn,
+                LogLevel.Error => LogPriority.Error,
+                LogLevel.Critical => LogPriority.Error,
+                LogLevel.None => (LogPriority)(-1),
+                _ => (LogPriority)level
+            };
     }
 }

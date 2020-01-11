@@ -139,12 +139,8 @@ namespace SymbolCollector.Server
                 foreach (var filePath in Directory.GetFiles(directories))
                 {
                     var destinationName = filePath.Replace(trimDown, string.Empty);
-                    await using (var file = File.OpenRead(filePath))
-                    {
-                        await _gcsWriter.WriteAsync(destinationName, file, token);
-                    }
-
-                    File.Delete(filePath);
+                    await using var file = File.OpenRead(filePath);
+                    await _gcsWriter.WriteAsync(destinationName, file, token);
                 }
             }
 

@@ -42,6 +42,14 @@ namespace SymbolCollector.Server
 
         private string _baseWorkingPath = null!; // Either bound via configuration or thrown early
 
+        /// <summary>
+        ///  Whether a copy of the first file collected with a id/hash should be copied next to the new conflicting file.
+        /// </summary>
+        /// <remarks>
+        /// This helps debugging since both files can be found under the /conflict directory.
+        /// </remarks>
+        public bool CopyBaseFileToConflictFolder { get; set; } = false;
+
         public string BaseWorkingPath
         {
             get
@@ -166,11 +174,20 @@ namespace SymbolCollector.Server
                     && symbol.Hash is {}
                     && string.CompareOrdinal(fileResult.Hash, symbol.Hash) != 0)
                 {
-                    // TODO: Unlikely case a debugId on un-matching file hash (modified file?)
-                    // TODO: Store the file for debugging, raise a Sentry event attachments
                     var conflictDestination = Path.Combine(
                         _conflictPath,
-                        batchId.ToString(),
+                        fileResult.UnifiedId);
+                    if (_options.CopyBaseFileToConflictFolder)
+                    {
+                        Directory.CreateDirectory(conflictDestination);
+                        await using (var conflictingFile = File.OpenRead(symbol.Path))
+                        {
+                            await using var file = File.OpenWrite(Path.Combine(conflictDestination, symbol.Name));
+                            await conflictingFile.CopyToAsync(file, token);
+                        }
+                    }
+
+                    conflictDestination = Path.Combine(conflictDestination, batchId.ToString(),
                         // To avoid files with conflicting name from the same batch
                         _random.Next().ToString(CultureInfo.InvariantCulture),
                         fileName);
@@ -253,7 +270,8 @@ namespace SymbolCollector.Server
             batch.ClientMetrics = clientMetrics;
             batch.Close();
 
-            var processingLocation = Path.Combine(_processingPath, batch.BatchType.ToSymsorterPrefix(), batchId.ToString());
+            var processingLocation =
+                Path.Combine(_processingPath, batch.BatchType.ToSymsorterPrefix(), batchId.ToString());
 
             var destination = Path.Combine(_donePath, batch.BatchType.ToSymsorterPrefix(), batchId.ToString());
             foreach (var symbol in batch.Symbols.Values)

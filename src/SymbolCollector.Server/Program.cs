@@ -8,7 +8,10 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Sentry;
+using Sentry.Extensions.Logging;
+using Sentry.Protocol;
 using Serilog;
 using SystemEnvironment = System.Environment;
 
@@ -80,6 +83,17 @@ namespace SymbolCollector.Server
                     {
                         o.AddInAppExclude("Serilog");
                         o.AddInAppExclude("Google");
+                        o.BeforeSend = @event =>
+                        {
+                            // Stop raising warning that endpoint was overriden
+                            if (@event.LogEntry.Formatted?.Contains(@"Binding to endpoints defined in") == true
+                                && @event.Level == SentryLevel.Warning)
+                            {
+                                return null;
+                            }
+
+                            return @event;
+                        };
                     });
                     webBuilder.UseSerilog();
                     webBuilder.UseStartup<Startup>();

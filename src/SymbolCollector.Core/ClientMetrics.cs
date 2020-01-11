@@ -10,6 +10,7 @@ namespace SymbolCollector.Core
         private int _filesProcessedCount;
         private int _jobsInFlightCount;
         private int _failedToUploadCount;
+        private int _failedToParse;
         private int _successfullyUploadCount;
         private int _machOFileFoundCount;
         private int _elfFileFoundCount;
@@ -26,6 +27,7 @@ namespace SymbolCollector.Core
         public long JobsInFlightCount => _jobsInFlightCount;
 
         public long FailedToUploadCount => _failedToUploadCount;
+        public long FailedToParseCount => _failedToParse;
 
         public long SuccessfullyUploadCount => _successfullyUploadCount;
         public long AlreadyExistedCount => _alreadyExistedCount;
@@ -46,6 +48,7 @@ namespace SymbolCollector.Core
         public void ElfFileFound() => Interlocked.Increment(ref _elfFileFoundCount);
         public void FatMachOFileFound() => Interlocked.Increment(ref _fatMachOFileFoundCount);
         public void FailedToUpload() => Interlocked.Increment(ref _failedToUploadCount);
+        public void FailedToParse() => Interlocked.Increment(ref _failedToParse);
         public void SuccessfulUpload() => Interlocked.Increment(ref _successfullyUploadCount);
         public void AlreadyExisted() => Interlocked.Increment(ref _alreadyExistedCount);
         public void JobsInFlightRemove(int tasksCount) => Interlocked.Add(ref _jobsInFlightCount, -tasksCount);
