@@ -166,11 +166,17 @@ namespace SymbolCollector.Server
                     && symbol.Hash is {}
                     && string.CompareOrdinal(fileResult.Hash, symbol.Hash) != 0)
                 {
-                    // TODO: Unlikely case a debugId on un-matching file hash (modified file?)
-                    // TODO: Store the file for debugging, raise a Sentry event attachments
                     var conflictDestination = Path.Combine(
                         _conflictPath,
-                        batchId.ToString(),
+                        fileResult.UnifiedId);
+                    Directory.CreateDirectory(Path.GetDirectoryName(conflictDestination));
+                    await using (var conflictingFile = File.OpenRead(symbol.Path))
+                    {
+                        await using var file = File.OpenWrite(Path.Combine(conflictDestination, symbol.Name));
+                        await conflictingFile.CopyToAsync(file, token);
+                    }
+
+                    conflictDestination = Path.Combine(batchId.ToString(),
                         // To avoid files with conflicting name from the same batch
                         _random.Next().ToString(CultureInfo.InvariantCulture),
                         fileName);
@@ -253,7 +259,8 @@ namespace SymbolCollector.Server
             batch.ClientMetrics = clientMetrics;
             batch.Close();
 
-            var processingLocation = Path.Combine(_processingPath, batch.BatchType.ToSymsorterPrefix(), batchId.ToString());
+            var processingLocation =
+                Path.Combine(_processingPath, batch.BatchType.ToSymsorterPrefix(), batchId.ToString());
 
             var destination = Path.Combine(_donePath, batch.BatchType.ToSymsorterPrefix(), batchId.ToString());
             foreach (var symbol in batch.Symbols.Values)

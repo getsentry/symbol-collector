@@ -241,7 +241,7 @@ namespace SymbolCollector.Server
             }
         }
 
-        public async ValueTask<(string fileName, Stream data)> ProcessStreamedFile(
+        private async ValueTask<(string fileName, Stream data)> ProcessStreamedFile(
             MultipartSection section, ContentDispositionHeaderValue contentDisposition,
             ModelStateDictionary modelState, long sizeLimit)
         {
