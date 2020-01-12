@@ -24,6 +24,10 @@ script:
   - export JAVA_HOME=$(/usr/libexec/java_home -v 1.8)
   - dotnet tool install --global boots > nul
   - boots https://aka.ms/xamarin-android-commercial-d16-4-macos
+  - echo no | android create avd --force -n test -t android-29 --abi armeabi-v7a -c 100M
+  - emulator -avd test -no-audio -no-window &
+  - android-wait-for-emulator
+  - adb shell input keyevent 82 &
   - ./build.sh
 after_success:
   - curl -s https://codecov.io/bash > codecov
