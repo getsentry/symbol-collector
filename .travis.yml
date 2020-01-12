@@ -22,11 +22,16 @@ script:
   - brew update
   - brew cask install adoptopenjdk/openjdk/adoptopenjdk8
   - export JAVA_HOME=$(/usr/libexec/java_home -v 1.8)
-  - dotnet tool install --global boots > nul
-  - boots https://aka.ms/xamarin-android-commercial-d16-4-macos
+  # - dotnet tool install --global boots > nul
+  # - boots https://aka.ms/xamarin-android-commercial-d16-4-macos
   # - export PATH=${PATH}:$(pwd)/android-sdk/tools/bin:$(pwd)/android-sdk/tools:$(pwd)/android-sdk/platform-tools
-  - ./android-sdk/tools/bin/avdmanager list
-  # - tools/bin/avdmanager list
+  - pwd
+  - ls -lah
+  - echo $PATH
+  - echo $ANDROID_HOME
+  - echo $ANDROID_SDK_PATH
+  - ~/android-sdk/tools/bin/avdmanager list
+  - echo "no" | ~/android-sdk/tools/bin/avdmanager create avd -n ci -k "system-images;android-29;google_apis;armeabi-v7a"
   # - echo no | android create avd --force -n test -t android-29 --abi armeabi-v7a -c 100M
   # - emulator -avd test -no-skin -no-audio -no-window -no-boot-anim &
   # - android-wait-for-emulator
