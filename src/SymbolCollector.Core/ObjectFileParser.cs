@@ -89,6 +89,15 @@ namespace SymbolCollector.Core
                     result = null;
                 }
             }
+            catch (Exception ignore)
+                when (ignore.GetType().IsAssignableFrom(typeof(UnauthorizedAccessException))
+                      || ignore.GetType().IsAssignableFrom(typeof(FileNotFoundException)))
+            {
+                result = null;
+                Metrics.FailedToParse();
+                // Too often to bother. Can't blacklist them all as it differs per device.
+                _logger.LogInformation(ignore, "Failed processing file {file}.", file);
+            }
             catch (Exception e)
             {
                 result = null;
@@ -269,47 +278,38 @@ namespace SymbolCollector.Core
 
         private bool TryParseMachOFile(string file, out ObjectFileResult? result)
         {
-            try
+            // TODO: find an async API if this is used by the server
+            if (MachOReader.TryLoad(file, out var machO) == MachOResult.OK)
             {
-                // TODO: find an async API if this is used by the server
-                if (MachOReader.TryLoad(file, out var machO) == MachOResult.OK)
+                Metrics.MachOFileFound();
+                _logger.LogDebug("Mach-O found {file}", file);
+
+                // https://github.com/getsentry/symbolic/blob/d951dd683a62d32595cc232e93843bffe5bd6a17/debuginfo/src/macho.rs#L112-L127
+                var objectKind = GetObjectKind(machO);
+
+                var arch = GetArchitecture(machO);
+
+                var debugId = string.Empty;
+                var uuid = machO.GetCommandsOfType<Uuid?>().FirstOrDefault();
+                if (!(uuid is null))
                 {
-                    Metrics.MachOFileFound();
-                    _logger.LogDebug("Mach-O found {file}", file);
-
-                    // https://github.com/getsentry/symbolic/blob/d951dd683a62d32595cc232e93843bffe5bd6a17/debuginfo/src/macho.rs#L112-L127
-                    var objectKind = GetObjectKind(machO);
-
-                    var arch = GetArchitecture(machO);
-
-                    var debugId = string.Empty;
-                    var uuid = machO.GetCommandsOfType<Uuid?>().FirstOrDefault();
-                    if (!(uuid is null))
-                    {
-                        // TODO: Verify this is coming out correctly. Endianess not verified!!!
-                        debugId = uuid.Id.ToString();
-                    }
-
-                    result = new ObjectFileResult(
-                        debugId,
-                        debugId.Replace("-", string.Empty).ToLower(), // TODO: Figure out when to append + "0",
-                        file,
-                        GetSha256Hash(file),
-                        BuildIdType.Uuid,
-                        objectKind,
-                        FileFormat.MachO,
-                        arch);
-                    return true;
+                    // TODO: Verify this is coming out correctly. Endianess not verified!!!
+                    debugId = uuid.Id.ToString();
                 }
 
-                _logger.LogDebug("Couldn't load': {file} with mach-O reader.", file);
-            }
-            catch (Exception e)
-            {
-                // You would expect TryLoad doesn't throw but that's not the case
-                _logger.LogError(e, "Failed processing file {file}.", file);
+                result = new ObjectFileResult(
+                    debugId,
+                    debugId.Replace("-", string.Empty).ToLower(), // TODO: Figure out when to append + "0",
+                    file,
+                    GetSha256Hash(file),
+                    BuildIdType.Uuid,
+                    objectKind,
+                    FileFormat.MachO,
+                    arch);
+                return true;
             }
 
+            _logger.LogDebug("Couldn't load': {file} with mach-O reader.", file);
             result = null;
             return false;
         }

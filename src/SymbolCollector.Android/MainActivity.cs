@@ -1,15 +1,21 @@
 ﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
 using Android.App;
 using Android.OS;
 using Android.Runtime;
 using Android.Support.V7.App;
 using Android.Systems;
+using Android.Views;
+using Android.Widget;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Sentry;
 using Sentry.Extensibility;
 using SymbolCollector.Core;
+using Object = Java.Lang.Object;
+using OperationCanceledException = System.OperationCanceledException;
+using String = Java.Lang.String;
 
 namespace SymbolCollector.Android
 {
@@ -28,8 +34,63 @@ namespace SymbolCollector.Android
             SetContentView(Resource.Layout.activity_main);
 
             var uploader = _serviceProvider.GetRequiredService<AndroidUploader>();
-            // Won't async void here, just discarding the task instead
-            _ = uploader.StartUpload(_friendlyName, CancellationToken.None);
+            var metrics = _serviceProvider.GetRequiredService<ClientMetrics>();
+            var uploadButton = (Button)base.FindViewById(Resource.Id.btnUpload);
+            var source = new CancellationTokenSource();
+            var upload = Task.CompletedTask;
+            uploadButton.Click += async (sender, args) =>
+            {
+                // TODO: Get from resource
+                if (uploadButton.Text == "Collect symbols")
+                {
+                    source = new CancellationTokenSource();
+                    var uploadedCount = (TextView)base.FindViewById(Resource.Id.uploaded_count);
+
+                    uploadButton.Text = "Cancel";
+                    var uploadTask = uploader.StartUpload(_friendlyName, source.Token);
+                    var updateUiTask = Task.Run(async () =>
+                    {
+                        while (!source.IsCancellationRequested)
+                        {
+                            RunOnUiThread(() => uploadedCount.Text = FormatBytes(metrics.UploadedBytesCount));
+                            try
+                            {
+                                await Task.Delay(500, source.Token);
+                            }
+                            catch (OperationCanceledException)
+                            {
+                            }
+                        }
+
+                    }, source.Token);
+                    try
+                    {
+                        await Task.WhenAny(uploadTask, updateUiTask);
+                    }
+                    finally
+                    {
+                        source.Cancel();
+                    }
+                }
+                else
+                {
+                    try
+                    {
+                        uploadButton.Enabled = false;
+                        source.Cancel();
+                        await upload;
+                    }
+                    catch (OperationCanceledException)
+                    {
+                    }
+                    finally
+                    {
+                        uploadButton.Text = "Collect symbols";
+                        uploadButton.Enabled = true;
+                    }
+                }
+
+            };
         }
 
         public MainActivity()
@@ -53,6 +114,12 @@ namespace SymbolCollector.Android
                 o.DiagnosticsLevel = Sentry.Protocol.SentryLevel.Info;
                 o.AttachStacktrace = true;
                 o.Dsn = new Dsn("https://02619ad38bcb40d0be5167e1fb335954@sentry.io/1847454");
+                // TODO: This needs to be built-in
+                o.BeforeSend += @event => @event.Exception switch
+                {
+                    var e when e is OperationCanceledException => null,
+                    _ => @event
+                };
             });
 
             // TODO: This should be part of a package: Sentry.Xamarin.Android
@@ -115,6 +182,7 @@ namespace SymbolCollector.Android
                     SentrySdk.Close();
                 }
             };
+
             _host = Startup.Init(c =>
             {
                 c.AddSingleton<AndroidUploader>();
@@ -135,6 +203,24 @@ namespace SymbolCollector.Android
             base.Dispose(disposing);
             _host.Dispose();
             _sentry.Dispose();
+        }
+
+        public string FormatBytes(long bytes)
+        {
+            const int scale = 1024;
+            var orders = new[] { "GB", "MB", "KB", "Bytes" };
+            var max = (long)Math.Pow(scale, orders.Length - 1);
+
+            foreach (var order in orders)
+            {
+                if ( bytes > max )
+                {
+                    return $"{decimal.Divide(bytes, max):##.##} {order}";
+                }
+
+                max /= scale;
+            }
+            return "0 Bytes";
         }
     }
 }

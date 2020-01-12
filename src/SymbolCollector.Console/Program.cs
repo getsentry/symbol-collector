@@ -32,6 +32,12 @@ namespace SymbolCollector.Console
                 o.DiagnosticsLevel = Sentry.Protocol.SentryLevel.Warning;
                 o.AttachStacktrace = true;
                 o.Dsn = new Dsn(Dsn);
+                // TODO: This needs to be built-in
+                o.BeforeSend += @event => @event.Exception switch
+                {
+                    var e when e is OperationCanceledException => null,
+                    _ => @event
+                };
             });
             {
                 SentrySdk.ConfigureScope(s =>
