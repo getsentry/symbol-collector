@@ -3,8 +3,8 @@ env:
   global:
     - DOTNET_CLI_TELEMETRY_OPTOUT=1
     - AndroidSdkDirectory=../../android-sdk/android-sdk-macosx
-dotnet: 3.1.100
-mono: 6.6.0
+# dotnet: 3.1.100
+# mono: 6.6.0
 branches:
   only:
     - master
@@ -19,18 +19,15 @@ script:
   - chmod u+x android-sdk-installer
   - chmod u+x accept-licenses
   - ./android-sdk-installer --dir=./android-sdk --install=build-tools-29.0.0,android-29,platform-tools-29.0.0 --accept="android-sdk-license-e6a904e8|android-sdk-license-e6a904e8|android-sdk-license-e6a904e8"
-  - brew update
-  - brew cask install adoptopenjdk/openjdk/adoptopenjdk8
-  - export JAVA_HOME=$(/usr/libexec/java_home -v 1.8)
+  # - brew update
+  # - brew cask install adoptopenjdk/openjdk/adoptopenjdk8
+  # - export JAVA_HOME=$(/usr/libexec/java_home -v 1.8)
   # - dotnet tool install --global boots > nul
   # - boots https://aka.ms/xamarin-android-commercial-d16-4-macos
-  # - export PATH=${PATH}:$(pwd)/android-sdk/tools/bin:$(pwd)/android-sdk/tools:$(pwd)/android-sdk/platform-tools
-  - export ANDROID_HOME=$ANDROID_HOME
-  - pwd
   - ls -lah
-  - echo $PATH
-  - echo $ANDROID_HOME
-  - echo $ANDROID_SDK_PATH
+  - ls -lah android-sdk/
+  - ls -lah android-sdk/tools/
+  - ls -lah $HOME/.android-sdk-installer
   - ./android-sdk/tools/bin/avdmanager list
   - echo "no" | ./android-sdk/tools/bin/avdmanager create avd -n ci -k "system-images;android-29;google_apis;x86"
   # - echo no | android create avd --force -n test -t android-29 --abi armeabi-v7a -c 100M
