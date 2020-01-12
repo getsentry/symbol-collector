@@ -6,16 +6,13 @@ using Android.OS;
 using Android.Runtime;
 using Android.Support.V7.App;
 using Android.Systems;
-using Android.Views;
 using Android.Widget;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Sentry;
 using Sentry.Extensibility;
 using SymbolCollector.Core;
-using Object = Java.Lang.Object;
 using OperationCanceledException = System.OperationCanceledException;
-using String = Java.Lang.String;
 
 namespace SymbolCollector.Android
 {
@@ -215,18 +212,19 @@ namespace SymbolCollector.Android
         public string FormatBytes(long bytes)
         {
             const int scale = 1024;
-            var orders = new[] { "GB", "MB", "KB", "Bytes" };
+            var orders = new[] {"GB", "MB", "KB", "Bytes"};
             var max = (long)Math.Pow(scale, orders.Length - 1);
 
             foreach (var order in orders)
             {
-                if ( bytes > max )
+                if (bytes > max)
                 {
                     return $"{decimal.Divide(bytes, max):##.##} {order}";
                 }
 
                 max /= scale;
             }
+
             return "0 Bytes";
         }
     }
