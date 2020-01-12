@@ -15,9 +15,9 @@ matrix:
       osx_image: xcode11.2
 script:
   - curl -L https://raw.github.com/embarkmobile/android-sdk-installer/version-2/android-sdk-installer -o android-sdk-installer
-  - curl -L https://raw.github.com/embarkmobile/android-sdk-installer/version-2/accept-licenses -o accept-licenses
+  # - curl -L https://raw.github.com/embarkmobile/android-sdk-installer/version-2/accept-licenses -o accept-licenses
   - chmod u+x android-sdk-installer
-  - chmod u+x accept-licenses
+  # - chmod u+x accept-licenses
   - ./android-sdk-installer --dir=./android-sdk --install=build-tools-29.0.0,android-29,platform-tools-29.0.0 --accept="android-sdk-license-e6a904e8|android-sdk-license-e6a904e8|android-sdk-license-e6a904e8"
   # - brew update
   # - brew cask install adoptopenjdk/openjdk/adoptopenjdk8
@@ -27,9 +27,15 @@ script:
   - ls -lah
   - ls -lah android-sdk/
   - ls -lah android-sdk/tools/
-  - ls -lah $HOME/.android-sdk-installer
+  - ls -lah android-sdk/tools/android-sdk-macosx
+  - ls -lah android-sdk/tools/android-sdk-macosx/tools
+  - ls -lah android-sdk/tools/android-sdk-macosx/tools/bin
+  - source ./android-sdk/env
+  - echo $ANDROID_HOME
+  - echo $ANDROID_SDK_PATH
   - ./android-sdk/tools/bin/avdmanager list
-  - echo "no" | ./android-sdk/tools/bin/avdmanager create avd -n ci -k "system-images;android-29;google_apis;x86"
+  - ./android-sdk/tools/accept-licenses
+  - echo "no" | ./android-sdk/tools/android-sdk-macosx/tools/bin/avdmanager create avd -n ci -k "system-images;android-29;google_apis;x86"
   # - echo no | android create avd --force -n test -t android-29 --abi armeabi-v7a -c 100M
   # - emulator -avd test -no-skin -no-audio -no-window -no-boot-anim &
   - ./android-sdk/tools/wait_for_emulator
