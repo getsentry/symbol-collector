@@ -1,3 +1,5 @@
+using System;
+using System.IO;
 using NUnit.Framework;
 using NUnit.Framework.Internal;
 using Xamarin.UITest;
@@ -13,9 +15,23 @@ namespace SymbolCollector.Android.UITests
         [SetUp]
         public void BeforeEachTest()
         {
-            _app = ConfigureApp
-                .Android
-                .StartApp();
+            var setup = ConfigureApp.Android;
+            var apkPath = Environment.GetEnvironmentVariable("SYMBOL_COLLECTOR_APK");
+
+            if (apkPath is { })
+            {
+                if (File.Exists(apkPath))
+                {
+                    setup = setup.ApkFile(apkPath);
+                    Console.WriteLine($"Using APK: {apkPath}");
+                }
+                else
+                {
+                    Console.WriteLine($"APK path defined but no file exists at this path: {apkPath}");
+                }
+            }
+
+            _app = setup.StartApp();
         }
 
         [Test]
