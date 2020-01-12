@@ -10,7 +10,6 @@ using ELFSharp.ELF.Sections;
 using ELFSharp.ELF.Segments;
 using ELFSharp.MachO;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using FileType = ELFSharp.ELF.FileType;
 using ELFMachine = ELFSharp.ELF.Machine;
 using MachOMachine = ELFSharp.MachO.Machine;
@@ -25,9 +24,9 @@ namespace SymbolCollector.Core
         public ClientMetrics Metrics { get; }
 
         public ObjectFileParser(
-            FatBinaryReader? fatBinaryReader = null,
-            ClientMetrics? metrics = null,
-            ILogger<ObjectFileParser>? logger = null)
+            ClientMetrics metrics,
+            ILogger<ObjectFileParser> logger,
+            FatBinaryReader? fatBinaryReader = null)
         {
             if (fatBinaryReader is null
                 && logger is {}
@@ -37,8 +36,8 @@ namespace SymbolCollector.Core
             }
 
             _fatBinaryReader = fatBinaryReader;
-            _logger = logger ?? NullLogger<ObjectFileParser>.Instance;
-            Metrics = metrics ?? new ClientMetrics();
+            _logger = logger;
+            Metrics = metrics;
         }
 
         public bool TryParse(string file, out ObjectFileResult? result)
@@ -89,14 +88,18 @@ namespace SymbolCollector.Core
                     result = null;
                 }
             }
-            catch (Exception ignore)
-                when (ignore.GetType().IsAssignableFrom(typeof(UnauthorizedAccessException))
-                      || ignore.GetType().IsAssignableFrom(typeof(FileNotFoundException)))
+            catch (UnauthorizedAccessException ua)
             {
-                result = null;
-                Metrics.FailedToParse();
                 // Too often to bother. Can't blacklist them all as it differs per device.
-                _logger.LogInformation(ignore, "Failed processing file {file}.", file);
+                Metrics.FileOrDirectoryUnauthorizedAccess();
+                _logger.LogDebug(ua, "Unauthorized for {file}.", file);
+                result = null;
+            }
+            catch (FileNotFoundException dnf)
+            {
+                _logger.LogDebug(dnf, "File not found: {file}.", file);
+                Metrics.FileDoesNotExist();
+                result = null;
             }
             catch (Exception e)
             {
@@ -131,10 +134,8 @@ namespace SymbolCollector.Core
         {
             // Check if it's a Fat Mach-O
             FatMachO? load = null;
-            if (_fatBinaryReader?.TryLoad(file, out load) == true && load is {
-                    }
-                    fatMachO &&
-                fatMachO.Header.FatArchCount > 0)
+            if (_fatBinaryReader?.TryLoad(file, out load) == true
+                && load is { } fatMachO && fatMachO.Header.FatArchCount > 0)
             {
                 Metrics.FatMachOFileFound();
                 _logger.LogInformation("Fat binary file with {count} Mach-O files: {file}.",

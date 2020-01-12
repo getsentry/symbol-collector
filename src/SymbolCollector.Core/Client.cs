@@ -80,7 +80,7 @@ namespace SymbolCollector.Core
                 }
                 catch (UnauthorizedAccessException)
                 {
-                    Metrics.DirectoryUnauthorizedAccess();
+                    Metrics.FileOrDirectoryUnauthorizedAccess();
                     yield break;
                 }
                 catch (DirectoryNotFoundException)

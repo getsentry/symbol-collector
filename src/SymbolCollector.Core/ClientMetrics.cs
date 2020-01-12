@@ -16,8 +16,9 @@ namespace SymbolCollector.Core
         private int _elfFileFoundCount;
         private int _fatMachOFileFoundCount;
         private long _uploadedBytesCount;
-        private int _directoryUnauthorizedAccessCount;
+        private int _fileOrDirectoryUnauthorizedAccessCount;
         private int _directoryDoesNotExistCount;
+        private int _fileDoesNotExistCount;
         private int _alreadyExistedCount;
 
         public DateTimeOffset StartedTime { get; } = DateTimeOffset.Now;
@@ -40,8 +41,9 @@ namespace SymbolCollector.Core
 
         public long UploadedBytesCount => _uploadedBytesCount;
 
-        public int DirectoryUnauthorizedAccessCount => _directoryUnauthorizedAccessCount;
+        public int FileOrDirectoryUnauthorizedAccessCount => _fileOrDirectoryUnauthorizedAccessCount;
         public int DirectoryDoesNotExistCount => _directoryDoesNotExistCount;
+        public int FileDoesNotExistCount => _fileDoesNotExistCount;
 
         public void FileProcessed() => Interlocked.Increment(ref _filesProcessedCount);
         public void MachOFileFound() => Interlocked.Increment(ref _machOFileFoundCount);
@@ -54,8 +56,9 @@ namespace SymbolCollector.Core
         public void JobsInFlightRemove(int tasksCount) => Interlocked.Add(ref _jobsInFlightCount, -tasksCount);
         public void JobsInFlightAdd(int tasksCount) => Interlocked.Add(ref _jobsInFlightCount, tasksCount);
         public void UploadedBytesAdd(long bytes) => Interlocked.Add(ref _uploadedBytesCount, bytes);
-        public void DirectoryUnauthorizedAccess() => Interlocked.Increment(ref _directoryUnauthorizedAccessCount);
+        public void FileOrDirectoryUnauthorizedAccess() => Interlocked.Increment(ref _fileOrDirectoryUnauthorizedAccessCount);
         public void DirectoryDoesNotExist() => Interlocked.Increment(ref _directoryDoesNotExistCount);
+        public void FileDoesNotExist() => Interlocked.Increment(ref _fileDoesNotExistCount);
         public TimeSpan RanFor => DateTimeOffset.Now - StartedTime;
 
         public void Write(IDictionary data)
@@ -64,8 +67,9 @@ namespace SymbolCollector.Core
             data["Ran for"] = RanFor;
             data["File Processed"] = FilesProcessedCount;
             // TODO: Fix PII stripping, Sentry is deleting the field for containing "Unauthorized"
-            data["Directory Unautnorized"] = DirectoryUnauthorizedAccessCount;
-            data["Directory DoesNotExist"] = DirectoryDoesNotExistCount;
+            data["File or Directory Unauthorized"] = FileOrDirectoryUnauthorizedAccessCount;
+            data["Directory Does Not Exist"] = DirectoryDoesNotExistCount;
+            data["File Does Not Exist"] = FileDoesNotExistCount;
             data["Jobs in flight"] = JobsInFlightCount;
             data["Failed to upload"] = FailedToUploadCount;
             data["Successfully uploaded"] = SuccessfullyUploadCount;
@@ -85,10 +89,12 @@ namespace SymbolCollector.Core
             writer.WriteLine(RanFor);
             writer.Write("File Processed:\t\t\t\t");
             writer.WriteLine(FilesProcessedCount);
-            writer.Write("Directory UnauthorizedAccess:\t\t");
-            writer.WriteLine(DirectoryUnauthorizedAccessCount);
+            writer.Write("File or Directory UnauthorizedAccess:\t\t");
+            writer.WriteLine(FileOrDirectoryUnauthorizedAccessCount);
             writer.Write("Directory DoesNotExist:\t\t\t");
             writer.WriteLine(DirectoryDoesNotExistCount);
+            writer.Write("File DoesNotExist:\t\t\t");
+            writer.WriteLine(FileDoesNotExistCount);
             writer.Write("Job in flight:\t\t\t\t");
             writer.WriteLine(JobsInFlightCount);
             writer.Write("Failed to upload:\t\t\t");

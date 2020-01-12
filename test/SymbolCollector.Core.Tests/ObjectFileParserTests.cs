@@ -13,14 +13,14 @@ namespace SymbolCollector.Core.Tests
             public FatBinaryReader? FatBinaryReader { get; set; } =
                 new FatBinaryReader(Substitute.For<ILogger<FatBinaryReader>>());
 
-            public ClientMetrics? Metrics { get; set; }
-            public ILogger<ObjectFileParser>? Logger { get; set; }
+            public ClientMetrics Metrics { get; set; } = new ClientMetrics();
+            public ILogger<ObjectFileParser> Logger { get; set; } = Substitute.For<ILogger<ObjectFileParser>>();
 
             public ObjectFileParser GetSut() =>
                 new ObjectFileParser(
-                    FatBinaryReader,
                     Metrics,
-                    Logger);
+                    Logger,
+                    FatBinaryReader);
         }
 
         private readonly Fixture _fixture = new Fixture();
@@ -53,7 +53,7 @@ namespace SymbolCollector.Core.Tests
                     // Fat Mach-O files path are defined in temp folders. Only the actual file name is expected to match.
                     var expectedFile = expectedFiles[i];
                     var actualFile = actualFiles[i];
-                    Assert.Equal(Path.GetFileName(expectedFile.Path),Path.GetFileName(actualFile.Path));
+                    Assert.Equal(Path.GetFileName(expectedFile.Path), Path.GetFileName(actualFile.Path));
                     expectedFile.Path = actualFile.Path;
                     AssertObjectFileResult(expectedFile, actualFile);
                 }

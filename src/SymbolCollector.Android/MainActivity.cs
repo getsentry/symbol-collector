@@ -36,18 +36,21 @@ namespace SymbolCollector.Android
             var uploader = _serviceProvider.GetRequiredService<AndroidUploader>();
             var metrics = _serviceProvider.GetRequiredService<ClientMetrics>();
             var uploadButton = (Button)base.FindViewById(Resource.Id.btnUpload);
+            var uploadButtonOriginalText = GetString(Resource.Id.btnUpload);
             var source = new CancellationTokenSource();
-            var upload = Task.CompletedTask;
-            uploadButton.Click += async (sender, args) =>
+            var uploadTask = Task.CompletedTask;
+
+            uploadButton.Click += OnUploadButtonOnClick;
+
+            async void OnUploadButtonOnClick(object sender, EventArgs args)
             {
-                // TODO: Get from resource
-                if (uploadButton.Text == "Collect symbols")
+                if (uploadButton.Text == uploadButtonOriginalText)
                 {
                     source = new CancellationTokenSource();
                     var uploadedCount = (TextView)base.FindViewById(Resource.Id.uploaded_count);
 
                     uploadButton.Text = "Cancel";
-                    var uploadTask = uploader.StartUpload(_friendlyName, source.Token);
+                    uploadTask = uploader.StartUpload(_friendlyName, source.Token);
                     var updateUiTask = Task.Run(async () =>
                     {
                         while (!source.IsCancellationRequested)
@@ -61,11 +64,15 @@ namespace SymbolCollector.Android
                             {
                             }
                         }
-
                     }, source.Token);
                     try
                     {
                         await Task.WhenAny(uploadTask, updateUiTask);
+                        if (uploadTask.IsCompletedSuccessfully)
+                        {
+                            uploadButton.Enabled = false;
+                            uploadButton.Text = "Completed";
+                        }
                     }
                     finally
                     {
@@ -78,19 +85,18 @@ namespace SymbolCollector.Android
                     {
                         uploadButton.Enabled = false;
                         source.Cancel();
-                        await upload;
+                        await uploadTask;
                     }
                     catch (OperationCanceledException)
                     {
                     }
                     finally
                     {
-                        uploadButton.Text = "Collect symbols";
+                        uploadButton.Text = uploadButtonOriginalText;
                         uploadButton.Enabled = true;
                     }
                 }
-
-            };
+            }
         }
 
         public MainActivity()
@@ -115,6 +121,7 @@ namespace SymbolCollector.Android
                 o.AttachStacktrace = true;
                 o.Dsn = new Dsn("https://02619ad38bcb40d0be5167e1fb335954@sentry.io/1847454");
                 // TODO: This needs to be built-in
+                o.AddInAppExclude("Mono");
                 o.BeforeSend += @event => @event.Exception switch
                 {
                     var e when e is OperationCanceledException => null,
