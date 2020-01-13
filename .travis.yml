@@ -22,18 +22,16 @@ script:
   - export JAVA_HOME=$(/usr/libexec/java_home -v 1.8)
   - dotnet tool install --global boots > nul
   - boots https://aka.ms/xamarin-android-commercial-d16-4-macos
-  - source ./android-sdk/env
-  - echo "y" | android update sdk -a --no-ui --filter sys-img-x86_64-android-29
-  - echo "no" | android create avd -n ci -t android-29 --abi default/x86_64 -c 100M -p ./avd
-  - ls -lah ./avd
-  - mkdir ./.android
-  - ln -s ./.android/avd ./avd
-  - ls -lah ./.android
-  - ls -lah ./.android/avd
-  - export ANDROID_AVD_HOME=./avd
-  - emulator -avd ci -no-skin -no-audio -no-window -no-boot-anim &
-  - ./android-sdk/tools/wait_for_emulator
-  - adb shell input keyevent 82 &
+  # TODO: Get the emulator to run
+  # - source ./android-sdk/env
+  # - echo "y" | android update sdk -a --no-ui --filter sys-img-x86_64-android-29
+  # - export ANDROID_AVD_HOME=./avd
+  # - ls -lah ./avd
+  # - echo "no" | android create avd -n ci -t android-29 --abi default/x86_64 -c 100M -p ./avd
+  # - ls -lah ./avd
+  # - emulator -avd ci -no-skin -no-audio -no-window -no-boot-anim &
+  # - ./android-sdk/tools/wait_for_emulator
+  # - adb shell input keyevent 82 &
   - ./build.sh
 after_success:
   - curl -s https://codecov.io/bash > codecov
