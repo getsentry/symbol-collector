@@ -24,8 +24,10 @@ script:
   - boots https://aka.ms/xamarin-android-commercial-d16-4-macos
   - source ./android-sdk/env
   - echo "y" | android update sdk -a --no-ui --filter sys-img-x86_64-android-29
-  - echo "no" | android create avd -n ci -t android-29 --abi default/x86_64 -c 100M
-  - mkdir -p ./.android/avd
+  - echo "no" | android create avd -n ci -t android-29 --abi default/x86_64 -c 100M -p .
+  - ls -lah .
+  - ls -lah ./.android
+  - ls -lah ./.android/avd
   - export EMULATOR_INI=$(find . -name ci.ini)
   - export ANDROID_AVD_HOME=$(dirname $EMULATOR_INI)
   - emulator -avd ci -no-skin -no-audio -no-window -no-boot-anim &
