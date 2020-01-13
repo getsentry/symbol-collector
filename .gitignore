@@ -7,3 +7,4 @@ out/
 TestResults/
 *.user
 dev-data/
+TestResult.xml

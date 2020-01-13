@@ -89,7 +89,7 @@ namespace SymbolCollector.Core
             writer.WriteLine(RanFor);
             writer.Write("File Processed:\t\t\t\t");
             writer.WriteLine(FilesProcessedCount);
-            writer.Write("File or Directory UnauthorizedAccess:\t\t");
+            writer.Write("File or Directory Unauthorized\t\t");
             writer.WriteLine(FileOrDirectoryUnauthorizedAccessCount);
             writer.Write("Directory DoesNotExist:\t\t\t");
             writer.WriteLine(DirectoryDoesNotExistCount);
