@@ -26,11 +26,10 @@ script:
   - echo "y" | android update sdk -a --no-ui --filter sys-img-x86_64-android-29
   - echo "no" | android create avd -n ci -t android-29 --abi default/x86_64 -c 100M -p ./avd
   - ls -lah ./avd
-  - mkdir /.android
-  - ln -s /.android/avd ./avd
+  - mkdir ./.android
+  - ln -s ./.android/avd ./avd
   - ls -lah ./.android
   - ls -lah ./.android/avd
-  - export EMULATOR_INI=$(find . -name *.ini)
   - export ANDROID_AVD_HOME=./avd
   - emulator -avd ci -no-skin -no-audio -no-window -no-boot-anim &
   - ./android-sdk/tools/wait_for_emulator
