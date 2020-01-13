@@ -33,65 +33,67 @@ namespace SymbolCollector.Android
             var uploader = _serviceProvider.GetRequiredService<AndroidUploader>();
             var metrics = _serviceProvider.GetRequiredService<ClientMetrics>();
             var uploadButton = (Button)base.FindViewById(Resource.Id.btnUpload);
+            var cancelButton = (Button)base.FindViewById(Resource.Id.btnCancel);
             var uploadButtonOriginalText = GetString(Resource.Id.btnUpload);
             var source = new CancellationTokenSource();
             var uploadTask = Task.CompletedTask;
 
             uploadButton.Click += OnUploadButtonOnClick;
+            cancelButton.Click += OnCancelButtonOnClick;
 
             async void OnUploadButtonOnClick(object sender, EventArgs args)
             {
-                if (uploadButton.Text == uploadButtonOriginalText)
-                {
-                    source = new CancellationTokenSource();
-                    var uploadedCount = (TextView)base.FindViewById(Resource.Id.uploaded_count);
+                uploadButton.Enabled = false;
+                source = new CancellationTokenSource();
+                var uploadedCount = (TextView)base.FindViewById(Resource.Id.uploaded_count);
 
-                    uploadButton.Text = "Cancel";
-                    uploadTask = uploader.StartUpload(_friendlyName, source.Token);
-                    var updateUiTask = Task.Run(async () =>
+                uploadTask = uploader.StartUpload(_friendlyName, source.Token);
+                var updateUiTask = Task.Run(async () =>
+                {
+                    while (!source.IsCancellationRequested)
                     {
-                        while (!source.IsCancellationRequested)
+                        RunOnUiThread(() => uploadedCount.Text = FormatBytes(metrics.UploadedBytesCount));
+                        try
                         {
-                            RunOnUiThread(() => uploadedCount.Text = FormatBytes(metrics.UploadedBytesCount));
-                            try
-                            {
-                                await Task.Delay(500, source.Token);
-                            }
-                            catch (OperationCanceledException)
-                            {
-                            }
+                            await Task.Delay(500, source.Token);
                         }
-                    }, source.Token);
-                    try
-                    {
-                        await Task.WhenAny(uploadTask, updateUiTask);
-                        if (uploadTask.IsCompletedSuccessfully)
+                        catch (OperationCanceledException)
                         {
-                            uploadButton.Enabled = false;
-                            uploadButton.Text = "Completed";
                         }
                     }
-                    finally
+                }, source.Token);
+                try
+                {
+                    cancelButton.Enabled = true;
+                    await Task.WhenAny(uploadTask, updateUiTask);
+                    if (uploadTask.IsCompletedSuccessfully)
                     {
-                        source.Cancel();
+                        cancelButton.Enabled = false;
+                        uploadButton.Enabled = false;
+                        // TODO: make obvious job is done
+                        uploadButton.Text = "Completed";
                     }
                 }
-                else
+                finally
                 {
-                    try
-                    {
-                        uploadButton.Enabled = false;
-                        source.Cancel();
-                        await uploadTask;
-                    }
-                    catch (OperationCanceledException)
-                    {
-                    }
-                    finally
-                    {
-                        uploadButton.Text = uploadButtonOriginalText;
-                        uploadButton.Enabled = true;
-                    }
+                    source.Cancel();
+                }
+            }
+
+            async void OnCancelButtonOnClick(object sender, EventArgs args)
+            {
+                try
+                {
+                    source.Cancel();
+                    await uploadTask;
+                }
+                catch (OperationCanceledException)
+                {
+                }
+                finally
+                {
+                    uploadButton.Enabled = true;
+                    cancelButton.Enabled = false;
                 }
             }
         }
@@ -158,7 +160,7 @@ namespace SymbolCollector.Android
 #else
                 s.SetTag("build-type", "other");
 #endif
-                if (uname is {})
+                if (uname is { })
                 {
                     s.Contexts["uname"] = new
                     {
@@ -212,7 +214,7 @@ namespace SymbolCollector.Android
         public string FormatBytes(long bytes)
         {
             const int scale = 1024;
-            var orders = new[] {"GB", "MB", "KB", "Bytes"};
+            var orders = new[] { "GB", "MB", "KB", "Bytes" };
             var max = (long)Math.Pow(scale, orders.Length - 1);
 
             foreach (var order in orders)

@@ -2,5 +2,6 @@
     <string name="app_name">Symbol Collector</string>
     <string name="uploaded_count">Uploaded</string>
     <string name="upload_button">Collect symbols</string>
+    <string name="cancel_button">Cancel</string>
     <string name="main_text">Help fixing bugs in apps by collecting this device\'s debug symbols and images.</string>
 </resources>

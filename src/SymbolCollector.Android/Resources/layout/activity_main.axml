@@ -36,11 +36,12 @@
                         android:text="@string/upload_button"
                         android:layout_weight="0.5"
                         android:layout_marginTop="10dp"
-                        android:enabled="false"/>
+                        android:enabled="true"/>
 
                 <Button android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="Cancelar"
+                        android:id="@+id/btnCancel"
+                        android:text="@string/cancel_button"
                         android:layout_weight="0.5"
                         android:layout_marginTop="10dp"/>
 
@@ -91,7 +92,7 @@
                             android:layout_weight="1"
                             android:lines="1"
                             android:ellipsize="end"
-                            tools:text="leftleftleftleftleftleftleftleftleftleftleftleftleftleftleftleftleftleft"/>
+                            tools:text="left"/>
 
                     <TextView
                             android:layout_width="wrap_content"
@@ -115,7 +116,7 @@
                             android:layout_weight="1"
                             android:lines="1"
                             android:ellipsize="end"
-                            tools:text="leftleftleftleftleftleftleftleftleftleftleftleftleftleftleftleftleftleft"/>
+                            tools:text="left"/>
 
                     <TextView
                             android:layout_width="wrap_content"
@@ -139,7 +140,7 @@
                             android:layout_weight="1"
                             android:lines="1"
                             android:ellipsize="end"
-                            tools:text="leftleftleftleftleftleftleftleftleftleftleftleftleftleftleftleftleftleft"/>
+                            tools:text="left"/>
 
                     <TextView
                             android:layout_width="wrap_content"
@@ -163,7 +164,7 @@
                             android:layout_weight="1"
                             android:lines="1"
                             android:ellipsize="end"
-                            tools:text="leftleftleftleftleftleftleftleftleftleftleftleftleftleftleftleftleftleft"/>
+                            tools:text="left"/>
 
                     <TextView
                             android:layout_width="wrap_content"
@@ -187,7 +188,7 @@
                             android:layout_weight="1"
                             android:lines="1"
                             android:ellipsize="end"
-                            tools:text="leftleftleftleftleftleftleftleftleftleftleftleftleftleftleftleftleftleft"/>
+                            tools:text="left"/>
 
                     <TextView
                             android:layout_width="wrap_content"
