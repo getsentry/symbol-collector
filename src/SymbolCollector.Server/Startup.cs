@@ -85,6 +85,16 @@ namespace SymbolCollector.Server
                 _ = s.ServiceProvider.GetRequiredService<ISymbolService>();
             }
 
+            app.Use(async (context, func) =>
+            {
+                context.Response.OnStarting(() =>
+                {
+                    context.Response.Headers.Add("TraceIdentifier", new[] { context.TraceIdentifier });
+                    return Task.CompletedTask;
+                });
+                await func();
+            });
+
             app.UseRouting();
             app.UseEndpoints(endpoints =>
             {

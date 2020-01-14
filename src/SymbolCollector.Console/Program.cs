@@ -33,10 +33,19 @@ namespace SymbolCollector.Console
                 o.AttachStacktrace = true;
                 o.Dsn = new Dsn(Dsn);
                 // TODO: This needs to be built-in
-                o.BeforeSend += @event => @event.Exception switch
+                o.BeforeSend += @event =>
                 {
-                    var e when e is OperationCanceledException => null,
-                    _ => @event
+                    const string traceIdKey = "TraceIdentifier";
+                    switch (@event.Exception)
+                    {
+                        case var e when e is OperationCanceledException:
+                            return null;
+                        case var e when e?.Data.Contains(traceIdKey) == true:
+                            @event.SetTag(traceIdKey, e.Data[traceIdKey]?.ToString() ?? "unknown");
+                            break;
+                    }
+
+                    return @event;
                 };
             });
             {
