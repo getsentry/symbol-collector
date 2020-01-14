@@ -121,9 +121,16 @@ namespace SymbolCollector.Android
                     {
                         cancelButton.Enabled = false;
                         uploadButton.Enabled = false;
-                        // TODO: make obvious job is done
-                        uploadButton.Text = "Completed";
-                        // uploadedCount.Text = metrics.RanFor.ToString();
+                        
+                        var doneText = (TextView)base.FindViewById(Resource.Id.done_text);
+                        var ranForLabel = (TextView)base.FindViewById(Resource.Id.ran_for_label);
+                        var ranForContainer = (TextView)base.FindViewById(Resource.Id.ran_for_container);
+                        var ranForView = (TextView)base.FindViewById(Resource.Id.ran_for_view);
+                        doneText.Visibility = ViewStates.Visible;
+                        ranForView.Visibility = ViewStates.Visible;
+                        ranForContainer.Visibility = ViewStates.Visible;
+
+                        ranForLabel.Text = metrics.RanFor.ToString();
 
                     }
                     else if (uploadTask.IsFaulted)
@@ -146,7 +153,7 @@ namespace SymbolCollector.Android
                 }
             }
 
-            async void OnCancelButtonOnClick(object sender, EventArgs args)
+            void OnCancelButtonOnClick(object sender, EventArgs args)
             {
                 (GetSystemService(InputMethodService) as InputMethodManager)
                     ?.HideSoftInputFromWindow(CurrentFocus.WindowToken, 0);

@@ -1,12 +1,18 @@
 #!/bin/bash
 set -e
 
+pushd src/SymbolCollector.Android/
+msbuild /restore /p:Configuration=Release \
+    /p:AndroidBuildApplicationPackage=true \
+    /t:Clean\;Build\;SignAndroidPackage
+popd
+
 pushd test/SymbolCollector.Android.UITests/
 msbuild /restore /p:Configuration=Release /t:Build
 # Don't run emulator tests on Travis-CI
 if [ -z ${TRAVIS_JOB_ID+x} ]; then
     pushd bin/Release
-    export SYMBOL_COLLECTOR_APK=../../../../src/SymbolCollector.Android/bin/Release/io.sentry.symbol_collector.apk
+    export SYMBOL_COLLECTOR_APK=../../../../src/SymbolCollector.Android/bin/Release/io.sentry.symbol.collector.apk
     mono ../../tools/nunit/net35/nunit3-console.exe SymbolCollector.Android.UITests.dll
     unset SYMBOL_COLLECTOR_APK
     popd

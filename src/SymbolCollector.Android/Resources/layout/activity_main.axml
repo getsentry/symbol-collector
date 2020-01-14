@@ -26,6 +26,15 @@
                       android:layout_height="wrap_content"
                       android:orientation="vertical">
 
+            <TextView android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:text="💯"
+                      android:textColor="@android:color/holo_red_dark"
+                      android:textSize="50sp"
+                      android:id="@+id/done_text"
+                      android:gravity="center_horizontal"
+                      android:visibility="gone"
+                      tools:visibility="visible" />
             <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -67,6 +76,39 @@
                           android:id="@+id/metrics_container"
                           android:orientation="vertical"
                           android:visibility="gone">
+
+                <!-- Ran for - show at the end -->
+                <LinearLayout android:layout_width="match_parent"
+                              android:layout_height="wrap_content"
+                              android:visibility="gone"
+                              tools:visibility="visible"
+                              android:id="@+id/ran_for_container"
+                              android:orientation="horizontal">
+
+                    <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:lines="1"
+                            android:text="Ran for:"
+                            android:ellipsize="end"
+                            tools:text="left"/>
+
+                    <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:id="@+id/ran_for_label"
+                            android:layout_marginLeft="10dp"
+                            tools:text="right"/>
+
+                </LinearLayout>
+
+                <View android:layout_width="match_parent"
+                      android:background="@color/colorPrimaryDark"
+                      android:visibility="gone"
+                      tools:visibility="visible"
+                      android:id="@+id/ran_for_view"
+                      android:layout_height="1dp"/>
 
                 <!-- Started time -->
                 <LinearLayout android:layout_width="match_parent"
