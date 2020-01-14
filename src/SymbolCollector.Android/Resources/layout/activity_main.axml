@@ -13,12 +13,12 @@
               android:layout_height="wrap_content"
               android:text="@string/main_text"
               android:textAlignment="center"
-              android:textSize="16sp">
+              android:textSize="20sp">
     </TextView>
 
     <ScrollView android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:id="@+id/scrollContent"
+                android:id="@+id/scroll_content"
                 android:layout_below="@+id/intro"
                 android:layout_above="@+id/footer">
 
@@ -26,6 +26,19 @@
                       android:layout_height="wrap_content"
                       android:orientation="vertical">
 
+            <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:lines="1"
+                    android:text="Symbol collector server address:"
+                    tools:text="left"/>
+
+            <EditText android:layout_width="match_parent"
+                      android:text="https://symbol-collector.services"
+                      android:id="@+id/server_url"
+                      android:layout_height="match_parent" />
+
+            <!-- Buttons -->
             <LinearLayout android:layout_width="match_parent"
                           android:layout_height="wrap_content"
                           android:orientation="horizontal">
@@ -42,46 +55,20 @@
                         android:layout_height="wrap_content"
                         android:id="@+id/btnCancel"
                         android:text="@string/cancel_button"
+                        android:enabled="false"
                         android:layout_weight="0.5"
                         android:layout_marginTop="10dp"/>
 
             </LinearLayout>
 
-
-            <TextView
-                    android:id="@+id/uploaded_count"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/uploaded_count"
-                    android:layout_marginTop="10dp"/>
-
+            <!-- Metrics container -->
             <LinearLayout android:layout_width="match_parent"
                           android:layout_height="wrap_content"
+                          android:id="@+id/metrics_container"
                           android:orientation="vertical"
-            >
-                <!--        android:visibility="gone"-->
+                          android:visibility="gone">
 
-                <LinearLayout android:layout_width="match_parent"
-                              android:layout_height="wrap_content"
-                              android:orientation="horizontal">
-
-                    <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            tools:text="left"/>
-
-                    <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            tools:text="right"/>
-
-                </LinearLayout>
-
-                <View android:layout_width="match_parent"
-                      android:background="@color/colorPrimaryDark"
-                      android:layout_height="1dp"/>
-
+                <!-- Started time -->
                 <LinearLayout android:layout_width="match_parent"
                               android:layout_height="wrap_content"
                               android:orientation="horizontal">
@@ -91,12 +78,14 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:lines="1"
+                            android:text="Started at:"
                             android:ellipsize="end"
                             tools:text="left"/>
 
                     <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:id="@+id/started_time"
                             android:layout_marginLeft="10dp"
                             tools:text="right"/>
 
@@ -106,6 +95,31 @@
                       android:background="@color/colorPrimaryDark"
                       android:layout_height="1dp"/>
 
+                <!-- Files uploaded -->
+                <LinearLayout android:layout_width="match_parent"
+                              android:layout_height="wrap_content"
+                              android:orientation="horizontal">
+
+                    <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="File bytes uploaded:"
+                            tools:text="left"/>
+
+                    <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:id="@+id/uploaded_count"
+                            tools:text="right"/>
+
+                </LinearLayout>
+
+                <View android:layout_width="match_parent"
+                      android:background="@color/colorPrimaryDark"
+                      android:layout_height="1dp"/>
+
+                <!-- Already existed-->
                 <LinearLayout android:layout_width="match_parent"
                               android:layout_height="wrap_content"
                               android:orientation="horizontal">
@@ -115,12 +129,14 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:lines="1"
+                            android:text="Already known:"
                             android:ellipsize="end"
                             tools:text="left"/>
 
                     <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:id="@+id/already_existed"
                             android:layout_marginLeft="10dp"
                             tools:text="right"/>
 
@@ -130,6 +146,7 @@
                       android:background="@color/colorPrimaryDark"
                       android:layout_height="1dp"/>
 
+                <!-- Files Processed Count -->
                 <LinearLayout android:layout_width="match_parent"
                               android:layout_height="wrap_content"
                               android:orientation="horizontal">
@@ -137,6 +154,7 @@
                     <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
+                            android:text="Files processed:"
                             android:layout_weight="1"
                             android:lines="1"
                             android:ellipsize="end"
@@ -145,6 +163,7 @@
                     <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:id="@+id/files_processed"
                             android:layout_marginLeft="10dp"
                             tools:text="right"/>
 
@@ -154,6 +173,7 @@
                       android:background="@color/colorPrimaryDark"
                       android:layout_height="1dp"/>
 
+                <!-- Successfully Upload Count -->
                 <LinearLayout android:layout_width="match_parent"
                               android:layout_height="wrap_content"
                               android:orientation="horizontal">
@@ -161,6 +181,7 @@
                     <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
+                            android:text="Successfully uploaded:"
                             android:layout_weight="1"
                             android:lines="1"
                             android:ellipsize="end"
@@ -169,6 +190,7 @@
                     <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:id="@+id/successfully_upload"
                             android:layout_marginLeft="10dp"
                             tools:text="right"/>
 
@@ -178,6 +200,7 @@
                       android:background="@color/colorPrimaryDark"
                       android:layout_height="1dp"/>
 
+                <!-- Elf File Found Count -->
                 <LinearLayout android:layout_width="match_parent"
                               android:layout_height="wrap_content"
                               android:orientation="horizontal">
@@ -185,6 +208,7 @@
                     <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
+                            android:text="ELF files:"
                             android:layout_weight="1"
                             android:lines="1"
                             android:ellipsize="end"
@@ -193,9 +217,166 @@
                     <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:id="@+id/elf_files"
                             android:layout_marginLeft="10dp"
                             tools:text="right"/>
 
+                </LinearLayout>
+
+                <View android:layout_width="match_parent"
+                      android:background="@color/colorPrimaryDark"
+                      android:layout_height="1dp"/>
+
+                <!-- Failed To Parse Count -->
+                <LinearLayout android:layout_width="match_parent"
+                              android:layout_height="wrap_content"
+                              android:orientation="horizontal">
+
+                    <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Failed to parse:"
+                            android:lines="1"
+                            android:ellipsize="end"
+                            tools:text="left"/>
+
+                    <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:id="@+id/failed_parsing"
+                            android:layout_marginLeft="10dp"
+                            tools:text="right"/>
+                </LinearLayout>
+
+                <View android:layout_width="match_parent"
+                      android:background="@color/colorPrimaryDark"
+                      android:layout_height="1dp"/>
+
+                <!-- Failed To Upload Count -->
+                <LinearLayout android:layout_width="match_parent"
+                              android:layout_height="wrap_content"
+                              android:orientation="horizontal">
+
+                    <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Failed to upload:"
+                            android:lines="1"
+                            android:ellipsize="end"
+                            tools:text="left"/>
+
+                    <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:id="@+id/failed_uploading"
+                            android:layout_marginLeft="10dp"
+                            tools:text="right"/>
+                </LinearLayout>
+
+                <View android:layout_width="match_parent"
+                      android:background="@color/colorPrimaryDark"
+                      android:layout_height="1dp"/>
+
+                <!-- Jobs In Flight Count -->
+                <LinearLayout android:layout_width="match_parent"
+                              android:layout_height="wrap_content"
+                              android:orientation="horizontal">
+
+                    <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Jobs in flight:"
+                            android:lines="1"
+                            android:ellipsize="end"
+                            tools:text="left"/>
+
+                    <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:id="@+id/jobs_in_flight"
+                            android:layout_marginLeft="10dp"
+                            tools:text="right"/>
+                </LinearLayout>
+
+                <View android:layout_width="match_parent"
+                      android:background="@color/colorPrimaryDark"
+                      android:layout_height="1dp"/>
+
+                <!-- Directory Does Not Exist Count -->
+                <LinearLayout android:layout_width="match_parent"
+                              android:layout_height="wrap_content"
+                              android:orientation="horizontal">
+
+                    <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Directory not found:"
+                            android:lines="1"
+                            android:ellipsize="end"
+                            tools:text="left"/>
+
+                    <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:id="@+id/directory_not_found"
+                            android:layout_marginLeft="10dp"
+                            tools:text="right"/>
+                </LinearLayout>
+
+                <View android:layout_width="match_parent"
+                      android:background="@color/colorPrimaryDark"
+                      android:layout_height="1dp"/>
+
+                <!-- File Does Not Exist Count -->
+                <LinearLayout android:layout_width="match_parent"
+                              android:layout_height="wrap_content"
+                              android:orientation="horizontal">
+
+                    <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="File not found:"
+                            android:lines="1"
+                            android:ellipsize="end"
+                            tools:text="left"/>
+
+                    <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:id="@+id/file_not_found"
+                            android:layout_marginLeft="10dp"
+                            tools:text="right"/>
+                </LinearLayout>
+
+                <View android:layout_width="match_parent"
+                      android:background="@color/colorPrimaryDark"
+                      android:layout_height="1dp"/>
+
+                <!-- Unauthorized Access -->
+                <LinearLayout android:layout_width="match_parent"
+                              android:layout_height="wrap_content"
+                              android:orientation="horizontal">
+
+                    <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Unauthorized access:"
+                            android:lines="1"
+                            android:ellipsize="end"
+                            tools:text="left"/>
+
+                    <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:id="@+id/unauthorized_access"
+                            android:layout_marginLeft="10dp"
+                            tools:text="right"/>
                 </LinearLayout>
 
                 <View android:layout_width="match_parent"
@@ -211,9 +392,11 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_horizontal"
-            android:text="aa: http://www.google.com\ntest"
+            android:textSize="15dp"
+            android:text="Source code:\nhttps://github.com/getsentry/symbol-collector"
             android:autoLink="web"
             android:layout_marginTop="10dp"
+            android:layout_marginBottom="10dp"
             android:layout_alignParentBottom="true"/>
 
 </RelativeLayout>

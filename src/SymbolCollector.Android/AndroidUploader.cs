@@ -1,6 +1,8 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Sentry;
 using SymbolCollector.Core;
 using Exception = System.Exception;
 
@@ -29,10 +31,16 @@ namespace SymbolCollector.Android
                 {
                     await _client.UploadAllPathsAsync(friendlyName, BatchType.Android, paths, token);
                 }
+                catch (OperationCanceledException)
+                {
+                }
                 catch (Exception e)
                 {
                     _logger.LogError(e, "Failed uploading {friendlyName} paths: {paths}",
                         friendlyName, paths);
+                    // Make sure event is flushed and rethrow
+                    await SentrySdk.FlushAsync(TimeSpan.FromSeconds(3));
+                    throw;
                 }
             }, token);
     }

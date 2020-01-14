@@ -2,21 +2,27 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Android.App;
+using Android.Content;
+using Android.Content.PM;
 using Android.OS;
 using Android.Runtime;
 using Android.Support.V7.App;
 using Android.Systems;
+using Android.Views;
+using Android.Views.InputMethods;
 using Android.Widget;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Sentry;
 using Sentry.Extensibility;
+using Sentry.Protocol;
 using SymbolCollector.Core;
+using AlertDialog = Android.App.AlertDialog;
 using OperationCanceledException = System.OperationCanceledException;
 
 namespace SymbolCollector.Android
 {
-    [Activity(Label = "@string/app_name", Theme = "@style/AppTheme", MainLauncher = true)]
+    [Activity(Label = "@string/app_name", Theme = "@style/AppTheme", MainLauncher = true, ScreenOrientation = ScreenOrientation.Portrait)]
     public class MainActivity : AppCompatActivity
     {
         private readonly IDisposable _sentry;
@@ -34,34 +40,79 @@ namespace SymbolCollector.Android
             var metrics = _serviceProvider.GetRequiredService<ClientMetrics>();
             var uploadButton = (Button)base.FindViewById(Resource.Id.btnUpload);
             var cancelButton = (Button)base.FindViewById(Resource.Id.btnCancel);
-            var uploadButtonOriginalText = GetString(Resource.Id.btnUpload);
+            var url = (EditText)base.FindViewById(Resource.Id.server_url);
             var source = new CancellationTokenSource();
-            var uploadTask = Task.CompletedTask;
+
+            url.FocusChange += (sender, args) =>
+            {
+                if (!args.HasFocus)
+                {
+                    (GetSystemService(InputMethodService) as InputMethodManager)
+                        ?.HideSoftInputFromWindow(CurrentFocus.WindowToken, 0);
+                }
+            };
 
             uploadButton.Click += OnUploadButtonOnClick;
             cancelButton.Click += OnCancelButtonOnClick;
 
             async void OnUploadButtonOnClick(object sender, EventArgs args)
             {
+                var options = _serviceProvider.GetRequiredService<SymbolClientOptions>();
+                options.BaseAddress = new Uri(url.Text); // TODO validate
+
+                (GetSystemService(InputMethodService) as InputMethodManager)
+                    ?.HideSoftInputFromWindow(CurrentFocus.WindowToken, 0);
+
                 uploadButton.Enabled = false;
                 source = new CancellationTokenSource();
-                var uploadedCount = (TextView)base.FindViewById(Resource.Id.uploaded_count);
 
-                uploadTask = uploader.StartUpload(_friendlyName, source.Token);
+                var uploadTask = uploader.StartUpload(_friendlyName, source.Token);
+
                 var updateUiTask = Task.Run(async () =>
                 {
+                    var uploadedCount = (TextView)base.FindViewById(Resource.Id.uploaded_count);
+                    var startedTime = (TextView)base.FindViewById(Resource.Id.started_time);
+                    var alreadyExisted = (TextView)base.FindViewById(Resource.Id.already_existed);
+                    var filesProcessed = (TextView)base.FindViewById(Resource.Id.files_processed);
+                    var successfullyUpload = (TextView)base.FindViewById(Resource.Id.successfully_upload);
+                    var elfFiles = (TextView)base.FindViewById(Resource.Id.elf_files);
+                    var failedParsing = (TextView)base.FindViewById(Resource.Id.failed_parsing);
+                    var failedUploading = (TextView)base.FindViewById(Resource.Id.failed_uploading);
+                    var jobsInFlight = (TextView)base.FindViewById(Resource.Id.jobs_in_flight);
+                    var directoryNotFound = (TextView)base.FindViewById(Resource.Id.directory_not_found);
+                    var fileNotFound = (TextView)base.FindViewById(Resource.Id.file_not_found);
+                    var unauthorizedAccess = (TextView)base.FindViewById(Resource.Id.unauthorized_access);
+
                     while (!source.IsCancellationRequested)
                     {
-                        RunOnUiThread(() => uploadedCount.Text = FormatBytes(metrics.UploadedBytesCount));
+                        RunOnUiThread(() =>
+                        {
+                            uploadedCount.Text = metrics.UploadedBytesCountHumanReadable();
+                            startedTime.Text = metrics.StartedTime.ToString();
+                            alreadyExisted.Text = metrics.AlreadyExistedCount.ToString();
+                            filesProcessed.Text = metrics.FilesProcessedCount.ToString();
+                            successfullyUpload.Text = metrics.SuccessfullyUploadCount.ToString();
+                            elfFiles.Text = metrics.ElfFileFoundCount.ToString();
+                            failedParsing.Text = metrics.FailedToParseCount.ToString();
+                            failedUploading.Text = metrics.FailedToUploadCount.ToString();
+                            jobsInFlight.Text = metrics.JobsInFlightCount.ToString();
+                            directoryNotFound.Text = metrics.DirectoryDoesNotExistCount.ToString();
+                            fileNotFound.Text = metrics.FileDoesNotExistCount.ToString();
+                            unauthorizedAccess.Text = metrics.FileOrDirectoryUnauthorizedAccessCount.ToString();
+                        });
                         try
                         {
-                            await Task.Delay(500, source.Token);
+                            await Task.Delay(250, source.Token);
                         }
                         catch (OperationCanceledException)
                         {
                         }
                     }
                 }, source.Token);
+
+                var container = base.FindViewById(Resource.Id.metrics_container);
+                container.Visibility = ViewStates.Visible;
+
                 try
                 {
                     cancelButton.Enabled = true;
@@ -72,7 +123,22 @@ namespace SymbolCollector.Android
                         uploadButton.Enabled = false;
                         // TODO: make obvious job is done
                         uploadButton.Text = "Completed";
+                        // uploadedCount.Text = metrics.RanFor.ToString();
+
                     }
+                    else if (uploadTask.IsFaulted)
+                    {
+                        ShowError(uploadTask.Exception);
+                    }
+                    else
+                    {
+                        cancelButton.Enabled = false;
+                        uploadButton.Enabled = true;
+                    }
+                }
+                catch (Exception e)
+                {
+                    ShowError(e);
                 }
                 finally
                 {
@@ -82,20 +148,42 @@ namespace SymbolCollector.Android
 
             async void OnCancelButtonOnClick(object sender, EventArgs args)
             {
-                try
-                {
-                    source.Cancel();
-                    await uploadTask;
-                }
-                catch (OperationCanceledException)
-                {
-                }
-                finally
+                (GetSystemService(InputMethodService) as InputMethodManager)
+                    ?.HideSoftInputFromWindow(CurrentFocus.WindowToken, 0);
+                source.Cancel();
+            }
+        }
+
+        private void ShowError(Exception e)
+        {
+            if (e is null)
+            {
+                SentrySdk.CaptureMessage("ShowError called but no Exception instance provided.", SentryLevel.Error);
+            }
+
+            if (e is AggregateException ae && ae.InnerExceptions.Count == 1)
+            {
+                e = ae.InnerExceptions[0];
+            }
+
+            var uploadButton = (Button)base.FindViewById(Resource.Id.btnUpload);
+            var cancelButton = (Button)base.FindViewById(Resource.Id.btnCancel);
+
+            var lastEvent = SentrySdk.LastEventId;
+            // TODO: SentryId.Empty should operator overload ==
+            var message = SentryId.Empty.ToString() == lastEvent.ToString()
+                ? e?.ToString() ?? "Something didn't quite work."
+                : $"Sentry id {SentrySdk.LastEventId}:\n{e}";
+            var builder = new AlertDialog.Builder(this);
+            builder
+                .SetTitle("Error")
+                .SetMessage(message)
+                .SetNeutralButton("Ironic eh?", (o, eventArgs) =>
                 {
                     uploadButton.Enabled = true;
                     cancelButton.Enabled = false;
-                }
-            }
+                })
+                .Show();
         }
 
         public MainActivity()
@@ -116,7 +204,7 @@ namespace SymbolCollector.Android
             _sentry = SentrySdk.Init(o =>
             {
                 o.Debug = true;
-                o.DiagnosticsLevel = Sentry.Protocol.SentryLevel.Info;
+                o.DiagnosticsLevel = SentryLevel.Info;
                 o.AttachStacktrace = true;
                 o.Dsn = new Dsn("https://02619ad38bcb40d0be5167e1fb335954@sentry.io/1847454");
                 // TODO: This needs to be built-in
@@ -209,25 +297,6 @@ namespace SymbolCollector.Android
             base.Dispose(disposing);
             _host.Dispose();
             _sentry.Dispose();
-        }
-
-        public string FormatBytes(long bytes)
-        {
-            const int scale = 1024;
-            var orders = new[] { "GB", "MB", "KB", "Bytes" };
-            var max = (long)Math.Pow(scale, orders.Length - 1);
-
-            foreach (var order in orders)
-            {
-                if (bytes > max)
-                {
-                    return $"{decimal.Divide(bytes, max):##.##} {order}";
-                }
-
-                max /= scale;
-            }
-
-            return "0 Bytes";
         }
     }
 }

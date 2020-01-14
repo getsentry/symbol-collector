@@ -104,13 +104,33 @@ namespace SymbolCollector.Core
             writer.Write("Already existed:\t\t\t");
             writer.WriteLine(AlreadyExistedCount);
             writer.Write("Uploaded bytes:\t\t\t\t");
-            writer.WriteLine(UploadedBytesCount);
+            writer.WriteLine(UploadedBytesCountHumanReadable());
             writer.Write("ELF files loaded:\t\t\t");
             writer.WriteLine(ElfFileFoundCount);
             writer.Write("Mach-O files loaded:\t\t\t");
             writer.WriteLine(MachOFileFoundCount);
             writer.Write("Fat Mach-O files loaded:\t\t");
             writer.WriteLine(FatMachOFileFoundCount);
+        }
+
+        public string UploadedBytesCountHumanReadable()
+        {
+            const int scale = 1024;
+            var orders = new[] { "GB", "MB", "KB", "Bytes" };
+            var max = (long)Math.Pow(scale, orders.Length - 1);
+
+            var count = UploadedBytesCount;
+            foreach (var order in orders)
+            {
+                if (count > max)
+                {
+                    return $"{decimal.Divide(count, max):##.##} {order}";
+                }
+
+                max /= scale;
+            }
+
+            return "0 Bytes";
         }
     }
 }
