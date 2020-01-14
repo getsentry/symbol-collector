@@ -74,7 +74,7 @@ namespace SymbolCollector.Core
             data["Failed to upload"] = FailedToUploadCount;
             data["Successfully uploaded"] = SuccessfullyUploadCount;
             data["Already existed"] = AlreadyExistedCount;
-            data["Uploaded bytes"] = UploadedBytesCount;
+            data["Uploaded bytes"] = UploadedBytesCountHumanReadable();
             data["ELF files loaded"] = ElfFileFoundCount;
             data["Mach-O files loaded"] = MachOFileFoundCount;
             data["Fat Mach-O files loaded"] = FatMachOFileFoundCount;
