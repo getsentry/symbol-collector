@@ -26,6 +26,7 @@ namespace SymbolCollector.Console
             string? batchType = null,
             Uri? serverEndpoint = null)
         {
+            var userAgent = "Console/" + typeof(Program).Assembly.GetName().Version;
             using var _ = SentrySdk.Init(o =>
             {
                 o.Debug = true;
@@ -33,16 +34,31 @@ namespace SymbolCollector.Console
                 o.AttachStacktrace = true;
                 o.Dsn = new Dsn(Dsn);
                 // TODO: This needs to be built-in
-                o.BeforeSend += @event => @event.Exception switch
+                o.BeforeSend += @event =>
                 {
-                    var e when e is OperationCanceledException => null,
-                    _ => @event
+                    const string traceIdKey = "TraceIdentifier";
+                    switch (@event.Exception)
+                    {
+                        case var e when e is OperationCanceledException:
+                            return null;
+                        case var e when e?.Data.Contains(traceIdKey) == true:
+                            @event.SetTag(traceIdKey, e.Data[traceIdKey]?.ToString() ?? "unknown");
+                            break;
+                    }
+
+                    return @event;
                 };
             });
             {
                 SentrySdk.ConfigureScope(s =>
                 {
                     s.SetTag("app", typeof(Program).Assembly.GetName().Name);
+                    s.SetTag("user-agent", userAgent);
+                    if (serverEndpoint is {})
+                    {
+                        s.SetTag("server-endpoint", serverEndpoint.AbsoluteUri);
+                    }
+
                     s.SetExtra("parameters", new
                     {
                         upload,
@@ -72,7 +88,11 @@ namespace SymbolCollector.Console
                     if (serverEndpoint != null)
                     {
                         s.AddOptions()
-                            .PostConfigure<SymbolClientOptions>(o => o.BaseAddress = serverEndpoint);
+                            .PostConfigure<SymbolClientOptions>(o =>
+                            {
+                                o.UserAgent = userAgent;
+                                o.BaseAddress = serverEndpoint;
+                            });
                     }
 
                     s.AddSingleton(_metrics);
@@ -89,6 +109,11 @@ namespace SymbolCollector.Console
                             WriteLine("A 'bundleId' is required to upload symbols from this device.");
                             return;
                         }
+
+                        SentrySdk.ConfigureScope(s =>
+                        {
+                            s.SetTag("friendly-name", bundleId);
+                        });
 
                         logger.LogInformation("Uploading images from this device.");
                         var uploader = host.Services.GetRequiredService<ConsoleUploader>();

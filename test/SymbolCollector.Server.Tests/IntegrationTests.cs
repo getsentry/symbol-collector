@@ -106,7 +106,7 @@ namespace SymbolCollector.Server.Tests
 
             resp.AssertStatusCode(HttpStatusCode.BadRequest);
             var responseModel = await resp.Content.ToJsonElement();
-            Assert.Equal("The field BatchType must be between 1 and 4.",
+            Assert.Equal("The field BatchType must be between 1 and 5.",
                 responseModel.GetProperty("BatchType")[0].GetString());
             Assert.Equal("The Batch friendly name field is required.",
                 responseModel.GetProperty("BatchFriendlyName")[0].GetString());
@@ -115,10 +115,11 @@ namespace SymbolCollector.Server.Tests
         [Theory]
         [InlineData(BatchType.Unknown, true)]
         [InlineData(BatchType.Android, false)]
+        [InlineData(BatchType.Linux, false)]
         [InlineData(BatchType.IOS, false)]
         [InlineData(BatchType.MacOS, false)]
         [InlineData(BatchType.WatchOS, false)]
-        [InlineData((BatchType)((int)BatchType.Android + 1), true)]
+        [InlineData((BatchType)((int)BatchType.Linux + 1), true)]
         public async Task Start_BatchType_TestCase(BatchType batchType, bool validationError)
         {
             var model = new BatchStartRequestModel {BatchType = batchType};
@@ -134,7 +135,7 @@ namespace SymbolCollector.Server.Tests
             var responseModel = await resp.Content.ToJsonElement();
             if (validationError)
             {
-                Assert.Equal("The field BatchType must be between 1 and 4.",
+                Assert.Equal("The field BatchType must be between 1 and 5.",
                     responseModel.GetProperty("BatchType")[0].GetString());
             }
             else

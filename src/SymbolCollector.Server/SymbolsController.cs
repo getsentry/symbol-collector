@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http.Features;
@@ -171,12 +172,13 @@ namespace SymbolCollector.Server
                         section.ContentDisposition, out var contentDisposition) && MultipartRequestHelper
                         .HasFileContentDisposition(contentDisposition))
                 {
-                    var (fileName, data) =
+                    var (fileName, data, status) =
                         await ProcessStreamedFile(section, contentDisposition, ModelState, _fileSizeLimit);
 
                     if (!ModelState.IsValid)
                     {
-                        return BadRequest(ModelState);
+                        status ??= HttpStatusCode.BadRequest;
+                        return StatusCode((int)status, ModelState);
                     }
 
                     _logger.LogInformation(
@@ -241,12 +243,13 @@ namespace SymbolCollector.Server
             }
         }
 
-        private async ValueTask<(string fileName, Stream data)> ProcessStreamedFile(
+        private async ValueTask<(string fileName, Stream data, HttpStatusCode? code)> ProcessStreamedFile(
             MultipartSection section, ContentDispositionHeaderValue contentDisposition,
-            ModelStateDictionary modelState, long sizeLimit)
+            ModelStateDictionary modelState, long sizeLimitBytes)
         {
             var memoryStream = new MemoryStream();
             string? fileName = null;
+            HttpStatusCode? code = null;
             try
             {
                 fileName = contentDisposition.FileName.Value;
@@ -257,11 +260,13 @@ namespace SymbolCollector.Server
                 {
                     modelState.AddModelError("File", "The file is empty.");
                 }
-                else if (memoryStream.Length > sizeLimit)
+                else if (memoryStream.Length > sizeLimitBytes)
                 {
-                    var megabyteSizeLimit = sizeLimit / 1048576;
-                    modelState.AddModelError("File", $"The file exceeds {megabyteSizeLimit:N1} MB.");
-                    _logger.LogWarning("File name {fileName} is too large: {size} MB.", fileName, megabyteSizeLimit);
+                    var payloadMegabytesSizeLimit = sizeLimitBytes / 1048576;
+                    var limitMegabytesSizeLimit = sizeLimitBytes / 1048576;
+                    modelState.AddModelError("File", $"The file size {payloadMegabytesSizeLimit:N1} exceeds {limitMegabytesSizeLimit:N1} MB.");
+                    _logger.LogWarning("File name {fileName} is too large: {size} MB.", fileName, payloadMegabytesSizeLimit);
+                    code = HttpStatusCode.RequestEntityTooLarge;
                 }
                 else if (fileName.Any(p => _invalidChars.Contains(p)))
                 {
@@ -270,7 +275,7 @@ namespace SymbolCollector.Server
                 }
                 else
                 {
-                    return (fileName, memoryStream);
+                    return (fileName, memoryStream, null);
                 }
             }
             catch (Exception ex)
@@ -279,7 +284,7 @@ namespace SymbolCollector.Server
                 _logger.LogError(ex, "Failed to process file {file}", fileName);
             }
 
-            return ("error", memoryStream);
+            return ("error", memoryStream, code);
         }
     }
 

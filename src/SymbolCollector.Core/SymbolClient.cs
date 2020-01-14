@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -40,6 +41,7 @@ namespace SymbolCollector.Core
         Android,
 
         // linux (doesn't exist yet)
+        // TODO: break up in distributions
         Linux
     }
 
@@ -191,6 +193,13 @@ namespace SymbolCollector.Core
                         _logger.LogDebug("Upload response body: {body}", responseBody);
                     }
 
+                    if (uploadResponse.StatusCode == HttpStatusCode.RequestEntityTooLarge)
+                    {
+                        _logger.LogDebug("Server returns {statusCode} for {buildId}",
+                            uploadResponse.StatusCode, unifiedId);
+                        return false;
+                    }
+
                     await ThrowForUnsuccessful("Failed uploading file.", uploadResponse);
                 }
                 catch (Exception e)
@@ -218,7 +227,13 @@ namespace SymbolCollector.Core
                     messageFormat = $"{message}\n{responseBody}";
                 }
 
-                throw new InvalidOperationException(messageFormat);
+                var ex = new InvalidOperationException(messageFormat);
+                const string traceIdKey = "TraceIdentifier";
+                if (checkResponse.Headers.TryGetValues(traceIdKey, out var traceIds))
+                {
+                    ex.Data[traceIdKey] = traceIds.FirstOrDefault() ?? "unknown";
+                }
+                throw ex;
             }
         }
 

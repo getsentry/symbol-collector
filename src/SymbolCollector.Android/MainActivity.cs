@@ -60,6 +60,8 @@ namespace SymbolCollector.Android
                 var options = _serviceProvider.GetRequiredService<SymbolClientOptions>();
                 options.BaseAddress = new Uri(url.Text); // TODO validate
 
+                SentrySdk.ConfigureScope(s => s.SetTag("server-endpoint", options.BaseAddress.AbsoluteUri));
+
                 (GetSystemService(InputMethodService) as InputMethodManager)
                     ?.HideSoftInputFromWindow(CurrentFocus.WindowToken, 0);
 
@@ -121,7 +123,7 @@ namespace SymbolCollector.Android
                     {
                         cancelButton.Enabled = false;
                         uploadButton.Enabled = false;
-                        
+
                         var doneText = (TextView)base.FindViewById(Resource.Id.done_text);
                         var ranForLabel = (TextView)base.FindViewById(Resource.Id.ran_for_label);
                         var ranForContainer = (TextView)base.FindViewById(Resource.Id.ran_for_container);
@@ -180,7 +182,8 @@ namespace SymbolCollector.Android
             // TODO: SentryId.Empty should operator overload ==
             var message = SentryId.Empty.ToString() == lastEvent.ToString()
                 ? e?.ToString() ?? "Something didn't quite work."
-                : $"Sentry id {SentrySdk.LastEventId}:\n{e}";
+                : $"Sentry id {lastEvent}:\n{e}";
+
             var builder = new AlertDialog.Builder(this);
             builder
                 .SetTitle("Error")
@@ -216,10 +219,19 @@ namespace SymbolCollector.Android
                 o.Dsn = new Dsn("https://02619ad38bcb40d0be5167e1fb335954@sentry.io/1847454");
                 // TODO: This needs to be built-in
                 o.AddInAppExclude("Mono");
-                o.BeforeSend += @event => @event.Exception switch
+                // TODO: This needs to be built-in
+                o.BeforeSend += @event =>
                 {
-                    var e when e is OperationCanceledException => null,
-                    _ => @event
+                    const string traceIdKey = "TraceIdentifier";
+                    switch (@event.Exception)
+                    {
+                        case var e when e is OperationCanceledException:
+                            return null;
+                        case var e when e?.Data.Contains(traceIdKey) == true:
+                            @event.SetTag(traceIdKey, e.Data[traceIdKey]?.ToString() ?? "unknown");
+                            break;
+                    }
+                    return @event;
                 };
             });
 
@@ -284,19 +296,25 @@ namespace SymbolCollector.Android
                 }
             };
 
+            var userAgent = "Android/" + GetType().Assembly.GetName().Version;
             _host = Startup.Init(c =>
             {
                 c.AddSingleton<AndroidUploader>();
                 c.AddOptions().Configure<SymbolClientOptions>(o =>
                 {
-                    // TODO: Get proper version
-                    o.UserAgent = "Android/0.0.0";
+                    o.UserAgent = userAgent;
                     o.BlackListedPaths.Add("/system/build.prop");
                     o.BlackListedPaths.Add("/system/vendor/bin/netstat");
                     o.BlackListedPaths.Add("/system/vendor/bin/swapoff");
                 });
             });
             _serviceProvider = _host.Services;
+
+            SentrySdk.ConfigureScope(s =>
+            {
+                s.SetTag("user-agent", userAgent);
+                s.SetTag("friendly-name", _friendlyName);
+            });
         }
 
         protected override void Dispose(bool disposing)
