@@ -45,7 +45,7 @@ namespace SymbolCollector.Server
         /// </remarks>
         public bool CopyBaseFileToConflictFolder { get; set; } = false;
 
-        public Uri BaseAddress { get; set; } = default!;
+        public string BaseAddress { get; set; } = default!;
 
         public string BaseWorkingPath
         {

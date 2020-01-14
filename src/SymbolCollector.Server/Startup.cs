@@ -47,7 +47,7 @@ namespace SymbolCollector.Server
             services.AddOptions<SymbolServiceOptions>()
                 .Configure<IConfiguration>((o, c) =>
                 {
-                    o.BaseAddress = new Uri(c.GetValue<string>("Kestrel:EndPoints:Http:Url"));
+                    o.BaseAddress = c.GetValue<string>("Kestrel:EndPoints:Http:Url");
                     c.Bind("SymbolService", o);
                 })
                 .Configure(o => o.SymsorterPath = GetSymsorterPath())
@@ -145,16 +145,11 @@ namespace SymbolCollector.Server
         private class SymbolServiceEventProcessor : ISentryEventProcessor
         {
             private readonly SymbolServiceOptions _options;
-            private readonly string _serverEndpoint;
-            public SymbolServiceEventProcessor(IOptions<SymbolServiceOptions> options)
-            {
-                _options = options.Value;
-                _serverEndpoint = _options.BaseAddress.AbsoluteUri;
-            }
+            public SymbolServiceEventProcessor(IOptions<SymbolServiceOptions> options) => _options = options.Value;
 
             public SentryEvent Process(SentryEvent @event)
             {
-                @event.SetTag("server-endpoint", _serverEndpoint);
+                @event.SetTag("server-endpoint", _options.BaseAddress);
                 @event.Contexts["SymbolServiceOptions"] = _options;
                 return @event;
             }
