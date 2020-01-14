@@ -9,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Sentry;
+using Sentry.Extensibility;
 using Sentry.Protocol;
 using Serilog;
 using SystemEnvironment = System.Environment;
@@ -96,6 +97,7 @@ namespace SymbolCollector.Server
                     webBuilder.UseSerilog();
                     webBuilder.UseStartup<Startup>();
                 });
+
 
         private static async Task HealthCheck(IHost host)
         {

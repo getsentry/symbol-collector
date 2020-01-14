@@ -41,6 +41,7 @@ namespace SymbolCollector.Core
         Android,
 
         // linux (doesn't exist yet)
+        // TODO: break up in distributions
         Linux
     }
 

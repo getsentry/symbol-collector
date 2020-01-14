@@ -12,6 +12,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Sentry;
+using Sentry.Extensibility;
 using SymbolCollector.Core;
 using SymbolCollector.Server.Properties;
 
@@ -37,11 +39,17 @@ namespace SymbolCollector.Server
             services.AddSingleton<ISymbolGcsWriter, NoOpSymbolGcsWriter>();
             services.AddSingleton<IStorageClientFactory, StorageClientFactory>();
 
+            services.AddSingleton<ISentryEventProcessor, SymbolServiceEventProcessor>();
+
             services.AddOptions<JsonCredentialParameters>()
                 .Configure<IConfiguration>((o, c) => c.Bind("GoogleCloud:JsonCredentialParameters", o));
 
             services.AddOptions<SymbolServiceOptions>()
-                .Configure<IConfiguration>((o, c) => c.Bind("SymbolService", o))
+                .Configure<IConfiguration>((o, c) =>
+                {
+                    o.BaseAddress = new Uri(c.GetValue<string>("Kestrel:EndPoints:Http:Url"));
+                    c.Bind("SymbolService", o);
+                })
                 .Configure(o => o.SymsorterPath = GetSymsorterPath())
                 .Validate(o => !string.IsNullOrWhiteSpace(o.SymsorterPath), "SymsorterPath is required.")
                 .Validate(o => !string.IsNullOrWhiteSpace(o.BaseWorkingPath), "BaseWorkingPath is required.")
@@ -132,6 +140,24 @@ namespace SymbolCollector.Server
             }
 
             return "./" + fileName;
+        }
+
+        private class SymbolServiceEventProcessor : ISentryEventProcessor
+        {
+            private readonly SymbolServiceOptions _options;
+            private readonly string _serverEndpoint;
+            public SymbolServiceEventProcessor(IOptions<SymbolServiceOptions> options)
+            {
+                _options = options.Value;
+                _serverEndpoint = _options.BaseAddress.AbsoluteUri;
+            }
+
+            public SentryEvent Process(SentryEvent @event)
+            {
+                @event.SetTag("server-endpoint", _serverEndpoint);
+                @event.Contexts["SymbolServiceOptions"] = _options;
+                return @event;
+            }
         }
     }
 }
