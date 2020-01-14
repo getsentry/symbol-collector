@@ -15,7 +15,7 @@ namespace SymbolCollector.Core
         long ElfFileFoundCount { get; }
         int FatMachOFileFoundCount { get; }
         long UploadedBytesCount { get; }
-        int DirectoryUnauthorizedAccessCount { get; }
+        int FileOrDirectoryUnauthorizedAccessCount { get; }
         int DirectoryDoesNotExistCount { get; }
     }
 }

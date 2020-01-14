@@ -17,7 +17,7 @@ namespace SymbolCollector.Server.Models
         public long ElfFileFoundCount { get; set; }
         public int FatMachOFileFoundCount { get; set; }
         public long UploadedBytesCount { get; set; }
-        public int DirectoryUnauthorizedAccessCount { get; set; }
+        public int FileOrDirectoryUnauthorizedAccessCount { get; set; }
         public int DirectoryDoesNotExistCount { get; set; }
     }
 }

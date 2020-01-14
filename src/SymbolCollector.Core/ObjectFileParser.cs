@@ -10,7 +10,6 @@ using ELFSharp.ELF.Sections;
 using ELFSharp.ELF.Segments;
 using ELFSharp.MachO;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using FileType = ELFSharp.ELF.FileType;
 using ELFMachine = ELFSharp.ELF.Machine;
 using MachOMachine = ELFSharp.MachO.Machine;
@@ -25,9 +24,9 @@ namespace SymbolCollector.Core
         public ClientMetrics Metrics { get; }
 
         public ObjectFileParser(
-            FatBinaryReader? fatBinaryReader = null,
-            ClientMetrics? metrics = null,
-            ILogger<ObjectFileParser>? logger = null)
+            ClientMetrics metrics,
+            ILogger<ObjectFileParser> logger,
+            FatBinaryReader? fatBinaryReader = null)
         {
             if (fatBinaryReader is null
                 && logger is {}
@@ -37,8 +36,8 @@ namespace SymbolCollector.Core
             }
 
             _fatBinaryReader = fatBinaryReader;
-            _logger = logger ?? NullLogger<ObjectFileParser>.Instance;
-            Metrics = metrics ?? new ClientMetrics();
+            _logger = logger;
+            Metrics = metrics;
         }
 
         public bool TryParse(string file, out ObjectFileResult? result)
@@ -89,6 +88,19 @@ namespace SymbolCollector.Core
                     result = null;
                 }
             }
+            catch (UnauthorizedAccessException ua)
+            {
+                // Too often to bother. Can't blacklist them all as it differs per device.
+                Metrics.FileOrDirectoryUnauthorizedAccess();
+                _logger.LogDebug(ua, "Unauthorized for {file}.", file);
+                result = null;
+            }
+            catch (FileNotFoundException dnf)
+            {
+                _logger.LogDebug(dnf, "File not found: {file}.", file);
+                Metrics.FileDoesNotExist();
+                result = null;
+            }
             catch (Exception e)
             {
                 result = null;
@@ -122,10 +134,8 @@ namespace SymbolCollector.Core
         {
             // Check if it's a Fat Mach-O
             FatMachO? load = null;
-            if (_fatBinaryReader?.TryLoad(file, out load) == true && load is {
-                    }
-                    fatMachO &&
-                fatMachO.Header.FatArchCount > 0)
+            if (_fatBinaryReader?.TryLoad(file, out load) == true
+                && load is { } fatMachO && fatMachO.Header.FatArchCount > 0)
             {
                 Metrics.FatMachOFileFound();
                 _logger.LogInformation("Fat binary file with {count} Mach-O files: {file}.",
@@ -269,47 +279,38 @@ namespace SymbolCollector.Core
 
         private bool TryParseMachOFile(string file, out ObjectFileResult? result)
         {
-            try
+            // TODO: find an async API if this is used by the server
+            if (MachOReader.TryLoad(file, out var machO) == MachOResult.OK)
             {
-                // TODO: find an async API if this is used by the server
-                if (MachOReader.TryLoad(file, out var machO) == MachOResult.OK)
+                Metrics.MachOFileFound();
+                _logger.LogDebug("Mach-O found {file}", file);
+
+                // https://github.com/getsentry/symbolic/blob/d951dd683a62d32595cc232e93843bffe5bd6a17/debuginfo/src/macho.rs#L112-L127
+                var objectKind = GetObjectKind(machO);
+
+                var arch = GetArchitecture(machO);
+
+                var debugId = string.Empty;
+                var uuid = machO.GetCommandsOfType<Uuid?>().FirstOrDefault();
+                if (!(uuid is null))
                 {
-                    Metrics.MachOFileFound();
-                    _logger.LogDebug("Mach-O found {file}", file);
-
-                    // https://github.com/getsentry/symbolic/blob/d951dd683a62d32595cc232e93843bffe5bd6a17/debuginfo/src/macho.rs#L112-L127
-                    var objectKind = GetObjectKind(machO);
-
-                    var arch = GetArchitecture(machO);
-
-                    var debugId = string.Empty;
-                    var uuid = machO.GetCommandsOfType<Uuid?>().FirstOrDefault();
-                    if (!(uuid is null))
-                    {
-                        // TODO: Verify this is coming out correctly. Endianess not verified!!!
-                        debugId = uuid.Id.ToString();
-                    }
-
-                    result = new ObjectFileResult(
-                        debugId,
-                        debugId.Replace("-", string.Empty).ToLower(), // TODO: Figure out when to append + "0",
-                        file,
-                        GetSha256Hash(file),
-                        BuildIdType.Uuid,
-                        objectKind,
-                        FileFormat.MachO,
-                        arch);
-                    return true;
+                    // TODO: Verify this is coming out correctly. Endianess not verified!!!
+                    debugId = uuid.Id.ToString();
                 }
 
-                _logger.LogDebug("Couldn't load': {file} with mach-O reader.", file);
-            }
-            catch (Exception e)
-            {
-                // You would expect TryLoad doesn't throw but that's not the case
-                _logger.LogError(e, "Failed processing file {file}.", file);
+                result = new ObjectFileResult(
+                    debugId,
+                    debugId.Replace("-", string.Empty).ToLower(), // TODO: Figure out when to append + "0",
+                    file,
+                    GetSha256Hash(file),
+                    BuildIdType.Uuid,
+                    objectKind,
+                    FileFormat.MachO,
+                    arch);
+                return true;
             }
 
+            _logger.LogDebug("Couldn't load': {file} with mach-O reader.", file);
             result = null;
             return false;
         }

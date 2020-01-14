@@ -18,8 +18,7 @@ namespace SymbolCollector.Core.Tests
         {
             public Uri ServiceUri { get; set; } = new Uri("https://test.sentry/");
 
-            public ObjectFileParser ObjectFileParser { get; set; } =
-                new ObjectFileParser(logger: Substitute.For<ILogger<ObjectFileParser>>());
+            public ObjectFileParser ObjectFileParser { get; set; }
 
             public HttpMessageHandler? HttpMessageHandler { get; set; }
             public ClientMetrics Metrics { get; set; } = new ClientMetrics();
@@ -32,9 +31,12 @@ namespace SymbolCollector.Core.Tests
 
             public ILogger<Client> Logger { get; set; } = Substitute.For<ILogger<Client>>();
 
-            public Fixture() =>
+            public Fixture()
+            {
                 HttpMessageHandler = new TestMessageHandler((message, token) =>
                     Task.FromResult(new HttpResponseMessage(HttpStatusCode.Created)));
+                ObjectFileParser = new ObjectFileParser(Metrics, Substitute.For<ILogger<ObjectFileParser>>());
+            }
 
             public Client GetSut() =>
                 new Client(
@@ -51,7 +53,8 @@ namespace SymbolCollector.Core.Tests
         public async Task UploadAllPathsAsync_TestFilesDirectory_FilesDetected()
         {
             var counter = 0;
-            _fixture.ObjectFileParser = new ObjectFileParser(new FatBinaryReader());
+            _fixture.ObjectFileParser = new ObjectFileParser(_fixture.Metrics,
+                Substitute.For<ILogger<ObjectFileParser>>(), new FatBinaryReader());
             _fixture.HttpMessageHandler = new TestMessageHandler((message, token) =>
             {
                 if (message.RequestUri.PathAndQuery.EndsWith("upload"))
@@ -76,7 +79,8 @@ namespace SymbolCollector.Core.Tests
         [Fact]
         public async Task UploadAllPathsAsync_TestFilesDirectory_FileCorrectlySent()
         {
-            _fixture.ObjectFileParser = new ObjectFileParser(new FatBinaryReader());
+            _fixture.ObjectFileParser = new ObjectFileParser(_fixture.Metrics,
+                Substitute.For<ILogger<ObjectFileParser>>(), new FatBinaryReader());
 
             var sut = _fixture.GetSut();
             await sut.UploadAllPathsAsync("friendly name", BatchType.IOS, new[] {"TestFiles"}, CancellationToken.None);

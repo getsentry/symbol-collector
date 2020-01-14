@@ -73,7 +73,7 @@ namespace SymbolCollector.Core
 
     public class SymbolClient : ISymbolClient
     {
-        private readonly Uri _baseAddress;
+        private readonly SymbolClientOptions _options;
         private readonly ILogger<SymbolClient> _logger;
         private readonly HttpClient _httpClient;
 
@@ -84,7 +84,7 @@ namespace SymbolCollector.Core
         {
             _httpClient = new HttpClient(handler ?? new HttpClientHandler()) {Timeout = options.HttpClientTimeout};
             _httpClient.DefaultRequestHeaders.Add("User-Agent", options.UserAgent);
-            _baseAddress = options.BaseAddress;
+            _options = options;
             _logger = logger;
         }
 
@@ -96,7 +96,7 @@ namespace SymbolCollector.Core
             HttpContent content = new ByteArrayContent(JsonSerializer.SerializeToUtf8Bytes(body));
             content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/json");
 
-            var url = $"{_baseAddress.AbsoluteUri}symbol/batch/{batchId}/start";
+            var url = $"{_options.BaseAddress.AbsoluteUri}symbol/batch/{batchId}/start";
             try
             {
                 var response = await _httpClient.PostAsync(url,
@@ -120,7 +120,7 @@ namespace SymbolCollector.Core
             var content = new ByteArrayContent(JsonSerializer.SerializeToUtf8Bytes(body));
             content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/json");
 
-            var url = $"{_baseAddress.AbsoluteUri}symbol/batch/{batchId}/close";
+            var url = $"{_options.BaseAddress.AbsoluteUri}symbol/batch/{batchId}/close";
             try
             {
                 var response = await _httpClient.PostAsync(
@@ -153,7 +153,7 @@ namespace SymbolCollector.Core
             }
 
             {
-                var checkUrl = $"{_baseAddress.AbsoluteUri}symbol/batch/{batchId}/check/{unifiedId}/{hash}";
+                var checkUrl = $"{_options.BaseAddress.AbsoluteUri}symbol/batch/{batchId}/check/{unifiedId}/{hash}";
                 try
                 {
                     var checkResponse =
@@ -176,7 +176,7 @@ namespace SymbolCollector.Core
                 }
             }
             {
-                var uploadUrl = $"{_baseAddress.AbsoluteUri}symbol/batch/{batchId}/upload";
+                var uploadUrl = $"{_options.BaseAddress.AbsoluteUri}symbol/batch/{batchId}/upload";
                 try
                 {
                     var uploadResponse = await _httpClient.SendAsync(
