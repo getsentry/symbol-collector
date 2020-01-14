@@ -151,8 +151,18 @@ namespace SymbolCollector.Core
                     {
                         foreach (var buildIdFile in fatMachO.MachOFiles)
                         {
-                            if (!TryParseMachOFile(buildIdFile, out var machO) || machO is null)
+                            ObjectFileResult? machO;
+                            try
                             {
+                                if (!TryParseMachOFile(buildIdFile, out machO) || machO is null)
+                                {
+                                    continue;
+                                }
+                            }
+                            catch (Exception e)
+                            {
+                                _logger.LogWarning(e, "Fat binary file contains an invalid item with codeId: {codeId}. {file}.",
+                                    buildIdFile, file);
                                 continue;
                             }
 
