@@ -7,18 +7,6 @@ msbuild /restore /p:Configuration=Release \
     /t:Clean\;Build\;SignAndroidPackage
 popd
 
-pushd test/SymbolCollector.Android.UITests/
-msbuild /restore /p:Configuration=Release /t:Build
-# Don't run emulator tests on Travis-CI
-if [ -z ${TRAVIS_JOB_ID+x} ]; then
-    pushd bin/Release
-    export SYMBOL_COLLECTOR_APK=../../../../src/SymbolCollector.Android/bin/Release/io.sentry.symbol.collector.apk
-    mono ../../tools/nunit/net35/nunit3-console.exe SymbolCollector.Android.UITests.dll
-    unset SYMBOL_COLLECTOR_APK
-    popd
-fi
-popd
-
 pushd src/SymbolCollector.Server/
 dotnet build -c Release
 popd
@@ -32,6 +20,18 @@ popd
 
 pushd test/SymbolCollector.Core.Tests/
 dotnet test -c Release --collect:"XPlat Code Coverage" --settings ../coverletArgs.runsettings
+popd
+
+pushd test/SymbolCollector.Android.UITests/
+msbuild /restore /p:Configuration=Release /t:Build
+# Don't run emulator tests on Travis-CI
+if [ -z ${TRAVIS_JOB_ID+x} ]; then
+    pushd bin/Release
+    export SYMBOL_COLLECTOR_APK=../../../../src/SymbolCollector.Android/bin/Release/io.sentry.symbol.collector.apk
+    mono ../../tools/nunit/net35/nunit3-console.exe SymbolCollector.Android.UITests.dll
+    unset SYMBOL_COLLECTOR_APK
+    popd
+fi
 popd
 
 pushd src/SymbolCollector.Console/

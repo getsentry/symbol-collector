@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
+using Sentry;
 using SymbolCollector.Server.Models;
 
 namespace SymbolCollector.Server
@@ -22,6 +23,7 @@ namespace SymbolCollector.Server
         public const string Route = "/symbol";
 
         private readonly long _fileSizeLimit;
+        private readonly IHub _hub;
         private readonly ISymbolService _symbolService;
         private readonly ILogger<SymbolsController> _logger;
         private readonly char[] _invalidChars;
@@ -29,10 +31,12 @@ namespace SymbolCollector.Server
         private static readonly FormOptions DefaultFormOptions = new FormOptions();
 
         public SymbolsController(
+            IHub hub,
             IConfiguration config,
             ISymbolService symbolService,
             ILogger<SymbolsController> logger)
         {
+            _hub = hub;
             _symbolService = symbolService;
             _logger = logger;
             _fileSizeLimit = config.GetValue<long>("FileSizeLimitBytes");
@@ -58,6 +62,12 @@ namespace SymbolCollector.Server
                 return BadRequest(ModelState);
             }
 
+            _hub.ConfigureScope(s =>
+            {
+                s.SetTag("batchId", batchId.ToString());
+                s.SetTag("friendly-name", model.BatchFriendlyName);
+            });
+
             if (await _symbolService.GetBatch(batchId, token) is {})
             {
                 return BadRequest($"Batch Id {batchId} was already used.");
@@ -79,6 +89,11 @@ namespace SymbolCollector.Server
                 return BadRequest(ModelState);
             }
 
+            _hub.ConfigureScope(s =>
+            {
+                s.SetTag("batchId", batchId.ToString());
+            });
+
             await _symbolService.Finish(batchId, model.ClientMetrics, token);
             return NoContent();
         }
@@ -96,6 +111,11 @@ namespace SymbolCollector.Server
             {
                 return BadRequest(ModelState);
             }
+
+            _hub.ConfigureScope(s =>
+            {
+                s.SetTag("batchId", batchId.ToString());
+            });
 
             var symbol = await _symbolService.GetSymbol(unifiedId, token);
             if (symbol is null)
@@ -144,6 +164,11 @@ namespace SymbolCollector.Server
             {
                 return BadRequest(ModelState);
             }
+
+            _hub.ConfigureScope(s =>
+            {
+                s.SetTag("batchId", batchId.ToString());
+            });
 
             if (!MultipartRequestHelper.IsMultipartContentType(Request.ContentType))
             {
