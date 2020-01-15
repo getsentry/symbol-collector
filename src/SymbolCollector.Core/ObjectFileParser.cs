@@ -101,6 +101,14 @@ namespace SymbolCollector.Core
                 Metrics.FileDoesNotExist();
                 result = null;
             }
+            catch (Exception known)
+                when ("Unexpected name of the section's segment.".Equals(known.Message)
+                || "The size defined on the header is smaller than the subsequent file size.".Equals(known.Message))
+            {
+                result = null;
+                Metrics.FailedToParse();
+                _logger.LogWarning(known, "Malformed Mach-O file: {file}", file);
+            }
             catch (Exception e)
             {
                 result = null;
@@ -299,24 +307,31 @@ namespace SymbolCollector.Core
 
                 var arch = GetArchitecture(machO);
 
-                var debugId = string.Empty;
+                var codeId = string.Empty;
                 var uuid = machO.GetCommandsOfType<Uuid?>().FirstOrDefault();
                 if (!(uuid is null))
                 {
                     // TODO: Verify this is coming out correctly. Endianess not verified!!!
-                    debugId = uuid.Id.ToString();
+                    codeId = uuid.Id.ToString();
                 }
 
-                result = new ObjectFileResult(
-                    debugId,
-                    debugId.Replace("-", string.Empty).ToLower(), // TODO: Figure out when to append + "0",
-                    file,
-                    GetSha256Hash(file),
-                    BuildIdType.Uuid,
-                    objectKind,
-                    FileFormat.MachO,
-                    arch);
-                return true;
+                if (!string.IsNullOrWhiteSpace(codeId))
+                {
+
+                    result = new ObjectFileResult(
+                        codeId,
+                        // TODO: Figure out when to append + "0" (age),
+                        codeId.Replace("-", string.Empty).ToLower(),
+                        file,
+                        GetSha256Hash(file),
+                        BuildIdType.Uuid,
+                        objectKind,
+                        FileFormat.MachO,
+                        arch);
+                    return true;
+                }
+
+                _logger.LogInformation("File: {file} is a Mach-O but misses a UUID.", file);
             }
 
             _logger.LogDebug("Couldn't load': {file} with mach-O reader.", file);
