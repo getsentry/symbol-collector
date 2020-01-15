@@ -214,8 +214,7 @@ namespace SymbolCollector.Core
                             var desc16bytes = desc.Take(16).ToArray();
                             if (desc16bytes.Length != 16)
                             {
-                                // TODO: Throw?
-                                _logger.LogError("build-id exists but bytes (desc) length is unexpected {bytes}.",
+                                _logger.LogWarning("build-id exists but bytes (desc) length is unexpected {bytes}.",
                                     desc16bytes.Length);
                             }
                             else
