@@ -112,7 +112,7 @@ namespace SymbolCollector.Server
             await host.StartAsync(cancellationTokenSource.Token);
 
             using var client = new HttpClient();
-            using var response = await client.GetAsync(url + "/health",
+            using var response = await client.GetAsync(new Uri(new Uri(url, UriKind.Absolute), "/health"),
                 cancellationTokenSource.Token);
 
             if (response.IsSuccessStatusCode)

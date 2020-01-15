@@ -16,6 +16,8 @@ namespace SymbolCollector.Core
     {
         public Uri BaseAddress { get; set; } = null!;
 
+        public bool Http2 { get; set; } = false;
+
         // Big batches take ages to close
         public TimeSpan HttpClientTimeout { get; set; } = TimeSpan.FromMinutes(2);
         public string UserAgent { get; set; } = "SymbolCollector/0.0.0";
@@ -78,16 +80,21 @@ namespace SymbolCollector.Core
         private readonly SymbolClientOptions _options;
         private readonly ILogger<SymbolClient> _logger;
         private readonly HttpClient _httpClient;
+        private readonly Version _httpVersion;
 
         public SymbolClient(
             SymbolClientOptions options,
             ILogger<SymbolClient> logger,
-            HttpMessageHandler? handler = null)
+            HttpClient httpClient)
         {
-            _httpClient = new HttpClient(handler ?? new HttpClientHandler()) {Timeout = options.HttpClientTimeout};
-            _httpClient.DefaultRequestHeaders.Add("User-Agent", options.UserAgent);
+            _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient), "httpClient is required.");
+
+            httpClient.DefaultRequestHeaders.Add("User-Agent", options.UserAgent);
+            httpClient.Timeout = options.HttpClientTimeout;
+
             _options = options;
             _logger = logger;
+            _httpVersion = Version.Parse(_options.Http2 ? "2.0" : "1.1");
         }
 
         public async Task<Guid> Start(string friendlyName, BatchType batchType, CancellationToken token)
@@ -95,14 +102,14 @@ namespace SymbolCollector.Core
             var batchId = Guid.NewGuid();
             var body = new {BatchFriendlyName = friendlyName, BatchType = batchType};
 
-            HttpContent content = new ByteArrayContent(JsonSerializer.SerializeToUtf8Bytes(body));
+            var content = new ByteArrayContent(JsonSerializer.SerializeToUtf8Bytes(body));
             content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/json");
 
             var url = $"{_options.BaseAddress.AbsoluteUri}symbol/batch/{batchId}/start";
             try
             {
-                var response = await _httpClient.PostAsync(url,
-                    content, token);
+                var request = new HttpRequestMessage(HttpMethod.Post, url) {Version = _httpVersion, Content = content};
+                var response = await _httpClient.SendAsync(request, token);
                 await ThrowForUnsuccessful("Could not start batch.", response);
             }
             catch (Exception e)
@@ -125,10 +132,8 @@ namespace SymbolCollector.Core
             var url = $"{_options.BaseAddress.AbsoluteUri}symbol/batch/{batchId}/close";
             try
             {
-                var response = await _httpClient.PostAsync(
-                    url,
-                    content,
-                    token);
+                var request = new HttpRequestMessage(HttpMethod.Post, url) {Version = _httpVersion, Content = content};
+                var response = await _httpClient.SendAsync(request, token);
                 await ThrowForUnsuccessful("Could not close batch.", response);
             }
             catch (Exception e)
@@ -154,12 +159,16 @@ namespace SymbolCollector.Core
                 throw new ArgumentException("Invalid empty BuildId");
             }
 
+            return await IsSymbolMissing() && await Upload();
+
+            async Task<bool> IsSymbolMissing()
             {
                 var checkUrl = $"{_options.BaseAddress.AbsoluteUri}symbol/batch/{batchId}/check/{unifiedId}/{hash}";
                 try
                 {
                     var checkResponse =
-                        await _httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Head, checkUrl), token);
+                        await _httpClient.SendAsync(
+                            new HttpRequestMessage(HttpMethod.Head, checkUrl) {Version = _httpVersion}, token);
 
                     if (checkResponse.StatusCode == HttpStatusCode.Conflict)
                     {
@@ -176,7 +185,11 @@ namespace SymbolCollector.Core
                     _logger.LogError(e, "Failed to check for unifiedId through {url}", checkUrl);
                     throw;
                 }
+
+                return true;
             }
+
+            async Task<bool> Upload()
             {
                 var uploadUrl = $"{_options.BaseAddress.AbsoluteUri}symbol/batch/{batchId}/upload";
                 try
@@ -184,6 +197,7 @@ namespace SymbolCollector.Core
                     var uploadResponse = await _httpClient.SendAsync(
                         new HttpRequestMessage(HttpMethod.Post, uploadUrl)
                         {
+                            Version = _httpVersion,
                             Content = new MultipartFormDataContent {{new StreamContent(file), fileName, fileName}}
                         }, token);
 
@@ -233,6 +247,7 @@ namespace SymbolCollector.Core
                 {
                     ex.Data[traceIdKey] = traceIds.FirstOrDefault() ?? "unknown";
                 }
+
                 throw ex;
             }
         }

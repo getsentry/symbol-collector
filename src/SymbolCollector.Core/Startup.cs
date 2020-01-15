@@ -18,7 +18,7 @@ namespace SymbolCollector.Core
                 .ConfigureHostConfiguration(c => c.AddJsonFile(GetAppSettingsFilePath()))
                 .ConfigureServices((hostBuilderContext, services) =>
                 {
-                    ConfigureServices(hostBuilderContext, services);
+                    ConfigureServices(services);
                     configureServices?.Invoke(services);
                 })
                 .ConfigureLogging(l =>
@@ -31,13 +31,13 @@ namespace SymbolCollector.Core
             return host;
         }
 
-        private static void ConfigureServices(HostBuilderContext context, IServiceCollection services)
+        private static void ConfigureServices(IServiceCollection services)
         {
             services.AddSingleton<Client>();
             services.AddSingleton<ObjectFileParser>();
             services.AddSingleton<ClientMetrics>();
             services.AddSingleton<FatBinaryReader>();
-            services.AddSingleton<ISymbolClient, SymbolClient>();
+            services.AddHttpClient<ISymbolClient, SymbolClient>();
             services.AddSingleton<ClientMetrics>();
             services.AddOptions<SymbolClientOptions>()
                 .Configure<IConfiguration>((o, f) => f.Bind("SymbolClient", o))
