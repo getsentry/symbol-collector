@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
+using Sentry;
 using Xunit;
 
 namespace SymbolCollector.Core.Tests
@@ -65,6 +66,7 @@ namespace SymbolCollector.Core.Tests
                 return Task.FromResult(new HttpResponseMessage(HttpStatusCode.Created));
             });
             _fixture.SymbolClient = new SymbolClient(
+                Substitute.For<IHub>(),
                 new SymbolClientOptions {BaseAddress = _fixture.ServiceUri, UserAgent = "UnitTest/0.0.0"},
                 Substitute.For<ILogger<SymbolClient>>(),
                 new HttpClient(_fixture.HttpMessageHandler));
