@@ -32,6 +32,7 @@ namespace SymbolCollector.Console
                 o.Debug = true;
                 o.DiagnosticsLevel = Sentry.Protocol.SentryLevel.Warning;
                 o.AttachStacktrace = true;
+                o.AddInAppExclude("Polly");
                 o.Dsn = new Dsn(Dsn);
                 // TODO: This needs to be built-in
                 o.BeforeSend += @event =>
