@@ -1,11 +1,17 @@
 using System;
 using System.IO;
+using System.Linq;
+using System.Net.Http;
 using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Polly;
+using Polly.Extensions.Http;
+using Sentry;
+using Sentry.Protocol;
 
 namespace SymbolCollector.Core
 {
@@ -33,12 +39,56 @@ namespace SymbolCollector.Core
 
         private static void ConfigureServices(IServiceCollection services)
         {
+            services.AddHttpClient<ISymbolClient, SymbolClient>()
+                .AddPolicyHandler((s, r) => HttpPolicyExtensions.HandleTransientHttpError()
+                    .WaitAndRetryAsync(new[]
+                        {
+                            TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(5),
+#if RELEASE
+                            // TODO: Until a proper re-entrancy is built in the clients, add a last hope retry
+                            TimeSpan.FromSeconds(15)
+#endif
+                        },
+                        onRetry: async (result, span, retryAttempt, context) =>
+                        {
+                            var sentry = s.GetService<ISentryClient>();
+                            var evt = new SentryEvent(result.Exception)
+                            {
+                                Level = SentryLevel.Warning,
+                                LogEntry = new LogEntry
+                                {
+                                    Formatted =
+                                        $"Waiting {span} following attempt {retryAttempt} failed HTTP request.",
+                                    Message =
+                                        "Waiting {span} following attempt {retryAttempt} failed HTTP request.",
+                                }
+                            };
+                            evt.SetTag("Tag", "Polly");
+                            if (result.Result is { } request)
+                            {
+                                const string traceIdKey = "TraceIdentifier";
+                                if (request.Headers.TryGetValues(traceIdKey, out var traceIds))
+                                {
+                                    evt.SetTag(traceIdKey, traceIds.FirstOrDefault() ?? "unknown");
+                                }
+
+                                evt.SetTag("StatusCode", request.StatusCode.ToString());
+                                var responseBody = await request.Content.ReadAsStringAsync();
+                                if (!string.IsNullOrWhiteSpace(responseBody))
+                                {
+                                    evt.SetExtra("body", responseBody);
+                                }
+                            }
+                            sentry.CaptureEvent(evt);
+                        }
+                    ));
+
             services.AddSingleton<Client>();
             services.AddSingleton<ObjectFileParser>();
             services.AddSingleton<ClientMetrics>();
             services.AddSingleton<FatBinaryReader>();
-            services.AddHttpClient<ISymbolClient, SymbolClient>();
             services.AddSingleton<ClientMetrics>();
+
             services.AddOptions<SymbolClientOptions>()
                 .Configure<IConfiguration>((o, f) => f.Bind("SymbolClient", o))
                 .Validate(o => o.BaseAddress is {}, "BaseAddress is required.");

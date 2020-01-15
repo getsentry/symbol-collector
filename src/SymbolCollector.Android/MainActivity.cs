@@ -218,6 +218,7 @@ namespace SymbolCollector.Android
                 o.AttachStacktrace = true;
                 o.Dsn = new Dsn("https://02619ad38bcb40d0be5167e1fb335954@sentry.io/1847454");
                 // TODO: This needs to be built-in
+                o.AddInAppExclude("Polly");
                 o.AddInAppExclude("Mono");
                 // TODO: This needs to be built-in
                 o.BeforeSend += @event =>
