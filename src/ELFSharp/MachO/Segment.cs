@@ -24,6 +24,13 @@ namespace ELFSharp.MachO
             Reader.ReadInt32(); // we ignore flags for now
             if(fileSize > 0)
             {
+                if (fileSize > Size)
+                {
+                    var ex = new InvalidOperationException("The size defined on the header is smaller than the subsequent file size.");
+                    ex.Data["Size"] = Size;
+                    ex.Data["fileSize"] = fileSize;
+                    throw ex;
+                }
                 data = new byte[Size];
                 using(var stream = streamProvider())
                 {

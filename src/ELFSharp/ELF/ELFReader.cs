@@ -38,9 +38,14 @@ namespace ELFSharp.ELF
 				return Class.NotELF;
 			}
 			using(var reader = new BinaryReader(File.OpenRead(fileName)))
-			{
-				var magic = reader.ReadBytes(4);
-				for(var i = 0; i < 4; i++)
+            {
+                const int magicBytesLength = 4;
+				var magic = reader.ReadBytes(magicBytesLength);
+                if (magic.Length != magicBytesLength)
+                {
+                    return Class.NotELF;
+                }
+				for(var i = 0; i < magicBytesLength; i++)
 				{
 					if(magic[i] != Magic[i])
 					{
@@ -51,7 +56,7 @@ namespace ELFSharp.ELF
 				return value == 1 ? Class.Bit32 : Class.Bit64;
 			}
 		}
-        
+
 		public static ELF<T> Load<T>(string fileName) where T : struct
 		{
 			return new ELF<T>(fileName);
@@ -77,6 +82,6 @@ namespace ELFSharp.ELF
 			0x4C,
 			0x46
 		}; // 0x7F 'E' 'L' 'F'
-        
+
 	}
 }
