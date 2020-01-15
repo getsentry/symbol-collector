@@ -197,7 +197,7 @@ namespace SymbolCollector.Core.Tests
                 )
             };
             // Java class file which has the same magic bytes as a Fat Mach-O file
-            yield return new ObjectFileResultTestCase("TestFiles/DiskBuffer$1.class") {Expected = null!,};
+            yield return new ObjectFileResultTestCase("TestFiles/DiskBuffer$1.class") {Expected = null!};
         }
 
         public IEnumerator<object[]> GetEnumerator() =>

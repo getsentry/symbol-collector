@@ -23,7 +23,7 @@ namespace ELFSharp.MachO
             machO = null;
             uint magic;
             var file = File.OpenRead(fileName);
-            if (file.Length < 2)
+            if (file.Length < 4)
             {
                 return MachOResult.NotMachO;
             }
