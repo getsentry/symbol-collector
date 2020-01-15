@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Sentry;
 
 namespace SymbolCollector.Core
 {
@@ -79,14 +80,17 @@ namespace SymbolCollector.Core
     {
         private readonly SymbolClientOptions _options;
         private readonly ILogger<SymbolClient> _logger;
+        private readonly IHub _hub;
         private readonly HttpClient _httpClient;
         private readonly Version _httpVersion;
 
         public SymbolClient(
+            IHub hub,
             SymbolClientOptions options,
             ILogger<SymbolClient> logger,
             HttpClient httpClient)
         {
+            _hub = hub;
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient), "httpClient is required.");
 
             httpClient.DefaultRequestHeaders.Add("User-Agent", options.UserAgent);
@@ -100,6 +104,8 @@ namespace SymbolCollector.Core
         public async Task<Guid> Start(string friendlyName, BatchType batchType, CancellationToken token)
         {
             var batchId = Guid.NewGuid();
+            _hub.ConfigureScope(s => s.SetTag("batchId", batchId.ToString()));
+
             var body = new {BatchFriendlyName = friendlyName, BatchType = batchType};
 
             var content = new ByteArrayContent(JsonSerializer.SerializeToUtf8Bytes(body));
