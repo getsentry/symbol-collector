@@ -67,7 +67,7 @@ namespace SymbolCollector.Core.Tests
             _fixture.SymbolClient = new SymbolClient(
                 new SymbolClientOptions {BaseAddress = _fixture.ServiceUri, UserAgent = "UnitTest/0.0.0"},
                 Substitute.For<ILogger<SymbolClient>>(),
-                _fixture.HttpMessageHandler);
+                new HttpClient(_fixture.HttpMessageHandler));
 
             var sut = _fixture.GetSut();
             await sut.UploadAllPathsAsync("friendly name", BatchType.IOS, new[] {"TestFiles"}, CancellationToken.None);
