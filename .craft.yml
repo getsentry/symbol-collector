@@ -1,0 +1,5 @@
+github:
+  owner: getsentry
+  repo: symbol-collector
+targets:
+  - name: github

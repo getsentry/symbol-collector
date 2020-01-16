@@ -37,3 +37,12 @@ after_success:
   - curl -s https://codecov.io/bash > codecov
   - chmod +x codecov
   - ./codecov -f "*cobertura.xml"
+notifications:
+  webhooks:
+    urls:
+      - https://zeus.ci/hooks/48d1de38-3869-11ea-98eb-4e678c783820/public/provider/travis/webhook
+    on_success: always
+    on_failure: always
+    on_start: always
+    on_cancel: always
+    on_error: always

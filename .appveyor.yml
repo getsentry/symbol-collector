@@ -11,14 +11,21 @@ branches:
 build_script:
   - cmd: build.cmd
 artifacts:
-  - path: 'src\SymbolCollector.Android\bin\release\*.apk'
+  # Should be kept in sync with zeus.sh
+  - path: 'src\SymbolCollector.Android\bin\release\*Signed.apk'
   - path: 'src\SymbolCollector.Console\osx-x64\'
   - path: 'src\SymbolCollector.Console\linux-x64\'
   - path: 'src\SymbolCollector.Console\linux-musl-x64\'
   - path: 'src\SymbolCollector.Console\linux-arm\'
   - path: 'src\SymbolCollector.Server\server\'
+install:
+  - npm install -g @zeus-ci/cli
+  - bash scripts\zeus.sh report_pending
 on_success:
   - ps: |
       $env:PATH = 'C:\msys64\usr\bin;' + $env:PATH
       Invoke-WebRequest -Uri 'https://codecov.io/bash' -OutFile codecov.sh
-      bash codecov.sh -f "*cobertura.xml"
+      bash codecov.sh -f "*.cobertura.xml"
+      bash scripts/zeus.sh upload_artifacts
+on_failure:
+  - bash scripts\zeus.sh report_failed

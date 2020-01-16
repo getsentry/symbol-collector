@@ -13,12 +13,12 @@ if "%errorlevel%" NEQ "0" exit /b %errorlevel%
 popd
 
 pushd test\SymbolCollector.Server.Tests\
-dotnet test -c Release
+dotnet test -c Release --collect:"XPlat Code Coverage" --settings ..\coverletArgs.runsettings
 if "%errorlevel%" NEQ "0" exit /b %errorlevel%
 popd
 
 pushd test\SymbolCollector.Core.Tests\
-dotnet test -c Release
+dotnet test -c Release --collect:"XPlat Code Coverage" --settings ..\coverletArgs.runsettings
 if "%errorlevel%" NEQ "0" exit /b %errorlevel%
 popd
 
