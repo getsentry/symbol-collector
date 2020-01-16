@@ -8,11 +8,16 @@ export PATH=./node_modules/.bin:$PATH
 upload_artifacts() {
   # To be kept in sync with appveyor configs
   zeus upload -t "application/zip+apk" ./src/SymbolCollector.Android/bin/release/*Signed.apk
-  zeus upload -t "application/zip" ./src/SymbolCollector.Console/osx-x64.zip
-  zeus upload -t "application/zip" ./src/SymbolCollector.Console/linux-x64.zip
-  zeus upload -t "application/zip" ./src/SymbolCollector.Console/linux-musl-x64.zip
-  zeus upload -t "application/zip" ./src/SymbolCollector.Console/linux-arm.zip
-  zeus upload -t "application/zip" ./src/SymbolCollector.Server/server.zip
+  tar -czvf console-osx-x64.tar.gz ./src/SymbolCollector.Console/osx-x64/
+  zeus upload -t "application/zip" console-osx-x64.tar.gz
+  tar -czvf console-linux-x64.tar.gz ./src/SymbolCollector.Console/linux-x64/
+  zeus upload -t "application/zip" console-linux-x64.tar.gz
+  tar -czvf console-linux-musl-x64.tar.gz ./src/SymbolCollector.Console/linux-musl-x64/
+  zeus upload -t "application/zip" console-linux-musl-x64.tar.gz
+  tar -czvf console-linux-arm.tar.gz ./src/SymbolCollector.Console/linux-arm/
+  zeus upload -t "application/zip" console-linux-arm.tar.gz
+  tar -czvf server.tar.gz ./src/SymbolCollector.Server/server/
+  zeus upload -t "application/zip" server.tar.gz
   zeus job update --status=passed
 }
 
