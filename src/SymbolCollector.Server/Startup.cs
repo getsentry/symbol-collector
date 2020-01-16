@@ -32,7 +32,7 @@ namespace SymbolCollector.Server
             services.AddSingleton<FatBinaryReader>();
             services.AddSingleton<ClientMetrics>();
             services.AddSingleton<IBatchFinalizer, SymsorterBatchFinalizer>();
-            services.AddSingleton<ISymbolGcsWriter, NoOpSymbolGcsWriter>();
+            services.AddSingleton<ISymbolGcsWriter, SymbolGcsWriter>();
             services.AddSingleton<IStorageClientFactory, StorageClientFactory>();
 
             services.AddSingleton<ISentryEventProcessor, SymbolServiceEventProcessor>();

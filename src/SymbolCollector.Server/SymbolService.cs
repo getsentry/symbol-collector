@@ -265,7 +265,6 @@ namespace SymbolCollector.Server
 
             // TODO: Validate client metrics against data collected (recon)
             batch.ClientMetrics = clientMetrics;
-            batch.Close();
 
             var processingLocation =
                 Path.Combine(_processingPath, batch.BatchType.ToSymsorterPrefix(), batchId.ToString());
@@ -292,6 +291,8 @@ namespace SymbolCollector.Server
                 batchId, destination);
 
             await _batchFinalizer.CloseBatch(destination, batch, token);
+
+            batch.Close();
         }
 
 

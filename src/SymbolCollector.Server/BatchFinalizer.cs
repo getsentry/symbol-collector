@@ -77,82 +77,111 @@ namespace SymbolCollector.Server
 
             Directory.CreateDirectory(symsorterOutput);
 
-            var bundleId = ToBundleId(batch.FriendlyName);
-            var symsorterPrefix = batch.BatchType.ToSymsorterPrefix();
-
-            var args = $"-zz -o {symsorterOutput} --prefix {symsorterPrefix} --bundle-id {bundleId} {batchLocation}";
-
-            var process = new Process
+            if (SorterSymbols(batchLocation, batch, symsorterOutput))
             {
-                StartInfo = new ProcessStartInfo(_options.SymsorterPath, args)
-                {
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    CreateNoWindow = true
-                }
-            };
-
-            string? lastLine = null;
-            var sw = Stopwatch.StartNew();
-            if (!process.Start())
-            {
-                throw new InvalidOperationException("symsorter failed to start");
-            }
-
-            while (!process.StandardOutput.EndOfStream)
-            {
-                var line = process.StandardOutput.ReadLine();
-                _logger.LogInformation(line);
-                lastLine = line;
-            }
-
-            const int waitUpToMs = 500_000;
-            process.WaitForExit(waitUpToMs);
-            sw.Stop();
-            if (!process.HasExited)
-            {
-                throw new InvalidOperationException($"Timed out waiting for {batch.BatchId}. Symsorter args: {args}");
-            }
-
-            lastLine ??= string.Empty;
-
-            if (process.ExitCode != 0)
-            {
-                throw new InvalidOperationException($"Symsorter exit code: {process.ExitCode}. Args: {args}");
-            }
-
-            _logger.LogInformation("Symsorter finished in {timespan} and logged last: {lastLine}",
-                sw.Elapsed, lastLine);
-
-            var match = Regex.Match(lastLine, "Done: sorted (?<count>\\d+) debug files");
-            if (!match.Success)
-            {
-                _logger.LogError("Last line didn't match success: {lastLine}", lastLine);
                 return;
             }
 
-            _logger.LogInformation("Symsorter processed: {count}", match.Groups["count"].Value);
-
+            // TODO: Turn into a job.
             var trimDown = symsorterOutput + "/";
-            foreach (var directories in Directory.GetDirectories(symsorterOutput, "*", SearchOption.AllDirectories))
+            async Task UploadToGoogle(string filePath, CancellationToken token)
             {
-                foreach (var filePath in Directory.GetFiles(directories))
+                var destinationName = filePath.Replace(trimDown, string.Empty);
+                await using var file = File.OpenRead(filePath);
+                await _gcsWriter.WriteAsync(destinationName, file, token);
+            }
+
+            var counter = 0;
+            var groups =
+                from directory in Directory.GetDirectories(symsorterOutput, "*", SearchOption.AllDirectories)
+                from file in Directory.GetFiles(directory)
+                let c = counter++
+                group file by c / 20 // TODO: config
+                into fileGroup
+                select fileGroup.ToList();
+
+            try
+            {
+                foreach (var group in groups)
                 {
-                    var destinationName = filePath.Replace(trimDown, string.Empty);
-                    await using var file = File.OpenRead(filePath);
-                    await _gcsWriter.WriteAsync(destinationName, file, token);
+                    await Task.WhenAll(group.Select(file => UploadToGoogle(file, token)));
                 }
             }
-
-            string ToBundleId(string friendlyName)
+            catch (Exception e)
             {
-                var invalids = Path.GetInvalidFileNameChars().Concat(" ").ToArray();
-                return string.Join("_",
-                        friendlyName.Split(invalids, StringSplitOptions.RemoveEmptyEntries)
-                            .Append(_generator.Generate()))
-                    .TrimEnd('.');
+                _logger.LogError(e, "Failed uploading files to GCS.");
+                throw;
             }
         }
+
+         private bool SorterSymbols(string batchLocation, SymbolUploadBatch batch, string symsorterOutput)
+         {
+             var bundleId = ToBundleId(batch.FriendlyName);
+             var symsorterPrefix = batch.BatchType.ToSymsorterPrefix();
+
+             var args = $"-zz -o {symsorterOutput} --prefix {symsorterPrefix} --bundle-id {bundleId} {batchLocation}";
+
+             var process = new Process
+             {
+                 StartInfo = new ProcessStartInfo(_options.SymsorterPath, args)
+                 {
+                     UseShellExecute = false,
+                     RedirectStandardOutput = true,
+                     CreateNoWindow = true
+                 }
+             };
+
+             string? lastLine = null;
+             var sw = Stopwatch.StartNew();
+             if (!process.Start())
+             {
+                 throw new InvalidOperationException("symsorter failed to start");
+             }
+
+             while (!process.StandardOutput.EndOfStream)
+             {
+                 var line = process.StandardOutput.ReadLine();
+                 _logger.LogInformation(line);
+                 lastLine = line;
+             }
+
+             const int waitUpToMs = 500_000;
+             process.WaitForExit(waitUpToMs);
+             sw.Stop();
+             if (!process.HasExited)
+             {
+                 throw new InvalidOperationException($"Timed out waiting for {batch.BatchId}. Symsorter args: {args}");
+             }
+
+             lastLine ??= string.Empty;
+
+             if (process.ExitCode != 0)
+             {
+                 throw new InvalidOperationException($"Symsorter exit code: {process.ExitCode}. Args: {args}");
+             }
+
+             _logger.LogInformation("Symsorter finished in {timespan} and logged last: {lastLine}",
+                 sw.Elapsed, lastLine);
+
+             var match = Regex.Match(lastLine, "Done: sorted (?<count>\\d+) debug files");
+             if (!match.Success)
+             {
+                 _logger.LogError("Last line didn't match success: {lastLine}", lastLine);
+                 return true;
+             }
+
+             _logger.LogInformation("Symsorter processed: {count}", match.Groups["count"].Value);
+             return false;
+
+             string ToBundleId(string friendlyName)
+             {
+                 var invalids = Path.GetInvalidFileNameChars().Concat(" ").ToArray();
+                 return string.Join("_",
+                         friendlyName.Split(invalids, StringSplitOptions.RemoveEmptyEntries)
+                             .Append(_generator.Generate()))
+                     .TrimEnd('.');
+             }
+         }
 
          public void Dispose() => _suffixGenerator.Dispose();
     }

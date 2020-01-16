@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Google.Apis.Auth.OAuth2;
 using Google.Cloud.Storage.V1;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace SymbolCollector.Server
 {
@@ -41,13 +42,14 @@ namespace SymbolCollector.Server
 
     public class SymbolGcsWriter : ISymbolGcsWriter
     {
+        private readonly GoogleCloudStorageOptions _options;
         private readonly IStorageClientFactory _storageClientFactory;
         private readonly ILogger<SymbolGcsWriter> _logger;
         private volatile StorageClient? _storageClient;
-        private const string BucketName = "sentry-android-symbols-1";
 
-        public SymbolGcsWriter(IStorageClientFactory storageClientFactory, ILogger<SymbolGcsWriter> logger)
+        public SymbolGcsWriter(IOptions<GoogleCloudStorageOptions> options, IStorageClientFactory storageClientFactory, ILogger<SymbolGcsWriter> logger)
         {
+            _options = options.Value;
             _storageClientFactory =
                 storageClientFactory ?? throw new ArgumentNullException(nameof(storageClientFactory));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -66,7 +68,7 @@ namespace SymbolCollector.Server
             }
 
             var obj = await _storageClient!.UploadObjectAsync(
-                bucket: BucketName,
+                bucket: _options.BucketName,
                 objectName: name,
                 contentType: "application/octet-stream",
                 source: data,
