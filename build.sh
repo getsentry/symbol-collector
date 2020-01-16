@@ -8,7 +8,8 @@ msbuild /restore /p:Configuration=Release \
 popd
 
 pushd src/SymbolCollector.Server/
-dotnet build -c Release
+# Restore packages, builds it, runs smoke-test.
+dotnet run -c Release -- --smoke-test
 popd
 
 # clean up old test results

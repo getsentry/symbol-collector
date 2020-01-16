@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Google.Apis.Upload;
 using Google.Cloud.Storage.V1;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using NSubstitute;
 using Xunit;
 using static NSubstitute.Substitute;
@@ -21,9 +22,10 @@ namespace SymbolCollector.Server.Tests
         private class Fixture
         {
             public ILogger<SymbolGcsWriter> Logger { get; set; } = For<ILogger<SymbolGcsWriter>>();
+            public IOptions<GoogleCloudStorageOptions> Options { get; set; } = new OptionsWrapper<GoogleCloudStorageOptions>(new GoogleCloudStorageOptions());
             public IStorageClientFactory StorageClientFactory { get; set; } = For<IStorageClientFactory>();
 
-            public SymbolGcsWriter GetSut() => new SymbolGcsWriter(StorageClientFactory, Logger);
+            public SymbolGcsWriter GetSut() => new SymbolGcsWriter(Options, StorageClientFactory, Logger);
         }
 
         readonly Fixture _fixture = new Fixture();

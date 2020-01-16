@@ -27,7 +27,9 @@ namespace SymbolCollector.Android.UITests
                 }
                 else
                 {
-                    Console.WriteLine($"APK path defined but no file exists at this path: {apkPath}");
+                    var msg = $"APK path defined but no file exists at this path: {apkPath}";
+                    Console.WriteLine(msg);
+                    Assert.Fail(msg);
                 }
             }
 

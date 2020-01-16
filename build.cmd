@@ -6,6 +6,8 @@ if "%errorlevel%" NEQ "0" exit /b %errorlevel%
 popd
 
 pushd src\SymbolCollector.Server\
+:Restore packages, builds it, runs smoke-test.
+dotnet run -c release -- --smoke-test
 dotnet publish -c release -o server
 if "%errorlevel%" NEQ "0" exit /b %errorlevel%
 popd

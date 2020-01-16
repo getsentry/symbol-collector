@@ -47,13 +47,13 @@ namespace SymbolCollector.Server
 
                 using var host = CreateHostBuilder(args).Build();
 
-                if (!(args.Length == 1 && args[0] == "--smoke-test"))
+                if (args.Length == 1 && args[0] == "--smoke-test")
                 {
-                    host.Run();
+                    await SmokeTest(host);
                 }
                 else
                 {
-                    await HealthCheck(host);
+                    host.Run();
                 }
 
                 return 0;
@@ -99,7 +99,7 @@ namespace SymbolCollector.Server
                 });
 
 
-        private static async Task HealthCheck(IHost host)
+        private static async Task SmokeTest(IHost host)
         {
             var cancellationTokenSource = new CancellationTokenSource();
 
@@ -112,7 +112,7 @@ namespace SymbolCollector.Server
             await host.StartAsync(cancellationTokenSource.Token);
 
             using var client = new HttpClient();
-            using var response = await client.GetAsync(new Uri(new Uri(url, UriKind.Absolute), "/health"),
+            using var response = await client.GetAsync(new Uri(new Uri(url, UriKind.Absolute), "/smoke-test"),
                 cancellationTokenSource.Token);
 
             if (response.IsSuccessStatusCode)

@@ -69,31 +69,6 @@ namespace SymbolCollector.Server.Tests
             resp.AssertStatusCode(HttpStatusCode.OK);
         }
 
-        [Fact(Skip = "not writing to GCS atm")]
-        public async Task Put_StoresFileInGcs()
-        {
-            var client = _fixture.GetClient();
-            const string expectedFileName = "libfake.so";
-
-            var resp = await client.SendAsync(new HttpRequestMessage(HttpMethod.Post, SymbolsController.Route)
-            {
-                Content = new MultipartFormDataContent
-                {
-                    {new StringContent("fake stuff"), expectedFileName, expectedFileName}
-                }
-            });
-
-            Assert.True(resp.IsSuccessStatusCode);
-            await _fixture.StorageClient.Received(1).UploadObjectAsync(
-                Arg.Any<string>(),
-                expectedFileName,
-                Arg.Any<string>(),
-                Arg.Any<Stream>(),
-                Arg.Any<UploadObjectOptions>(),
-                Arg.Any<CancellationToken>(),
-                Arg.Any<IProgress<IUploadProgress>>());
-        }
-
         [Fact]
         public async Task Start_MissingBody_BadRequest()
         {
