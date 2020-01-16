@@ -106,9 +106,16 @@ namespace SymbolCollector.Server
                     name: "default",
                     pattern: "{controller=Home}/{action=Index}/{id?}");
 
+                endpoints.Map("/smoke-test", context =>
+                {
+                    // TODO: Proper smoke-test (used to make sure DI is correct. Can't expect working config for GCS.
+                    context.Response.StatusCode = (int)HttpStatusCode.OK;
+                    return Task.CompletedTask;
+                });
+
                 endpoints.Map("/health", context =>
                 {
-                    // TODO: Proper health check
+                    // TODO: Proper health check: Ensure config to GCS is proper (hit by load balancer)
                     context.Response.StatusCode = (int)HttpStatusCode.OK;
                     return Task.CompletedTask;
                 });
