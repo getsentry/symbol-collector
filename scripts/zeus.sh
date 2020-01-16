@@ -9,13 +9,13 @@ upload_artifacts() {
   # To be kept in sync with appveyor configs
   zeus upload -t "application/zip+apk" ./src/SymbolCollector.Android/bin/release/*Signed.apk
   tar -czvf console-osx-x64.tar.gz ./src/SymbolCollector.Console/osx-x64/
-  zeus upload -t "application/zip" console-linux-x64.zip
+  zeus upload -t "application/zip" console-osx-x64.zip
   tar -czvf console-linux-x64.zip ./src/SymbolCollector.Console/linux-x64/
   zeus upload -t "application/zip" console-linux-x64.zip
   tar -czvf console-linux-musl-x64.zip ./src/SymbolCollector.Console/linux-musl-x64/
   zeus upload -t "application/zip" console-linux-musl-x64.zip
-  tar -czvf console-linux-x64.zip ./src/SymbolCollector.Console/linux-x64/
-  zeus upload -t "application/zip" console-linux-x64.zip
+  tar -czvf console-linux-arm.zip ./src/SymbolCollector.Console/linux-arm/
+  zeus upload -t "application/zip" console-linux-arm.zip
   tar -czvf server.zip ./src/SymbolCollector.Server/server
   zeus upload -t "application/zip" server.zip
   zeus job update --status=passed
