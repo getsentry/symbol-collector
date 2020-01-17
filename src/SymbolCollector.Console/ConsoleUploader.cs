@@ -26,7 +26,7 @@ namespace SymbolCollector.Console
             _logger = logger;
         }
 
-        public async Task StartUploadSymbols(string bundleId, CancellationToken token)
+        public async Task StartUploadSymbols(IEnumerable<string> paths, string bundleId, CancellationToken token)
         {
             SentrySdk.ConfigureScope(s =>
             {
@@ -39,17 +39,6 @@ namespace SymbolCollector.Console
                 });
             });
 
-            // TODO: Get the paths via parameter or config file/env var?
-            var paths = new List<string> {"/usr/lib/", "/usr/local/lib/"};
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                // TODO: Add per OS paths
-                paths.Add("/System/Library/Frameworks/");
-            }
-            else
-            {
-                paths.Add("/lib/");
-            }
 
             _ = Task.Run(() =>
             {
