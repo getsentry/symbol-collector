@@ -72,6 +72,9 @@ namespace SymbolCollector.Server
             }
             set => _baseWorkingPath = value;
         }
+
+        public bool DeleteDoneDirectory { get; set; }
+        public bool DeleteSymsortedDirectory { get; set; }
     }
 
     internal class InMemorySymbolService : ISymbolService, IDisposable

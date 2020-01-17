@@ -82,9 +82,14 @@ namespace SymbolCollector.Server
                 return;
             }
 
+            if (_options.DeleteDoneDirectory)
+            {
+                Directory.Delete(batchLocation, true);
+            }
+
             // TODO: Turn into a job.
             var trimDown = symsorterOutput + "/";
-            async Task UploadToGoogle(string filePath, CancellationToken token)
+            async Task UploadToGoogle(string filePath)
             {
                 var destinationName = filePath.Replace(trimDown, string.Empty);
                 await using var file = File.OpenRead(filePath);
@@ -104,13 +109,18 @@ namespace SymbolCollector.Server
             {
                 foreach (var group in groups)
                 {
-                    await Task.WhenAll(group.Select(file => UploadToGoogle(file, token)));
+                    await Task.WhenAll(group.Select(UploadToGoogle));
                 }
             }
             catch (Exception e)
             {
                 _logger.LogError(e, "Failed uploading files to GCS.");
                 throw;
+            }
+
+            if (_options.DeleteSymsortedDirectory)
+            {
+                Directory.Delete(symsorterOutput, true);
             }
         }
 
