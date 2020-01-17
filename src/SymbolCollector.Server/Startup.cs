@@ -5,11 +5,13 @@ using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Google.Apis.Auth.OAuth2;
+using JustEat.StatsD;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Sentry;
@@ -51,7 +53,6 @@ namespace SymbolCollector.Server
                 .Validate(o => !string.IsNullOrWhiteSpace(o.BaseWorkingPath), "BaseWorkingPath is required.")
                 .Validate(o => !Directory.Exists(o.SymsorterPath), $"SymsorterPath doesn't exist.");
 
-
             services.AddOptions<GoogleCloudStorageOptions>()
                 .Configure<IConfiguration>((o, c) => c.Bind("GoogleCloud", o))
                 .Configure<IOptions<JsonCredentialParameters>>((g, o) =>
@@ -74,6 +75,37 @@ namespace SymbolCollector.Server
             services.AddMvc()
                 .AddJsonOptions(options =>
                     options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
+
+            services.AddSingleton<ISymbolServiceMetrics, MetricsPublisher>();
+            services.AddSingleton<ISymbolControllerMetrics, MetricsPublisher>();
+            services.AddSingleton<IMetricsPublisher, MetricsPublisher>();
+
+            services.AddOptions<StatsDOptions>()
+                .Configure<IConfiguration>((o, c) => c.Bind("StatsD", o))
+                .Validate(o => !string.IsNullOrWhiteSpace(o.Host), "StatD host is required.");
+
+            services.AddStatsD(
+                provider =>
+                {
+                    var options = provider.GetRequiredService<IOptions<StatsDOptions>>().Value;
+                    var logger = provider.GetRequiredService<ILogger<StatsDConfiguration>>();
+
+                    logger.LogInformation("Configuring statsd with {host}:{port} and prefix: {prefix}",
+                        options.Host, options.Port, options.Prefix);
+
+                    return new StatsDConfiguration()
+                    {
+                        Host = options.Host,
+                        Port = options.Port,
+                        Prefix = options.Prefix,
+                        OnError = ex =>
+                        {
+                            // How spammy is this going to be?
+                            logger.LogError(ex, "StatsD error.");
+                            return true; // Don't rethrow
+                        }
+                    };
+                });
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -93,7 +125,7 @@ namespace SymbolCollector.Server
             {
                 context.Response.OnStarting(() =>
                 {
-                    context.Response.Headers.Add("TraceIdentifier", new[] { context.TraceIdentifier });
+                    context.Response.Headers.Add("TraceIdentifier", new[] {context.TraceIdentifier});
                     return Task.CompletedTask;
                 });
                 await func();
@@ -147,15 +179,28 @@ namespace SymbolCollector.Server
 
         private class SymbolServiceEventProcessor : ISentryEventProcessor
         {
+            private readonly IMetricsPublisher _metrics;
             private readonly SymbolServiceOptions _options;
-            public SymbolServiceEventProcessor(IOptions<SymbolServiceOptions> options) => _options = options.Value;
+            public SymbolServiceEventProcessor(IMetricsPublisher metrics, IOptions<SymbolServiceOptions> options)
+            {
+                _metrics = metrics;
+                _options = options.Value;
+            }
 
             public SentryEvent Process(SentryEvent @event)
             {
+                _metrics.SentryEventProcessed();
                 @event.SetTag("server-endpoint", _options.BaseAddress);
                 @event.Contexts["SymbolServiceOptions"] = _options;
                 return @event;
             }
+        }
+
+        public class StatsDOptions
+        {
+            public string Host { get; set; } = null!;
+            public int Port { get; set; }
+            public string Prefix { get; set; } = "";
         }
     }
 }
