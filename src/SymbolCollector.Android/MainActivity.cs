@@ -126,8 +126,8 @@ namespace SymbolCollector.Android
 
                         var doneText = (TextView)base.FindViewById(Resource.Id.done_text);
                         var ranForLabel = (TextView)base.FindViewById(Resource.Id.ran_for_label);
-                        var ranForContainer = (TextView)base.FindViewById(Resource.Id.ran_for_container);
-                        var ranForView = (TextView)base.FindViewById(Resource.Id.ran_for_view);
+                        var ranForContainer = base.FindViewById(Resource.Id.ran_for_container);
+                        var ranForView = base.FindViewById(Resource.Id.ran_for_view);
                         doneText.Visibility = ViewStates.Visible;
                         ranForView.Visibility = ViewStates.Visible;
                         ranForContainer.Visibility = ViewStates.Visible;
