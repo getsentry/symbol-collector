@@ -20,7 +20,7 @@ namespace SymbolCollector.Console
         static async Task Main(
             string? upload = null,
             string? check = null,
-            string? package = null,
+            string? path = null,
             string? symsorter = null,
             string? bundleId = null,
             string? batchType = null,
@@ -65,7 +65,7 @@ namespace SymbolCollector.Console
                     {
                         upload,
                         check,
-                        package,
+                        path,
                         symsorter,
                         bundleId,
                         batchType,
@@ -102,6 +102,7 @@ namespace SymbolCollector.Console
                 });
 
                 var logger = host.Services.GetRequiredService<ILogger<Program>>();
+                var uploader = host.Services.GetRequiredService<ConsoleUploader>();
 
                 switch (upload)
                 {
@@ -118,21 +119,29 @@ namespace SymbolCollector.Console
                         });
 
                         logger.LogInformation("Uploading images from this device.");
-                        var uploader = host.Services.GetRequiredService<ConsoleUploader>();
-                        await uploader.StartUploadSymbols(bundleId, cancellation.Token);
+                        await uploader.StartUploadSymbols(
+                            DefaultSymbolPathProvider.GetDefaultPaths(),
+                            bundleId,
+                            cancellation.Token);
                         return;
-                    case "package":
-                        if (package is null || batchType is null || bundleId is null)
+                    case "directory":
+                        if (path is null || batchType is null || bundleId is null)
                         {
                             WriteLine(@"Missing required parameters:
 --bundle-id MacOS_15.11
 --batch-type macos
---package path/to/package.dmg");
+--path path/to/dir");
                             return;
                         }
 
-                        logger.LogInformation("Uploading stuff from package: '{package}'.", package);
-                        // TODO:
+                        if (!Directory.Exists(path))
+                        {
+                            WriteLine($@"Directory {path} doesn't exist.");
+                            return;
+                        }
+
+                        logger.LogInformation("Uploading stuff from directory: '{path}'.", path);
+                        await uploader.StartUploadSymbols(new[] {path}, bundleId, cancellation.Token);
                         break;
                 }
 
@@ -229,7 +238,7 @@ ObjectKind: {r.ObjectKind}
 
                 WriteLine(@"Parameters:
 --upload device --bundle-id id
---upload package --bundle-id id --batch-type type --package ~/location
+--upload directory --bundle-id id --batch-type type --path ~/location
     Valid Batch Types are: android, macos, ios, watchos, android
 --check file-to-check");
             }
