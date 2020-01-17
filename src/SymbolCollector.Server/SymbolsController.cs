@@ -25,6 +25,7 @@ namespace SymbolCollector.Server
         private readonly long _fileSizeLimit;
         private readonly IHub _hub;
         private readonly ISymbolService _symbolService;
+        private readonly ISymbolControllerMetrics _metrics;
         private readonly ILogger<SymbolsController> _logger;
         private readonly char[] _invalidChars;
 
@@ -34,10 +35,12 @@ namespace SymbolCollector.Server
             IHub hub,
             IConfiguration config,
             ISymbolService symbolService,
+            ISymbolControllerMetrics metrics,
             ILogger<SymbolsController> logger)
         {
             _hub = hub;
             _symbolService = symbolService;
+            _metrics = metrics;
             _logger = logger;
             _fileSizeLimit = config.GetValue<long>("FileSizeLimitBytes");
             // Don't allow file names with paths encoded.
@@ -57,6 +60,7 @@ namespace SymbolCollector.Server
             [FromBody] BatchStartRequestModel model,
             CancellationToken token)
         {
+            using var _ = _metrics.BeginOpenBatch();
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
@@ -82,6 +86,7 @@ namespace SymbolCollector.Server
         public async Task<IActionResult> CloseBatch([FromRoute] Guid batchId, [FromBody] BatchEndRequestModel model,
             CancellationToken token)
         {
+            using var _ = _metrics.BeginCloseBatch();
             await ValidateBatch(batchId, ModelState, token);
 
             if (!ModelState.IsValid)
@@ -105,6 +110,7 @@ namespace SymbolCollector.Server
             [FromRoute] string hash,
             CancellationToken token)
         {
+            using var _ = _metrics.BeginSymbolMissingCheck();
             await ValidateBatch(batchId, ModelState, token);
 
             if (!ModelState.IsValid)
@@ -122,6 +128,7 @@ namespace SymbolCollector.Server
             {
                 _logger.LogDebug("{batchId} looked for {unifiedId} and {hash} which is a missing symbol.",
                     batchId, unifiedId, hash);
+                _metrics.SymbolCheckMissing();
                 return Ok();
             }
 
@@ -149,6 +156,7 @@ namespace SymbolCollector.Server
                 await _symbolService.Relate(batchId, symbol, token);
             }
 
+            _metrics.SymbolCheckExists();
             return Conflict();
         }
 
@@ -158,6 +166,7 @@ namespace SymbolCollector.Server
             [FromRoute] Guid batchId,
             CancellationToken token)
         {
+            using var _ = _metrics.BeginUploadSymbol();
             await ValidateBatch(batchId, ModelState, token);
 
             if (!ModelState.IsValid)
@@ -209,14 +218,27 @@ namespace SymbolCollector.Server
                     _logger.LogInformation(
                         "Persisting file '{fileName}' with {bytes} bytes.", fileName, data.Length);
 
-                    // TODO: Process the image: do we have it already? is it valid?
+                    var fileStoreResult = await _symbolService.Store(
+                        batchId,
+                        fileName,
+                        data,
+                        token);
 
-                    results.Add((fileName,
-                        await _symbolService.Store(
-                            batchId,
-                            fileName,
-                            data,
-                            token)));
+                    switch (fileStoreResult)
+                    {
+                        case StoreResult.Invalid:
+                            _metrics.FileInvalid();
+                            break;
+                        case StoreResult.Created:
+                            _metrics.FileStored(data.Length);
+                            break;
+                        case StoreResult.AlreadyExisted:
+                            _metrics.FileKnown();
+                            break;
+                    }
+
+                    results.Add((fileName, fileStoreResult));
+
 
                     await data.DisposeAsync();
                 }
@@ -289,8 +311,10 @@ namespace SymbolCollector.Server
                 {
                     var payloadMegabytesSizeLimit = sizeLimitBytes / 1048576;
                     var limitMegabytesSizeLimit = sizeLimitBytes / 1048576;
-                    modelState.AddModelError("File", $"The file size {payloadMegabytesSizeLimit:N1} exceeds {limitMegabytesSizeLimit:N1} MB.");
-                    _logger.LogWarning("File name {fileName} is too large: {size} MB.", fileName, payloadMegabytesSizeLimit);
+                    modelState.AddModelError("File",
+                        $"The file size {payloadMegabytesSizeLimit:N1} exceeds {limitMegabytesSizeLimit:N1} MB.");
+                    _logger.LogWarning("File name {fileName} is too large: {size} MB.", fileName,
+                        payloadMegabytesSizeLimit);
                     code = HttpStatusCode.RequestEntityTooLarge;
                 }
                 else if (fileName.Any(p => _invalidChars.Contains(p)))
