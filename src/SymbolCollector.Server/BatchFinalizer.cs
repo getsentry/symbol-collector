@@ -40,12 +40,14 @@ namespace SymbolCollector.Server
     {
         private readonly SuffixGenerator _generator;
         private readonly SymbolServiceOptions _options;
+        private readonly IMetricsPublisher _metrics;
         private readonly ILogger<SymsorterBatchFinalizer> _logger;
         private readonly ISymbolGcsWriter _gcsWriter;
         private readonly SuffixGenerator _suffixGenerator;
         private readonly string _symsorterOutputPath;
 
         public SymsorterBatchFinalizer(
+            IMetricsPublisher metrics,
             IOptions<SymbolServiceOptions> options,
             ISymbolGcsWriter gcsWriter,
             SuffixGenerator suffixGenerator,
@@ -53,6 +55,7 @@ namespace SymbolCollector.Server
             ILogger<SymsorterBatchFinalizer> logger)
         {
             _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
+            _metrics = metrics;
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _generator = generator;
             _gcsWriter = gcsWriter ?? throw new ArgumentNullException(nameof(gcsWriter));
