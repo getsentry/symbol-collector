@@ -23,8 +23,8 @@ namespace SymbolCollector.Server
 
         public static IConfiguration Configuration { get; private set; } = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-            .AddJsonFile($"appsettings.{Environment}.json", optional: true)
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
+            .AddJsonFile($"appsettings.{Environment}.json", optional: false)
             .AddEnvironmentVariables()
             .Build();
 

@@ -181,6 +181,7 @@ namespace SymbolCollector.Server
         {
             private readonly IMetricsPublisher _metrics;
             private readonly SymbolServiceOptions _options;
+            private readonly string _cores = Environment.ProcessorCount.ToString();
             public SymbolServiceEventProcessor(IMetricsPublisher metrics, IOptions<SymbolServiceOptions> options)
             {
                 _metrics = metrics;
@@ -192,6 +193,8 @@ namespace SymbolCollector.Server
                 _metrics.SentryEventProcessed();
                 @event.SetTag("server-endpoint", _options.BaseAddress);
                 @event.Contexts["SymbolServiceOptions"] = _options;
+
+                @event.SetTag("cores", _cores);
                 return @event;
             }
         }

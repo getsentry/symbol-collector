@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 export batchId=$(uuidgen)
 export batchFriendlyName="curl-test-batch"
 export batchType="Android"
