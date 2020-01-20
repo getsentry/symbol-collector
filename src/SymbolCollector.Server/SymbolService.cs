@@ -271,6 +271,9 @@ namespace SymbolCollector.Server
         {
             var batch = await GetOpenBatch(batchId, token);
 
+            // Client is built with retry and this code isn't idempotent
+            batch.Close();
+
             // TODO: Validate client metrics against data collected (recon)
             batch.ClientMetrics = clientMetrics;
 
@@ -299,8 +302,6 @@ namespace SymbolCollector.Server
                 batchId, destination);
 
             await _batchFinalizer.CloseBatch(destination, batch, token);
-
-            batch.Close();
         }
 
 

@@ -96,7 +96,10 @@ namespace SymbolCollector.Server
             {
                 var destinationName = filePath.Replace(trimDown, string.Empty);
                 await using var file = File.OpenRead(filePath);
-                await _gcsWriter.WriteAsync(destinationName, file, token);
+                await _gcsWriter.WriteAsync(destinationName, file,
+                    // The client disconnecting at this point shouldn't affect closing this batch.
+                    // This should anyway be a background job queued by the batch finalizer
+                    CancellationToken.None);
             }
 
             var counter = 0;
