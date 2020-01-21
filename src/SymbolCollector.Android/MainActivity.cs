@@ -2,7 +2,6 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Android.App;
-using Android.Content;
 using Android.Content.PM;
 using Android.OS;
 using Android.Runtime;
@@ -22,7 +21,8 @@ using OperationCanceledException = System.OperationCanceledException;
 
 namespace SymbolCollector.Android
 {
-    [Activity(Label = "@string/app_name", Theme = "@style/AppTheme", MainLauncher = true, ScreenOrientation = ScreenOrientation.Portrait)]
+    [Activity(Label = "@string/app_name", Theme = "@style/AppTheme", MainLauncher = true,
+        ScreenOrientation = ScreenOrientation.Portrait)]
     public class MainActivity : AppCompatActivity
     {
         private readonly IDisposable _sentry;
@@ -47,8 +47,7 @@ namespace SymbolCollector.Android
             {
                 if (!args.HasFocus)
                 {
-                    (GetSystemService(InputMethodService) as InputMethodManager)
-                        ?.HideSoftInputFromWindow(CurrentFocus.WindowToken, 0);
+                    Unfocus();
                 }
             };
 
@@ -62,106 +61,126 @@ namespace SymbolCollector.Android
 
                 SentrySdk.ConfigureScope(s => s.SetTag("server-endpoint", options.BaseAddress.AbsoluteUri));
 
-                (GetSystemService(InputMethodService) as InputMethodManager)
-                    ?.HideSoftInputFromWindow(CurrentFocus.WindowToken, 0);
+                Unfocus();
 
                 uploadButton.Enabled = false;
                 source = new CancellationTokenSource();
 
                 var uploadTask = uploader.StartUpload(_friendlyName, source.Token);
+                var updateUiTask = StartUiUpdater(source.Token, metrics);
 
-                var updateUiTask = Task.Run(async () =>
-                {
-                    var uploadedCount = (TextView)base.FindViewById(Resource.Id.uploaded_count);
-                    var startedTime = (TextView)base.FindViewById(Resource.Id.started_time);
-                    var alreadyExisted = (TextView)base.FindViewById(Resource.Id.already_existed);
-                    var filesProcessed = (TextView)base.FindViewById(Resource.Id.files_processed);
-                    var successfullyUpload = (TextView)base.FindViewById(Resource.Id.successfully_upload);
-                    var elfFiles = (TextView)base.FindViewById(Resource.Id.elf_files);
-                    var failedParsing = (TextView)base.FindViewById(Resource.Id.failed_parsing);
-                    var failedUploading = (TextView)base.FindViewById(Resource.Id.failed_uploading);
-                    var jobsInFlight = (TextView)base.FindViewById(Resource.Id.jobs_in_flight);
-                    var directoryNotFound = (TextView)base.FindViewById(Resource.Id.directory_not_found);
-                    var fileNotFound = (TextView)base.FindViewById(Resource.Id.file_not_found);
-                    var unauthorizedAccess = (TextView)base.FindViewById(Resource.Id.unauthorized_access);
-
-                    while (!source.IsCancellationRequested)
-                    {
-                        RunOnUiThread(() =>
-                        {
-                            uploadedCount.Text = metrics.UploadedBytesCountHumanReadable();
-                            startedTime.Text = metrics.StartedTime.ToString();
-                            alreadyExisted.Text = metrics.AlreadyExistedCount.ToString();
-                            filesProcessed.Text = metrics.FilesProcessedCount.ToString();
-                            successfullyUpload.Text = metrics.SuccessfullyUploadCount.ToString();
-                            elfFiles.Text = metrics.ElfFileFoundCount.ToString();
-                            failedParsing.Text = metrics.FailedToParseCount.ToString();
-                            failedUploading.Text = metrics.FailedToUploadCount.ToString();
-                            jobsInFlight.Text = metrics.JobsInFlightCount.ToString();
-                            directoryNotFound.Text = metrics.DirectoryDoesNotExistCount.ToString();
-                            fileNotFound.Text = metrics.FileDoesNotExistCount.ToString();
-                            unauthorizedAccess.Text = metrics.FileOrDirectoryUnauthorizedAccessCount.ToString();
-                        });
-                        try
-                        {
-                            await Task.Delay(250, source.Token);
-                        }
-                        catch (OperationCanceledException)
-                        {
-                        }
-                    }
-                }, source.Token);
-
-                var container = base.FindViewById(Resource.Id.metrics_container);
-                container.Visibility = ViewStates.Visible;
-
-                try
-                {
-                    cancelButton.Enabled = true;
-                    await Task.WhenAny(uploadTask, updateUiTask);
-                    if (uploadTask.IsCompletedSuccessfully)
-                    {
-                        cancelButton.Enabled = false;
-                        uploadButton.Enabled = false;
-
-                        var doneText = (TextView)base.FindViewById(Resource.Id.done_text);
-                        var ranForLabel = (TextView)base.FindViewById(Resource.Id.ran_for_label);
-                        var ranForContainer = base.FindViewById(Resource.Id.ran_for_container);
-                        var ranForView = base.FindViewById(Resource.Id.ran_for_view);
-                        doneText.Visibility = ViewStates.Visible;
-                        ranForView.Visibility = ViewStates.Visible;
-                        ranForContainer.Visibility = ViewStates.Visible;
-
-                        ranForLabel.Text = metrics.RanFor.ToString();
-
-                    }
-                    else if (uploadTask.IsFaulted)
-                    {
-                        ShowError(uploadTask.Exception);
-                    }
-                    else
-                    {
-                        cancelButton.Enabled = false;
-                        uploadButton.Enabled = true;
-                    }
-                }
-                catch (Exception e)
-                {
-                    ShowError(e);
-                }
-                finally
-                {
-                    source.Cancel();
-                }
+                await Upload(uploadTask, updateUiTask, metrics, cancelButton, uploadButton, source);
             }
 
             void OnCancelButtonOnClick(object sender, EventArgs args)
             {
-                (GetSystemService(InputMethodService) as InputMethodManager)
-                    ?.HideSoftInputFromWindow(CurrentFocus.WindowToken, 0);
+                Unfocus();
                 source.Cancel();
             }
         }
+
+        private void Unfocus()
+        {
+            if (CurrentFocus.WindowToken is {} windowToken)
+            {
+                (GetSystemService(InputMethodService) as InputMethodManager)
+                    ?.HideSoftInputFromWindow(windowToken, 0);
+            }
+        }
+
+        private async Task Upload(
+            Task uploadTask,
+            Task updateUiTask,
+            ClientMetrics metrics,
+            View cancelButton,
+            View uploadButton,
+            CancellationTokenSource source)
+        {
+            var container = base.FindViewById(Resource.Id.metrics_container);
+            container.Visibility = ViewStates.Visible;
+
+            var doneText = (TextView)base.FindViewById(Resource.Id.done_text);
+            var ranForLabel = (TextView)base.FindViewById(Resource.Id.ran_for_label);
+            var ranForContainer = base.FindViewById(Resource.Id.ran_for_container);
+            var ranForView = base.FindViewById(Resource.Id.ran_for_view);
+
+            try
+            {
+                cancelButton.Enabled = true;
+                await Task.WhenAny(uploadTask, updateUiTask);
+                if (uploadTask.IsCompletedSuccessfully)
+                {
+                    cancelButton.Enabled = false;
+                    uploadButton.Enabled = false;
+
+                    doneText.Visibility = ViewStates.Visible;
+                    ranForView.Visibility = ViewStates.Visible;
+                    ranForContainer.Visibility = ViewStates.Visible;
+
+                    ranForLabel.Text = metrics.RanFor.ToString();
+                }
+                else if (uploadTask.IsFaulted)
+                {
+                    ShowError(uploadTask.Exception);
+                }
+                else
+                {
+                    cancelButton.Enabled = false;
+                    uploadButton.Enabled = true;
+                }
+            }
+            catch (Exception e)
+            {
+                ShowError(e);
+            }
+            finally
+            {
+                source.Cancel();
+            }
+        }
+
+        private Task StartUiUpdater(CancellationToken token, ClientMetrics metrics) =>
+            Task.Run(async () =>
+            {
+                var uploadedCount = (TextView)base.FindViewById(Resource.Id.uploaded_count);
+                var startedTime = (TextView)base.FindViewById(Resource.Id.started_time);
+                var alreadyExisted = (TextView)base.FindViewById(Resource.Id.already_existed);
+                var filesProcessed = (TextView)base.FindViewById(Resource.Id.files_processed);
+                var successfullyUpload = (TextView)base.FindViewById(Resource.Id.successfully_upload);
+                var elfFiles = (TextView)base.FindViewById(Resource.Id.elf_files);
+                var failedParsing = (TextView)base.FindViewById(Resource.Id.failed_parsing);
+                var failedUploading = (TextView)base.FindViewById(Resource.Id.failed_uploading);
+                var jobsInFlight = (TextView)base.FindViewById(Resource.Id.jobs_in_flight);
+                var directoryNotFound = (TextView)base.FindViewById(Resource.Id.directory_not_found);
+                var fileNotFound = (TextView)base.FindViewById(Resource.Id.file_not_found);
+                var unauthorizedAccess = (TextView)base.FindViewById(Resource.Id.unauthorized_access);
+
+                while (!token.IsCancellationRequested)
+                {
+                    RunOnUiThread(() =>
+                    {
+                        uploadedCount.Text = metrics.UploadedBytesCountHumanReadable();
+                        startedTime.Text = metrics.StartedTime.ToString();
+                        alreadyExisted.Text = metrics.AlreadyExistedCount.ToString();
+                        filesProcessed.Text = metrics.FilesProcessedCount.ToString();
+                        successfullyUpload.Text = metrics.SuccessfullyUploadCount.ToString();
+                        elfFiles.Text = metrics.ElfFileFoundCount.ToString();
+                        failedParsing.Text = metrics.FailedToParseCount.ToString();
+                        failedUploading.Text = metrics.FailedToUploadCount.ToString();
+                        jobsInFlight.Text = metrics.JobsInFlightCount.ToString();
+                        directoryNotFound.Text = metrics.DirectoryDoesNotExistCount.ToString();
+                        fileNotFound.Text = metrics.FileDoesNotExistCount.ToString();
+                        unauthorizedAccess.Text = metrics.FileOrDirectoryUnauthorizedAccessCount.ToString();
+                    });
+                    try
+                    {
+                        await Task.Delay(250, token);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                    }
+                }
+            }, token);
 
         private void ShowError(Exception e)
         {
@@ -216,7 +235,11 @@ namespace SymbolCollector.Android
                 o.Debug = true;
                 o.DiagnosticsLevel = SentryLevel.Info;
                 o.AttachStacktrace = true;
+#if DEBUG
                 o.Dsn = new Dsn("https://02619ad38bcb40d0be5167e1fb335954@sentry.io/1847454");
+#else
+                o.Dsn = new Dsn("https://2262a4fa0a6d409c848908ec90c3c5b4@sentry.io/1886021");
+#endif
                 o.SendDefaultPii = true;
                 o.AddInAppExclude("Polly");
                 o.AddInAppExclude("Mono");
@@ -232,6 +255,7 @@ namespace SymbolCollector.Android
                             @event.SetTag(traceIdKey, e.Data[traceIdKey]?.ToString() ?? "unknown");
                             break;
                     }
+
                     return @event;
                 };
             });

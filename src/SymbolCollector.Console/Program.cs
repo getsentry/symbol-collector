@@ -12,10 +12,13 @@ namespace SymbolCollector.Console
 {
     internal class Program
     {
+#if DEBUG
         private const string Dsn = "https://02619ad38bcb40d0be5167e1fb335954@sentry.io/1847454";
+#else
+        private const string Dsn = "https://2262a4fa0a6d409c848908ec90c3c5b4@sentry.io/1886021";
+#endif
 
         private static readonly ClientMetrics _metrics = new ClientMetrics();
-
 
         static async Task Main(
             string? upload = null,
