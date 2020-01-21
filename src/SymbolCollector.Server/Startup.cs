@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Net;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -179,22 +180,37 @@ namespace SymbolCollector.Server
 
         private class SymbolServiceEventProcessor : ISentryEventProcessor
         {
+            private readonly IWebHostEnvironment _environment;
             private readonly IMetricsPublisher _metrics;
             private readonly SymbolServiceOptions _options;
             private readonly string _cores = Environment.ProcessorCount.ToString();
-            public SymbolServiceEventProcessor(IMetricsPublisher metrics, IOptions<SymbolServiceOptions> options)
+            public SymbolServiceEventProcessor(
+                IWebHostEnvironment environment,
+                IMetricsPublisher metrics,
+                IOptions<SymbolServiceOptions> options)
             {
+                _environment = environment;
                 _metrics = metrics;
                 _options = options.Value;
             }
 
-            public SentryEvent Process(SentryEvent @event)
+            public SentryEvent? Process(SentryEvent @event)
             {
                 _metrics.SentryEventProcessed();
                 @event.SetTag("server-endpoint", _options.BaseAddress);
                 @event.Contexts["SymbolServiceOptions"] = _options;
 
                 @event.SetTag("cores", _cores);
+
+                // In dev, ignore statsd errors
+                if (_environment.IsDevelopment())
+                {
+                    if (@event.Exception is SocketException ex
+                        && ex.ToString().Contains("StatsD"))
+                    {
+                        return null;
+                    }
+                }
                 return @event;
             }
         }

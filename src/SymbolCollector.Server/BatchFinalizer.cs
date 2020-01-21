@@ -143,6 +143,7 @@ namespace SymbolCollector.Server
                  {
                      UseShellExecute = false,
                      RedirectStandardOutput = true,
+                     RedirectStandardError = true,
                      CreateNoWindow = true
                  }
              };
@@ -157,7 +158,22 @@ namespace SymbolCollector.Server
              while (!process.StandardOutput.EndOfStream)
              {
                  var line = process.StandardOutput.ReadLine();
+                 if (string.IsNullOrWhiteSpace(line))
+                 {
+                     continue;
+                 }
                  _logger.LogInformation(line);
+                 lastLine = line;
+             }
+
+             while (!process.StandardError.EndOfStream)
+             {
+                 var line = process.StandardError.ReadLine();
+                 if (string.IsNullOrWhiteSpace(line))
+                 {
+                     continue;
+                 }
+                 _logger.LogError(line);
                  lastLine = line;
              }
 
