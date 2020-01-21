@@ -8,7 +8,7 @@
     <ProjectReference Include="..\SymbolCollector.Core\SymbolCollector.Core.csproj" />
     <PackageReference Include="Sentry.AspNetCore" Version="2.0.0-beta7" />
     <PackageReference Include="Sentry.Serilog" Version="2.0.0-beta7" />
-    <PackageReference Include="Google.Cloud.Storage.V1" Version="2.3.0" />
+    <PackageReference Include="Google.Cloud.Storage.V1" Version="2.5.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="2.1.1" />
     <PackageReference Include="Serilog.Settings.Configuration" Version="3.1.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
@@ -30,6 +30,11 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="dev-data\done\android\c97658bb-c6fd-4844-be0e-2fd44b98d054\metadata.json" />
+    <_ContentIncludedByDefault Remove="dev-data\done\macos\690d22af-7156-419b-9c5b-72dcf6f1e14e\metadata.json" />
   </ItemGroup>
 
 </Project>
