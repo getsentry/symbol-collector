@@ -32,9 +32,4 @@
     </None>
   </ItemGroup>
 
-  <ItemGroup>
-    <_ContentIncludedByDefault Remove="dev-data\done\android\c97658bb-c6fd-4844-be0e-2fd44b98d054\metadata.json" />
-    <_ContentIncludedByDefault Remove="dev-data\done\macos\690d22af-7156-419b-9c5b-72dcf6f1e14e\metadata.json" />
-  </ItemGroup>
-
 </Project>
