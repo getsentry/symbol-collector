@@ -2,10 +2,12 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Google;
 using Google.Apis.Auth.OAuth2;
 using Google.Cloud.Storage.V1;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Sentry;
 
 namespace SymbolCollector.Server
 {
@@ -67,15 +69,28 @@ namespace SymbolCollector.Server
                 }
             }
 
-            var obj = await _storageClient!.UploadObjectAsync(
-                bucket: _options.BucketName,
-                objectName: name,
-                contentType: "application/octet-stream",
-                source: data,
-                options: new UploadObjectOptions { PredefinedAcl = PredefinedObjectAcl.PublicRead },
-                cancellationToken: cancellationToken);
+            try
+            {
+                var obj = await _storageClient!.UploadObjectAsync(
+                    bucket: _options.BucketName,
+                    objectName: name,
+                    contentType: "application/octet-stream",
+                    source: data,
+                    options: new UploadObjectOptions { PredefinedAcl = PredefinedObjectAcl.PublicRead },
+                    cancellationToken: cancellationToken);
 
-            _logger.LogInformation("Symbol {name} with {length} length stored {link}", name, data.Length, obj.MediaLink);
+                _logger.LogInformation("Symbol {name} with {length} length stored {link}", name, data.Length, obj.MediaLink);
+            }
+            catch (GoogleApiException e)
+            {
+                SentrySdk.ConfigureScope(s =>
+                {
+                    s.Contexts["google-api-error"] = e.Error;
+                    s.SetExtra("google-error-service-name", e.ServiceName);
+                    s.SetExtra("google-error-status-code", e.HttpStatusCode);
+                });
+                throw;
+            }
         }
     }
 }

@@ -128,6 +128,9 @@ namespace SymbolCollector.Server
             {
                 Directory.Delete(symsorterOutput, true);
             }
+
+            _logger.LogInformation("Batch {batchId} with name {friendlyName} completed successfully.",
+                batch.BatchId, batch.FriendlyName);
         }
 
          private bool SorterSymbols(string batchLocation, SymbolUploadBatch batch, string symsorterOutput)
