@@ -5,28 +5,6 @@ namespace SymbolCollector.Server
 {
     public class MetricsPublisher : IMetricsPublisher
     {
-        private class GaugeTimer : IDisposable
-        {
-            private readonly IStatsDPublisher _publisher;
-            private readonly string _bucket;
-            private readonly IDisposable _disposable;
-
-            public GaugeTimer(IStatsDPublisher publisher, string bucket)
-            {
-                _publisher = publisher;
-                _bucket = bucket;
-                _publisher.Increment(bucket);
-                _disposable = _publisher.StartTimer(bucket + "-timing");
-            }
-
-            public void Dispose()
-            {
-                _publisher.Decrement(_bucket);
-                _disposable.Dispose();
-            }
-        }
-
-        private const string BatchOpenBucket = "batch-open";
         private readonly IStatsDPublisher _publisher;
 
         public MetricsPublisher(IStatsDPublisher publisher) => _publisher = publisher;
@@ -35,25 +13,17 @@ namespace SymbolCollector.Server
 
         public void SentryEventProcessed() => _publisher.Increment("sentry-event-processed");
 
-        public IDisposable BeginOpenBatch()
-        {
-            _publisher.Increment(BatchOpenBucket);
-            return _publisher.StartTimer("batch-open-timing");
-        }
+        public IDisposable BeginOpenBatch() => _publisher.StartTimer("batch-open");
 
-        public IDisposable BeginCloseBatch()
-        {
-            _publisher.Decrement(BatchOpenBucket);
-            return _publisher.StartTimer("batch-open-timing");
-        }
+        public IDisposable BeginCloseBatch() => _publisher.StartTimer("batch-close");
 
-        public IDisposable BeginSymbolMissingCheck() => _publisher.StartTimer("symbol-is-missing");
+        public IDisposable BeginSymbolMissingCheck() => _publisher.StartTimer("symbol-check");
 
-        public void SymbolCheckExists() => _publisher.Increment("symbol-check-exists");
+        public void SymbolCheckExists() => _publisher.Increment("symbol-check-exists"); // TODO: Could be a tag to 'symbol-check'
 
-        public void SymbolCheckMissing() => _publisher.Increment("symbol-check-is-missing");
+        public void SymbolCheckMissing() => _publisher.Increment("symbol-check-missing"); // TODO: Could be a tag to 'symbol-check'
 
-        public IDisposable BeginUploadSymbol() => new GaugeTimer(_publisher, "symbol-upload");
+        public IDisposable BeginUploadSymbol() => _publisher.StartTimer("symbol-upload");
 
         public void FileStored(long size) => _publisher.Increment(size, "file-stored-bytes");
 
