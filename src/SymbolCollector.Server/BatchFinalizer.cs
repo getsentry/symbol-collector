@@ -70,7 +70,7 @@ namespace SymbolCollector.Server
             Directory.CreateDirectory(_symsorterOutputPath);
         }
 
-         public async Task CloseBatch(
+         public Task CloseBatch(
             string batchLocation,
             SymbolUploadBatch batch,
             CancellationToken token)
@@ -82,7 +82,7 @@ namespace SymbolCollector.Server
 
             if (SorterSymbols(batchLocation, batch, symsorterOutput))
             {
-                return;
+                return Task.CompletedTask;
             }
 
             if (_options.DeleteDoneDirectory)
