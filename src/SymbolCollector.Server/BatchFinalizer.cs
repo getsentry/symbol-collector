@@ -160,6 +160,7 @@ namespace SymbolCollector.Server
 
                 }, gcsUploadCancellation);
 
+            return Task.CompletedTask;
         }
 
          private bool SorterSymbols(string batchLocation, SymbolUploadBatch batch, string symsorterOutput)
