@@ -12,6 +12,7 @@ namespace SymbolCollector.Server
         public void DebugIdHashConflict() => _publisher.Increment("debug-id-hash-conflict");
 
         public void SentryEventProcessed() => _publisher.Increment("sentry-event-processed");
+        public IDisposable BeginGcsBatchUpload() => _publisher.StartTimer("gcs-upload");
 
         public IDisposable BeginOpenBatch() => _publisher.StartTimer("batch-open");
 
@@ -53,5 +54,6 @@ namespace SymbolCollector.Server
     public interface IMetricsPublisher : ISymbolControllerMetrics, ISymbolServiceMetrics
     {
         public void SentryEventProcessed();
+        IDisposable BeginGcsBatchUpload();
     }
 }

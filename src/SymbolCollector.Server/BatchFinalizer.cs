@@ -91,46 +91,75 @@ namespace SymbolCollector.Server
             }
 
             // TODO: Turn into a job.
-            var trimDown = symsorterOutput + "/";
-            async Task UploadToGoogle(string filePath)
+            var stopwatch = Stopwatch.StartNew();
+            var gcsUploadCancellation = CancellationToken.None;
+            var handle = _metrics.BeginGcsBatchUpload();
+            _ = Task.Run(async () =>
             {
-                var destinationName = filePath.Replace(trimDown, string.Empty);
-                await using var file = File.OpenRead(filePath);
-                await _gcsWriter.WriteAsync(destinationName, file,
-                    // The client disconnecting at this point shouldn't affect closing this batch.
-                    // This should anyway be a background job queued by the batch finalizer
-                    CancellationToken.None);
-            }
-
-            var counter = 0;
-            var groups =
-                from directory in Directory.GetDirectories(symsorterOutput, "*", SearchOption.AllDirectories)
-                from file in Directory.GetFiles(directory)
-                let c = counter++
-                group file by c / 20 // TODO: config
-                into fileGroup
-                select fileGroup.ToList();
-
-            try
-            {
-                foreach (var group in groups)
+                try
                 {
-                    await Task.WhenAll(group.Select(UploadToGoogle));
+                    var trimDown = symsorterOutput + "/";
+                    async Task UploadToGoogle(string filePath)
+                    {
+                        var destinationName = filePath.Replace(trimDown, string.Empty);
+                        await using var file = File.OpenRead(filePath);
+                        await _gcsWriter.WriteAsync(destinationName, file,
+                            // The client disconnecting at this point shouldn't affect closing this batch.
+                            // This should anyway be a background job queued by the batch finalizer
+                            gcsUploadCancellation);
+                    }
+
+                    var counter = 0;
+                    var groups =
+                        from directory in Directory.GetDirectories(symsorterOutput, "*", SearchOption.AllDirectories)
+                        from file in Directory.GetFiles(directory)
+                        let c = counter++
+                        group file by c / 20 // TODO: config
+                        into fileGroup
+                        select fileGroup.ToList();
+
+                    try
+                    {
+                        foreach (var group in groups)
+                        {
+                            await Task.WhenAll(group.Select(UploadToGoogle));
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.LogError(e, "Failed uploading files to GCS.");
+                        throw;
+                    }
+
+                    if (_options.DeleteSymsortedDirectory)
+                    {
+                        Directory.Delete(symsorterOutput, true);
+
+                        _logger.LogInformation("Batch {batchId} with name {friendlyName} deleted sorted directory {symsorterOutput}.",
+                            batch.BatchId, batch.FriendlyName, symsorterOutput);
+                    }
                 }
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "Failed uploading files to GCS.");
-                throw;
-            }
+                catch (Exception e)
+                {
+                    handle.Dispose();
+                    _logger.LogError(e, "Batch {batchId} with name {friendlyName} completed in {stopwatch}.",
+                        batch.BatchId, batch.FriendlyName, stopwatch.Elapsed);
+                    throw;
+                }
 
-            if (_options.DeleteSymsortedDirectory)
-            {
-                Directory.Delete(symsorterOutput, true);
-            }
+            }, gcsUploadCancellation)
+                .ContinueWith(t =>
+                {
+                    _logger.LogInformation("Batch {batchId} with name {friendlyName} completed in {stopwatch}.",
+                        batch.BatchId, batch.FriendlyName, stopwatch.Elapsed);
 
-            _logger.LogInformation("Batch {batchId} with name {friendlyName} completed successfully.",
-                batch.BatchId, batch.FriendlyName);
+                    if (t.IsFaulted)
+                    {
+                        _logger.LogError(t.Exception, "GCS upload Task failed.");
+                    }
+
+                }, gcsUploadCancellation);
+
         }
 
          private bool SorterSymbols(string batchLocation, SymbolUploadBatch batch, string symsorterOutput)
