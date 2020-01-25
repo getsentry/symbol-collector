@@ -2,7 +2,7 @@ using System;
 using System.Buffers;
 using System.Security.Cryptography;
 
-namespace SymbolCollector.Server
+namespace SymbolCollector.Core
 {
     public class SuffixGenerator : IDisposable
     {

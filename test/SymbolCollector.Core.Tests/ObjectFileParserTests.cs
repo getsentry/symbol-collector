@@ -61,8 +61,18 @@ namespace SymbolCollector.Core.Tests
             else
             {
                 AssertObjectFileResult(testCase.Expected, actual!);
+                if (testCase.ExpectedSymsorterFileName is {} name)
+                {
+                    Assert.Equal(name, actual!.ObjectKind.ToSymsorterFileName());
+                }
             }
         }
+
+        [Fact]
+        public void GetFallbackDebugId_NullArg_ReturnsNull() => Assert.Null(_fixture.GetSut().GetFallbackDebugId(null!));
+
+        [Fact]
+        public void GetFallbackDebugId_EmptyArg_ReturnsNull() => Assert.Null(_fixture.GetSut().GetFallbackDebugId(new byte[0]));
 
         private static void AssertObjectFileResult(ObjectFileResult expected, ObjectFileResult actual)
         {

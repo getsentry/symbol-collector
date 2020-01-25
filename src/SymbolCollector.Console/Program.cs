@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -27,9 +30,176 @@ namespace SymbolCollector.Console
             string? symsorter = null,
             string? bundleId = null,
             string? batchType = null,
+            bool dryrun = false,
             Uri? serverEndpoint = null)
         {
+            var cancellation = new CancellationTokenSource();
             var userAgent = "Console/" + typeof(Program).Assembly.GetName().Version;
+            var args = new Args(upload, check, path, symsorter, bundleId, batchType, serverEndpoint,
+                userAgent, dryrun,
+                cancellation);
+
+            Bootstrap(args);
+
+            try
+            {
+                await Run(args);
+            }
+            catch (Exception e)
+            {
+                WriteLine(e);
+                SentrySdk.CaptureException(e);
+            }
+            finally
+            {
+                await SentrySdk.FlushAsync(TimeSpan.FromSeconds(2));
+            }
+        }
+
+        private static async Task Run(Args args)
+        {
+            using var host = Startup.Init(s =>
+            {
+                if (args.ServerEndpoint != null)
+                {
+                    s.AddOptions()
+                        .PostConfigure<SymbolClientOptions>(o =>
+                        {
+                            o.UserAgent = args.UserAgent;
+                            o.BaseAddress = args.ServerEndpoint;
+                        });
+                }
+
+                s.AddSingleton(_metrics);
+                s.AddSingleton<ConsoleUploader>();
+            });
+
+            var logger = host.Services.GetRequiredService<ILogger<Program>>();
+            var uploader = host.Services.GetRequiredService<ConsoleUploader>();
+
+            switch (args.Upload)
+            {
+                case "device":
+                    if (args.BundleId is null)
+                    {
+                        WriteLine("A 'bundleId' is required to upload symbols from this device.");
+                        return;
+                    }
+
+                    SentrySdk.ConfigureScope(s =>
+                    {
+                        s.SetTag("friendly-name", args.BundleId);
+                    });
+
+                    logger.LogInformation("Uploading images from this device.");
+                    await uploader.StartUploadSymbols(
+                        DefaultSymbolPathProvider.GetDefaultPaths(),
+                        args.BundleId,
+                        args.Cancellation.Token);
+                    return;
+                case "directory":
+                    if (args.Path is null || args.BatchType is null || args.BundleId is null)
+                    {
+                        WriteLine(@"Missing required parameters:
+            --bundle-id MacOS_15.11
+            --batch-type macos
+            --path path/to/dir");
+                        return;
+                    }
+
+                    if (!Directory.Exists(args.Path))
+                    {
+                        WriteLine($@"Directory {args.Path} doesn't exist.");
+                        return;
+                    }
+
+                    logger.LogInformation("Uploading stuff from directory: '{path}'.", args.Path);
+                    await uploader.StartUploadSymbols(new[] {args.Path}, args.BundleId, args.Cancellation.Token);
+                    break;
+            }
+
+            if (args.Check is { } checkLib)
+            {
+                if (!File.Exists(args.Check))
+                {
+                    WriteLine($"File to check '{checkLib}' doesn't exist.");
+                    return;
+                }
+
+                logger.LogInformation("Checking '{checkLib}'.", checkLib);
+                var parser = host.Services.GetRequiredService<ObjectFileParser>();
+                if (parser.TryParse(checkLib, out var result) && result is {})
+                {
+                    if (result is FatMachOFileResult fatMachOFileResult)
+                    {
+                        WriteLine($"Fat Mach-O File:");
+                        Print(fatMachOFileResult);
+                        foreach (var innerFile in fatMachOFileResult.InnerFiles)
+                        {
+                            WriteLine("Inner file:");
+                            Print(innerFile);
+                        }
+                    }
+                    else
+                    {
+                        Print(result);
+                    }
+
+                    static void Print(ObjectFileResult r)
+                        => WriteLine($@"
+            Path: {r.Path}
+            CodeId: {r.CodeId}
+            DebugId: {r.DebugId}
+            BuildId: {r.UnifiedId}
+            BuildIdType: {r.BuildIdType}
+            File hash: {r.Hash}
+            File Format: {r.FileFormat}
+            Architecture: {r.Architecture}
+            ObjectKind: {r.ObjectKind}
+            ");
+                }
+                else
+                {
+                    WriteLine($"Failed to parse {checkLib}.");
+                }
+
+                return;
+            }
+
+            if (args.Symsorter is { } && args.BatchType is {} && args.BundleId is {} && args.Path is {})
+            {
+                if (string.IsNullOrWhiteSpace(args.BundleId))
+                {
+                    WriteLine("Missing bundle Id");
+                    return;
+                }
+
+                if (!Directory.Exists(args.Symsorter))
+                {
+                    WriteLine($"Directory '{args.Symsorter}' doesn't exist.");
+                    return;
+                }
+
+                var sorter = host.Services.GetRequiredService<Symsorter>();
+
+                await sorter.ProcessBundle(
+                    new SymsorterParameters(args.Path, args.BatchType, args.BundleId, args.DryRun),
+                    args.Symsorter,
+                    args.Cancellation.Token);
+
+                return;
+            }
+
+            WriteLine(@"Parameters:
+            --upload device --bundle-id id
+            --upload directory --bundle-id id --batch-type type --path ~/location
+                Valid Batch Types are: android, macos, ios, watchos, android
+            --symsorter path/to/symbols --bundle-id macos_10.11 --batch-type macos --path output/path [--dryrun true]
+            --check file-to-check");
+        }
+
+        private static void Bootstrap(Args args)
+        {
             using var _ = SentrySdk.Init(o =>
             {
                 o.Debug = true;
@@ -58,202 +228,61 @@ namespace SymbolCollector.Console
                 SentrySdk.ConfigureScope(s =>
                 {
                     s.SetTag("app", typeof(Program).Assembly.GetName().Name);
-                    s.SetTag("user-agent", userAgent);
-                    if (serverEndpoint is {})
+                    s.SetTag("user-agent", args.UserAgent);
+                    if (args.ServerEndpoint is {})
                     {
-                        s.SetTag("server-endpoint", serverEndpoint.AbsoluteUri);
+                        s.SetTag("server-endpoint", args.ServerEndpoint.AbsoluteUri);
                     }
 
-                    s.SetExtra("parameters", new
-                    {
-                        upload,
-                        check,
-                        path,
-                        symsorter,
-                        bundleId,
-                        batchType,
-                        endpoint = serverEndpoint
-                    });
+                    s.Contexts["parameters"] = args;
                 });
             }
 
-            var cancellation = new CancellationTokenSource();
             CancelKeyPress += (s, ev) =>
             {
                 _metrics.Write(Out);
                 WriteLine("Shutting down.");
                 ev.Cancel = false;
-                cancellation.Cancel();
+                args.Cancellation.Cancel();
             };
-
-            try
-            {
-                using var host = Startup.Init(s =>
-                {
-                    if (serverEndpoint != null)
-                    {
-                        s.AddOptions()
-                            .PostConfigure<SymbolClientOptions>(o =>
-                            {
-                                o.UserAgent = userAgent;
-                                o.BaseAddress = serverEndpoint;
-                            });
-                    }
-
-                    s.AddSingleton(_metrics);
-                    s.AddSingleton<ConsoleUploader>();
-                });
-
-                var logger = host.Services.GetRequiredService<ILogger<Program>>();
-                var uploader = host.Services.GetRequiredService<ConsoleUploader>();
-
-                switch (upload)
-                {
-                    case "device":
-                        if (bundleId is null)
-                        {
-                            WriteLine("A 'bundleId' is required to upload symbols from this device.");
-                            return;
-                        }
-
-                        SentrySdk.ConfigureScope(s =>
-                        {
-                            s.SetTag("friendly-name", bundleId);
-                        });
-
-                        logger.LogInformation("Uploading images from this device.");
-                        await uploader.StartUploadSymbols(
-                            DefaultSymbolPathProvider.GetDefaultPaths(),
-                            bundleId,
-                            cancellation.Token);
-                        return;
-                    case "directory":
-                        if (path is null || batchType is null || bundleId is null)
-                        {
-                            WriteLine(@"Missing required parameters:
---bundle-id MacOS_15.11
---batch-type macos
---path path/to/dir");
-                            return;
-                        }
-
-                        if (!Directory.Exists(path))
-                        {
-                            WriteLine($@"Directory {path} doesn't exist.");
-                            return;
-                        }
-
-                        logger.LogInformation("Uploading stuff from directory: '{path}'.", path);
-                        await uploader.StartUploadSymbols(new[] {path}, bundleId, cancellation.Token);
-                        break;
-                }
-
-                var parser = host.Services.GetRequiredService<ObjectFileParser>();
-
-                if (check is { } checkLib)
-                {
-                    if (!File.Exists(check))
-                    {
-                        WriteLine($"File to check '{checkLib}' doesn't exist.");
-                        return;
-                    }
-
-                    logger.LogInformation("Checking '{checkLib}'.", checkLib);
-                    if (parser.TryParse(checkLib, out var result) && result is {})
-                    {
-                        if (result is FatMachOFileResult fatMachOFileResult)
-                        {
-                            WriteLine($"Fat Mach-O File:");
-                            Print(fatMachOFileResult);
-                            foreach (var innerFile in fatMachOFileResult.InnerFiles)
-                            {
-                                WriteLine("Inner file:");
-                                Print(innerFile);
-                            }
-                        }
-                        else
-                        {
-                            Print(result);
-                        }
-
-                        static void Print(ObjectFileResult r)
-                            => WriteLine($@"
-Path: {r.Path}
-CodeId: {r.CodeId}
-DebugId: {r.DebugId}
-BuildId: {r.UnifiedId}
-BuildIdType: {r.BuildIdType}
-File hash: {r.Hash}
-File Format: {r.FileFormat}
-Architecture: {r.Architecture}
-ObjectKind: {r.ObjectKind}
-");
-                    }
-                    else
-                    {
-                        WriteLine($"Failed to parse {checkLib}.");
-                    }
-
-                    return;
-                }
-
-                if (symsorter is { })
-                {
-                    if (string.IsNullOrWhiteSpace(bundleId))
-                    {
-                        WriteLine("Missing bundle Id");
-                        return;
-                    }
-
-                    if (!Directory.Exists(symsorter))
-                    {
-                        WriteLine($"Directory '{symsorter}' doesn't exist.");
-                        return;
-                    }
-
-                    foreach (var file in Directory.GetFiles(symsorter, "*", SearchOption.AllDirectories))
-                    {
-                        if (parser.TryParse(file, out var result) && result is {})
-                        {
-                            if (result is FatMachOFileResult fatMachOFileResult)
-                            {
-                                foreach (var innerFile in fatMachOFileResult.InnerFiles)
-                                {
-                                    WriteLine($"{innerFile.DebugId[..2]}/{innerFile.DebugId[2..].Replace("-", "")}");
-                                }
-                            }
-                            else
-                            {
-                                if (result.FileFormat == FileFormat.Elf)
-                                {
-                                    WriteLine($"{result.CodeId[..2]}/{result.CodeId[2..].Replace("-", "")}");
-                                }
-                                else
-                                {
-                                    WriteLine($"{result.DebugId[..2]}/{result.DebugId[2..].Replace("-", "")}");
-                                }
-                            }
-                        }
-                    }
-
-                    return;
-                }
-
-                WriteLine(@"Parameters:
---upload device --bundle-id id
---upload directory --bundle-id id --batch-type type --path ~/location
-    Valid Batch Types are: android, macos, ios, watchos, android
---check file-to-check");
-            }
-            catch (Exception e)
-            {
-                WriteLine(e);
-                SentrySdk.CaptureException(e);
-            }
-            finally
-            {
-                await SentrySdk.FlushAsync(TimeSpan.FromSeconds(2));
-            }
         }
+    }
+
+    internal class Args
+    {
+        public Args(
+            string? upload,
+            string? check,
+            string? path,
+            string? symsorter,
+            string? bundleId,
+            string? batchType,
+            Uri? serverEndpoint,
+            string userAgent,
+            bool dryRun,
+            CancellationTokenSource cancellation)
+        {
+            Upload = upload;
+            Check = check;
+            Path = path;
+            Symsorter = symsorter;
+            BundleId = bundleId;
+            BatchType = batchType;
+            ServerEndpoint = serverEndpoint;
+            UserAgent = userAgent;
+            DryRun = dryRun;
+            Cancellation = cancellation;
+        }
+
+        public string? Upload { get; }
+        public string? Check { get; }
+        public string? Path { get; }
+        public string? Symsorter { get; }
+        public string? BundleId { get; }
+        public string? BatchType { get; }
+        public Uri? ServerEndpoint { get; }
+        public string UserAgent { get; }
+        public bool DryRun { get; }
+        public CancellationTokenSource Cancellation { get; }
     }
 }

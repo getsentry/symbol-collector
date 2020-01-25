@@ -16,7 +16,7 @@ namespace SymbolCollector.Core
         public FatHeader Header { get; set; }
         public IEnumerable<string> MachOFiles { get; set; } = Enumerable.Empty<string>();
 
-        internal IEnumerable<string> FilesToDelete = Enumerable.Empty<string>();
+        internal IEnumerable<string> FilesToDelete { get; set; } = Enumerable.Empty<string>();
 
         public void Dispose()
         {

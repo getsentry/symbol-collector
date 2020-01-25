@@ -476,7 +476,7 @@ namespace SymbolCollector.Core
             return hash;
         }
 
-        private string? GetFallbackDebugId(byte[] textSection)
+        internal string? GetFallbackDebugId(IReadOnlyList<byte> textSection)
         {
             if (textSection is null)
             {
@@ -484,13 +484,13 @@ namespace SymbolCollector.Core
                 return null;
             }
 
-            if (textSection.Length == 0)
+            if (textSection.Count == 0)
             {
                 _logger.LogWarning(".text section is 0 bytes long.");
                 return null;
             }
 
-            var length = Math.Min(4096, textSection.Length);
+            var length = Math.Min(4096, textSection.Count);
             var uuidSize = 16;
             var hash = new byte[uuidSize];
             for (var i = 0; i < length; i++)

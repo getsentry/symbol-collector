@@ -72,12 +72,19 @@ namespace SymbolCollector.Core.Tests
         public void ParseHeader_BufferTooSmall_ReturnsNull(byte[] input) => Assert.Null(FatBinaryReader.ParseHeader(input));
 
         [Fact]
-        public void GetFatArches_()
+        public void GetFatArches_ExpectedFatFilesArchitectures()
         {
             var arches = FatBinaryReader.GetFatArches(_fatMachO, 2).ToList();
             Assert.Equal(2, arches.Count);
             Assert.True(arches[0].Is64Bit());
             Assert.False(arches[1].Is64Bit());
+        }
+
+        [Fact]
+        public void TryLoad_InvalidPath_ReturnsNull()
+        {
+            var target = new FatBinaryReader();
+            Assert.False(target.TryLoad("invalid", out _));
         }
     }
 }

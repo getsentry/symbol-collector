@@ -36,30 +36,27 @@ namespace SymbolCollector.Server
     // file named: meta
     // {"name":"System.Net.Http.Native.dylib","arch":"x86_64","file_format":"macho"}
     // folder called /refs/ with an empty file named batch.FriendlyName
-    public class SymsorterBatchFinalizer : IBatchFinalizer, IDisposable
+    public class SymsorterBatchFinalizer : IBatchFinalizer
     {
-        private readonly SuffixGenerator _generator;
         private readonly SymbolServiceOptions _options;
         private readonly IMetricsPublisher _metrics;
         private readonly ILogger<SymsorterBatchFinalizer> _logger;
         private readonly ISymbolGcsWriter _gcsWriter;
-        private readonly SuffixGenerator _suffixGenerator;
+        private readonly BundleIdGenerator _bundleIdGenerator;
         private readonly string _symsorterOutputPath;
 
         public SymsorterBatchFinalizer(
             IMetricsPublisher metrics,
             IOptions<SymbolServiceOptions> options,
             ISymbolGcsWriter gcsWriter,
-            SuffixGenerator suffixGenerator,
-            SuffixGenerator generator,
+            BundleIdGenerator bundleIdGenerator,
             ILogger<SymsorterBatchFinalizer> logger)
         {
             _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
             _metrics = metrics;
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _generator = generator;
             _gcsWriter = gcsWriter ?? throw new ArgumentNullException(nameof(gcsWriter));
-            _suffixGenerator = suffixGenerator ?? throw new ArgumentNullException(nameof(suffixGenerator));
+            _bundleIdGenerator = bundleIdGenerator;
 
             if (!File.Exists(_options.SymsorterPath))
             {
@@ -80,7 +77,7 @@ namespace SymbolCollector.Server
 
             Directory.CreateDirectory(symsorterOutput);
 
-            if (SorterSymbols(batchLocation, batch, symsorterOutput))
+            if (SortSymbols(batchLocation, batch, symsorterOutput))
             {
                 return Task.CompletedTask;
             }
@@ -163,9 +160,9 @@ namespace SymbolCollector.Server
             return Task.CompletedTask;
         }
 
-         private bool SorterSymbols(string batchLocation, SymbolUploadBatch batch, string symsorterOutput)
+         private bool SortSymbols(string batchLocation, SymbolUploadBatch batch, string symsorterOutput)
          {
-             var bundleId = ToBundleId(batch.FriendlyName);
+             var bundleId = _bundleIdGenerator.CreateBundleId(batch.FriendlyName);
              var symsorterPrefix = batch.BatchType.ToSymsorterPrefix();
 
              var args = $"-zz -o {symsorterOutput} --prefix {symsorterPrefix} --bundle-id {bundleId} {batchLocation}";
@@ -237,17 +234,6 @@ namespace SymbolCollector.Server
 
              _logger.LogInformation("Symsorter processed: {count}", match.Groups["count"].Value);
              return false;
-
-             string ToBundleId(string friendlyName)
-             {
-                 var invalids = Path.GetInvalidFileNameChars().Concat(" ").ToArray();
-                 return string.Join("_",
-                         friendlyName.Split(invalids, StringSplitOptions.RemoveEmptyEntries)
-                             .Append(_generator.Generate()))
-                     .TrimEnd('.');
-             }
          }
-
-         public void Dispose() => _suffixGenerator.Dispose();
     }
 }
