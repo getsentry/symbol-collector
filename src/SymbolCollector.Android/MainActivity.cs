@@ -33,8 +33,12 @@ namespace SymbolCollector.Android
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
-            // Set our view from the "main" layout resource
             SetContentView(Resource.Layout.activity_main);
+
+            var footerText = (TextView)base.FindViewById(Resource.Id.footer);
+            var versionName = Application.Context.ApplicationContext.PackageManager
+                .GetPackageInfo(Application.Context.ApplicationContext.PackageName, 0).VersionName;
+            footerText.Text = $"Version: {versionName}\n" + footerText.Text;
 
             var uploader = _serviceProvider.GetRequiredService<AndroidUploader>();
             var metrics = _serviceProvider.GetRequiredService<ClientMetrics>();

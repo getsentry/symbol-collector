@@ -6,6 +6,7 @@ namespace SymbolCollector.Server
     public class MetricsPublisher : IMetricsPublisher
     {
         private readonly IStatsDPublisher _publisher;
+        private const string BatchOpenCurrentCount = "batch-current";
 
         public MetricsPublisher(IStatsDPublisher publisher) => _publisher = publisher;
 
@@ -14,9 +15,29 @@ namespace SymbolCollector.Server
         public void SentryEventProcessed() => _publisher.Increment("sentry-event-processed");
         public IDisposable BeginGcsBatchUpload() => _publisher.StartTimer("gcs-upload");
 
-        public IDisposable BeginOpenBatch() => _publisher.StartTimer("batch-open");
+        public IDisposable BeginOpenBatch()
+        {
+            _publisher.Increment(BatchOpenCurrentCount);
+            return _publisher.StartTimer("batch-open");
+        }
 
-        public IDisposable BeginCloseBatch() => _publisher.StartTimer("batch-close");
+        public IDisposable BeginCloseBatch()
+        {
+            var timing = _publisher.StartTimer(BatchOpenCurrentCount);
+
+            return new DisposeCallback(() =>
+            {
+                _publisher.Decrement("batch-open-current");
+                timing.Dispose();
+            });
+        }
+
+        private class DisposeCallback : IDisposable
+        {
+            private readonly Action _onDispose;
+            public DisposeCallback(Action onDispose) => _onDispose = onDispose;
+            public void Dispose() => _onDispose?.Invoke();
+        }
 
         public IDisposable BeginSymbolMissingCheck() => _publisher.StartTimer("symbol-check");
 
