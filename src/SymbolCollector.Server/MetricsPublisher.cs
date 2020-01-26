@@ -23,11 +23,11 @@ namespace SymbolCollector.Server
 
         public IDisposable BeginCloseBatch()
         {
-            var timing = _publisher.StartTimer(BatchOpenCurrentCount);
+            var timing = _publisher.StartTimer("batch-close");
 
             return new DisposeCallback(() =>
             {
-                _publisher.Decrement("batch-open-current");
+                _publisher.Decrement(BatchOpenCurrentCount);
                 timing.Dispose();
             });
         }

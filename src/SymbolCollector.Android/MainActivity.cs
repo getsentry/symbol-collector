@@ -85,7 +85,7 @@ namespace SymbolCollector.Android
 
         private void Unfocus()
         {
-            if (CurrentFocus.WindowToken is {} windowToken)
+            if (CurrentFocus?.WindowToken is {} windowToken)
             {
                 (GetSystemService(InputMethodService) as InputMethodManager)
                     ?.HideSoftInputFromWindow(windowToken, 0);

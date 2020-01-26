@@ -21,6 +21,6 @@ namespace SymbolCollector.Core
         public string CreateBundleId(string friendlyName) =>
             _removeCharsRegex
                 .Replace(friendlyName, "_")
-                .Trim('.') + _suffixGenerator.Generate();
+                .Trim('.') + "_" + _suffixGenerator.Generate();
     }
 }
