@@ -88,10 +88,14 @@ namespace SymbolCollector.Core
             services.AddSingleton<ClientMetrics>();
             services.AddSingleton<FatBinaryReader>();
             services.AddSingleton<ClientMetrics>();
+            services.AddSingleton<Symsorter>();
 
             services.AddOptions<SymbolClientOptions>()
                 .Configure<IConfiguration>((o, f) => f.Bind("SymbolClient", o))
                 .Validate(o => o.BaseAddress is {}, "BaseAddress is required.");
+
+            services.AddOptions<SymsorterOptions>()
+                .Configure<IConfiguration>((o, f) => f.Bind("Symsorter", o));
 
             services.AddSingleton<SymbolClientOptions>(c =>
                 c.GetRequiredService<IOptions<SymbolClientOptions>>().Value);

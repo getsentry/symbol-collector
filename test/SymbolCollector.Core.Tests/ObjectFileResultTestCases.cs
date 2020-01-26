@@ -25,7 +25,8 @@ namespace SymbolCollector.Core.Tests
                     BuildIdType.GnuBuildId,
                     ObjectKind.Library,
                     FileFormat.Elf,
-                    Architecture.X86)
+                    Architecture.X86),
+                ExpectedSymsorterFileName = "executable"
             };
 
             yield return new ObjectFileResultTestCase("TestFiles/libdl.so")
@@ -40,7 +41,8 @@ namespace SymbolCollector.Core.Tests
                     BuildIdType.GnuBuildId,
                     ObjectKind.Library,
                     FileFormat.Elf,
-                    Architecture.X86)
+                    Architecture.X86),
+                ExpectedSymsorterFileName = "executable"
             };
 
             yield return new ObjectFileResultTestCase("TestFiles/System.Net.Security.Native.so")
@@ -55,7 +57,8 @@ namespace SymbolCollector.Core.Tests
                     BuildIdType.GnuBuildId,
                     ObjectKind.Library,
                     FileFormat.Elf,
-                    Architecture.Amd64)
+                    Architecture.Amd64),
+                ExpectedSymsorterFileName = "executable"
             };
 
             yield return new ObjectFileResultTestCase("TestFiles/System.Net.Http.Native.so")
@@ -70,7 +73,8 @@ namespace SymbolCollector.Core.Tests
                     BuildIdType.GnuBuildId,
                     ObjectKind.Library,
                     FileFormat.Elf,
-                    Architecture.Amd64)
+                    Architecture.Amd64),
+                ExpectedSymsorterFileName = "executable"
             };
 
             yield return new ObjectFileResultTestCase("TestFiles/System.Globalization.Native.so")
@@ -85,7 +89,8 @@ namespace SymbolCollector.Core.Tests
                     BuildIdType.GnuBuildId,
                     ObjectKind.Library,
                     FileFormat.Elf,
-                    Architecture.Arm)
+                    Architecture.Arm),
+                ExpectedSymsorterFileName = "executable"
             };
 
             yield return new ObjectFileResultTestCase("TestFiles/libxamarin-app.so")
@@ -100,7 +105,8 @@ namespace SymbolCollector.Core.Tests
                     BuildIdType.GnuBuildId,
                     ObjectKind.Library,
                     FileFormat.Elf,
-                    Architecture.Arm)
+                    Architecture.Arm),
+                ExpectedSymsorterFileName = "executable"
             };
 
             yield return new ObjectFileResultTestCase("TestFiles/libxamarin-app-arm64-v8a.so")
@@ -115,7 +121,8 @@ namespace SymbolCollector.Core.Tests
                     BuildIdType.GnuBuildId,
                     ObjectKind.Debug,
                     FileFormat.Elf,
-                    Architecture.Arm64)
+                    Architecture.Arm64),
+                ExpectedSymsorterFileName = "debuginfo"
             };
 
             yield return new ObjectFileResultTestCase("TestFiles/libqcbassboost.so")
@@ -130,7 +137,8 @@ namespace SymbolCollector.Core.Tests
                     BuildIdType.TextSectionHash,
                     ObjectKind.Library,
                     FileFormat.Elf,
-                    Architecture.Arm)
+                    Architecture.Arm),
+                ExpectedSymsorterFileName = "executable"
             };
 
             yield return new ObjectFileResultTestCase("TestFiles/System.Net.Http.Native.dylib")
@@ -145,7 +153,8 @@ namespace SymbolCollector.Core.Tests
                     BuildIdType.Uuid,
                     ObjectKind.Library,
                     FileFormat.MachO,
-                    Architecture.Amd64)
+                    Architecture.Amd64),
+                ExpectedSymsorterFileName = "executable"
             };
 
             yield return new ObjectFileResultTestCase("TestFiles/libutil.dylib")
@@ -160,7 +169,8 @@ namespace SymbolCollector.Core.Tests
                     BuildIdType.Uuid,
                     ObjectKind.Library,
                     FileFormat.MachO,
-                    Architecture.Amd64)
+                    Architecture.Amd64),
+                ExpectedSymsorterFileName = "executable"
             };
 
             yield return new ObjectFileResultTestCase("TestFiles/libswiftObjectiveC.dylib")
@@ -210,6 +220,7 @@ namespace SymbolCollector.Core.Tests
     public class ObjectFileResultTestCase
     {
         public ObjectFileResult? Expected { get; set; }
+        public string? ExpectedSymsorterFileName { get; set; }
         public string Path { get; }
 
         public ObjectFileResultTestCase(string path) => Path = path;

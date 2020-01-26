@@ -1,0 +1,28 @@
+using Xunit;
+
+namespace SymbolCollector.Core.Tests
+{
+    public class BundleIdGeneratorTests
+    {
+        [Fact]
+        public void CreateBundleId_SameFriendlyName_DifferentBundleIdsWithoutSpacesAndSlashes()
+        {
+            using var suffixGenerator = new SuffixGenerator();
+            var target = new BundleIdGenerator(suffixGenerator);
+
+            var friendlyName = @".this is the // """"
+? * a friendly name";
+            var actual = target.CreateBundleId(friendlyName);
+            Assert.NotEqual(target.CreateBundleId(friendlyName), actual);
+            Assert.False(actual.EndsWith("."));
+            Assert.False(actual.StartsWith("."));
+            Assert.DoesNotContain("/", actual);
+            Assert.DoesNotContain(" ", actual);
+            Assert.DoesNotContain("\"", actual);
+            Assert.DoesNotContain("?", actual);
+            Assert.DoesNotContain("*", actual);
+            Assert.DoesNotContain(@"
+", actual);
+        }
+    }
+}

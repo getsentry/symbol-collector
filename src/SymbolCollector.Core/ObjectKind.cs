@@ -66,6 +66,18 @@ namespace SymbolCollector.Core
         FatMachO
     }
 
+    public static class FileFormatExtensions
+    {
+        public static string? ToSymsorterFileFormat(this FileFormat fileFormat) =>
+            fileFormat switch
+            {
+                FileFormat.Elf => "elf",
+                FileFormat.MachO => "macho",
+                FileFormat.FatMachO => null, // not symsorted. Inner files are.
+                _ => null
+            };
+    }
+
     public enum Architecture
     {
         Unknown,
@@ -96,5 +108,17 @@ namespace SymbolCollector.Core
         ArmV7m,
         ArmV7em,
         ArmUnknown
+    }
+
+    public static class ArchitectureExtensions
+    {
+        public static string ToSymsorterArchitecture(this Architecture architecture) =>
+            architecture switch
+            {
+                Architecture.Amd64 => "x86_64",
+                Architecture.Amd64Unknown => "x86_64",
+                // TODO: add other mappings from symbolic
+                var a => a.ToString().ToLower()
+            };
     }
 }

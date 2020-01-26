@@ -27,6 +27,7 @@ namespace SymbolCollector.Server
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddSingleton<SuffixGenerator>();
+            services.AddSingleton<BundleIdGenerator>();
 
             // TODO: When replacing this to a real (external storage backed), fix lifetimes below (scoped)
             services.AddSingleton<ISymbolService, InMemorySymbolService>();
