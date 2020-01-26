@@ -72,21 +72,6 @@ namespace SymbolCollector.Server
             SymbolUploadBatch batch,
             CancellationToken token)
         {
-            // get logger factory and create a logger for symsorter
-            var symsorterOutput = Path.Combine(_symsorterOutputPath, batch.BatchId.ToString());
-
-            Directory.CreateDirectory(symsorterOutput);
-
-            if (SortSymbols(batchLocation, batch, symsorterOutput))
-            {
-                return Task.CompletedTask;
-            }
-
-            if (_options.DeleteDoneDirectory)
-            {
-                Directory.Delete(batchLocation, true);
-            }
-
             // TODO: Turn into a job.
             var stopwatch = Stopwatch.StartNew();
             var gcsUploadCancellation = CancellationToken.None;
@@ -95,7 +80,23 @@ namespace SymbolCollector.Server
             {
                 try
                 {
+                    // get logger factory and create a logger for symsorter
+                    var symsorterOutput = Path.Combine(_symsorterOutputPath, batch.BatchId.ToString());
+
+                    Directory.CreateDirectory(symsorterOutput);
+
+                    if (SortSymbols(batchLocation, batch, symsorterOutput))
+                    {
+                        return;
+                    }
+
+                    if (_options.DeleteDoneDirectory)
+                    {
+                        Directory.Delete(batchLocation, true);
+                    }
+
                     var trimDown = symsorterOutput + "/";
+
                     async Task UploadToGoogle(string filePath)
                     {
                         var destinationName = filePath.Replace(trimDown, string.Empty);
@@ -132,16 +133,20 @@ namespace SymbolCollector.Server
                     {
                         Directory.Delete(symsorterOutput, true);
 
-                        _logger.LogInformation("Batch {batchId} with name {friendlyName} deleted sorted directory {symsorterOutput}.",
+                        _logger.LogInformation(
+                            "Batch {batchId} with name {friendlyName} deleted sorted directory {symsorterOutput}.",
                             batch.BatchId, batch.FriendlyName, symsorterOutput);
                     }
                 }
                 catch (Exception e)
                 {
-                    handle.Dispose();
                     _logger.LogError(e, "Batch {batchId} with name {friendlyName} completed in {stopwatch}.",
                         batch.BatchId, batch.FriendlyName, stopwatch.Elapsed);
                     throw;
+                }
+                finally
+                {
+                    handle.Dispose();
                 }
 
             }, gcsUploadCancellation)
