@@ -179,7 +179,8 @@ namespace SymbolCollector.Server
                      UseShellExecute = false,
                      RedirectStandardOutput = true,
                      RedirectStandardError = true,
-                     CreateNoWindow = true
+                     CreateNoWindow = true,
+                     Environment = { {"RUST_BACKTRACE","1"} }
                  }
              };
 
