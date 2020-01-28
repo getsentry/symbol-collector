@@ -124,6 +124,7 @@ To update the version of .NET Core/Mono on this repository a few files have to b
 
 # Resources
 
+* [Droidcon talk that foreshadows this project](https://player.vimeo.com/video/380844400)
 * [Blog post about native crash reporting support](https://blog.sentry.io/2019/09/26/fixing-native-apps-with-sentry).
 * [Support Android native (NDK) crashes](https://blog.sentry.io/2019/11/25/adding-native-support-to-our-android-sdk/)
 * Sentry's [Symbolicator project](https://github.com/getsentry/symbolicator).
