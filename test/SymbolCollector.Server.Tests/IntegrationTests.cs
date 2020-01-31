@@ -283,6 +283,69 @@ namespace SymbolCollector.Server.Tests
         }
 
         [Fact]
+        public async Task UploadSymbol_GzipedSymbol_SymbolAdded()
+        {
+            var registration = new BatchStartRequestModel
+            {
+                BatchFriendlyName = "Test batch", BatchType = BatchType.Android
+            };
+
+            var batchId = Guid.NewGuid();
+            var client = _fixture.GetClient();
+            var resp = await client.SendAsync(
+                new HttpRequestMessage(HttpMethod.Post, SymbolsController.Route + $"/batch/{batchId}/start")
+                {
+                    Content = new JsonContent(registration)
+                });
+
+            resp.AssertStatusCode(HttpStatusCode.OK);
+            var symbolService = _fixture.ServiceProvider.GetRequiredService<ISymbolService>();
+            var batch = await symbolService.GetBatch(batchId, CancellationToken.None);
+            Assert.Equal(batchId, batch!.BatchId);
+            Assert.Empty(batch.Symbols);
+            Assert.Equal(registration.BatchType, batch!.BatchType);
+            Assert.False(batch.IsClosed);
+            Assert.Equal(registration.BatchFriendlyName, batch!.FriendlyName);
+
+            var testFile = Path.Combine("TestFiles", "libxamarin-app-arm64-v8a.so");
+            const string unifiedId = "7621750937f30bf8e756cec46b960391f9f57b26";
+
+            var fileBytes = File.ReadAllBytes(testFile);
+            resp = await client.SendAsync(
+                new HttpRequestMessage(HttpMethod.Post, SymbolsController.Route + $"/batch/{batchId}/upload/")
+                {
+                    Content = new MultipartFormDataContent
+                    {
+                        {
+                            new GzipContent(new ByteArrayContent(fileBytes)), testFile, Path.GetFileName(testFile)
+                        }
+                    }
+                });
+            resp.AssertStatusCode(HttpStatusCode.Created);
+
+            var symbol = await symbolService.GetSymbol(unifiedId, CancellationToken.None);
+            Assert.Equal(Path.GetFileName(testFile), symbol!.Name);
+            Assert.Equal("5fb23797a8cb482bac325eabdcb3d7e70b89fe0ec51035010e9be3a7b76fff84", symbol.Hash);
+            Assert.Equal(unifiedId, symbol.UnifiedId);
+            Assert.EndsWith( Path.GetFileName(testFile), symbol.Path);
+            var baseWorking = _fixture.ServiceProvider.GetRequiredService<IOptions<SymbolServiceOptions>>().Value.BaseWorkingPath;
+            Assert.StartsWith(Path.Combine(baseWorking!, "processing", batch.BatchType.ToSymsorterPrefix(), batchId.ToString()), symbol.Path);
+            Assert.Equal(batchId, symbol.BatchIds.Single());
+            var actualBytes = File.ReadAllBytes(symbol.Path);
+            Assert.True(fileBytes.SequenceEqual(actualBytes));
+
+            Assert.Equal(FileFormat.Elf, symbol.FileFormat);
+            // TODO: Add the other info
+            // Assert.Equal(BuildIdType.GnuBuildId, symbol.BuildIdType);
+            Assert.Equal(Architecture.Arm64, symbol.Arch);
+
+            batch = await symbolService.GetBatch(batchId, CancellationToken.None);
+            var storedSymbol = Assert.Single(batch!.Symbols).Value;
+            Assert.Equal(symbol.UnifiedId, storedSymbol.UnifiedId);
+            Assert.Equal(symbol.Hash, storedSymbol.Hash);
+        }
+
+        [Fact]
         public async Task Batch_StartToEnd()
         {
             var registration = new BatchStartRequestModel

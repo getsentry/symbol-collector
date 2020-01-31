@@ -305,8 +305,12 @@ namespace SymbolCollector.Server
                 if (section.Headers.TryGetValue("Content-Encoding", out var contentType)
                     && contentType == "gzip")
                 {
-                    var gzipStream = new GZipStream(section.Body, CompressionMode.Decompress);
+                    await using var gzipStream = new GZipStream(section.Body, CompressionMode.Decompress);
                     await gzipStream.CopyToAsync(outputStream);
+                }
+                else
+                {
+                    await section.Body.CopyToAsync(outputStream);
                 }
 
                 outputStream.Position = 0; // TODO: needs rewinding?
