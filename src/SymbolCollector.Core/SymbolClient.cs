@@ -204,7 +204,7 @@ namespace SymbolCollector.Core
                         new HttpRequestMessage(HttpMethod.Post, uploadUrl)
                         {
                             Version = _httpVersion,
-                            Content = new MultipartFormDataContent {{new StreamContent(file), fileName, fileName}}
+                            Content = new MultipartFormDataContent {{new GzipContent(new StreamContent(file)), fileName, fileName}}
                         }, token);
 
                     if (_logger.IsEnabled(LogLevel.Debug))
