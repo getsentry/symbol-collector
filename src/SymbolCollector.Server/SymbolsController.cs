@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Threading;
@@ -294,20 +295,31 @@ namespace SymbolCollector.Server
             MultipartSection section, ContentDispositionHeaderValue contentDisposition,
             ModelStateDictionary modelState, long sizeLimitBytes)
         {
-            var memoryStream = new MemoryStream();
+            Stream outputStream = new MemoryStream();
             string? fileName = null;
             HttpStatusCode? code = null;
             try
             {
                 fileName = contentDisposition.FileName.Value;
-                await section.Body.CopyToAsync(memoryStream);
-                memoryStream.Position = 0; // TODO: needs rewinding?
 
-                if (memoryStream.Length == 0)
+                if (section.Headers.TryGetValue("Content-Encoding", out var contentType)
+                    && contentType == "gzip")
+                {
+                    await using var gzipStream = new GZipStream(section.Body, CompressionMode.Decompress);
+                    await gzipStream.CopyToAsync(outputStream);
+                }
+                else
+                {
+                    await section.Body.CopyToAsync(outputStream);
+                }
+
+                outputStream.Position = 0; // TODO: needs rewinding?
+
+                if (outputStream.Length == 0)
                 {
                     modelState.AddModelError("File", "The file is empty.");
                 }
-                else if (memoryStream.Length > sizeLimitBytes)
+                else if (outputStream.Length > sizeLimitBytes)
                 {
                     var payloadMegabytesSizeLimit = sizeLimitBytes / 1048576;
                     var limitMegabytesSizeLimit = sizeLimitBytes / 1048576;
@@ -324,7 +336,7 @@ namespace SymbolCollector.Server
                 }
                 else
                 {
-                    return (fileName, memoryStream, null);
+                    return (fileName, outputStream, null);
                 }
             }
             catch (Exception ex)
@@ -333,7 +345,7 @@ namespace SymbolCollector.Server
                 _logger.LogError(ex, "Failed to process file {file}", fileName);
             }
 
-            return ("error", memoryStream, code);
+            return ("error", outputStream, code);
         }
     }
 
