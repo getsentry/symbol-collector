@@ -221,6 +221,7 @@ namespace SymbolCollector.Android
 
         public MainActivity()
         {
+#pragma warning disable 618
             _friendlyName = $"Android:{Build.Manufacturer}-{Build.CpuAbi}-{Build.Model}";
             StructUtsname? uname = null;
             try
@@ -289,6 +290,8 @@ namespace SymbolCollector.Android
                 {
                     s.SetTag("cpu-abi2", Build.CpuAbi2);
                 }
+#pragma warning restore 618
+
 #if DEBUG
                 s.SetTag("build-type", "debug");
 #elif RELEASE
