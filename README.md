@@ -12,9 +12,10 @@
 [![codecov](https://codecov.io/gh/getsentry/symbol-collector/branch/main/graph/badge.svg)](https://codecov.io/gh/getsentry/symbol-collector)
 [![Discord Chat](https://img.shields.io/discord/621778831602221064.svg)](https://discord.gg/Ww9hbqr)
 
-This is a work in progress to collect system symbols from different devices like Android, macOS, Linux, etc.
+Collect system symbols from different devices like Android, macOS, Linux, etc.
 It involves a server that writes the symbols to Google cloud storage and a set of clients.
 
+![Symbol Collector on a device farm](.github/SymbolCollector.png?raw=true "Devices")
 
 ## Uploading symbols
 
