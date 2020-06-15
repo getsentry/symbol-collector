@@ -6,10 +6,10 @@
 </p>
 
 # Symbol Collector
-[![Travis](https://travis-ci.com/getsentry/symbol-collector.svg?branch=master)](https://travis-ci.com/getsentry/symbol-collector)
-[![AppVeyor](https://ci.appveyor.com/api/projects/status/gldfulfd5kk2stst/branch/master?svg=true)](https://ci.appveyor.com/project/sentry/symbol-collector/branch/master)
-[![Tests](https://img.shields.io/appveyor/tests/sentry/symbol-collector/master?compact_message)](https://ci.appveyor.com/project/sentry/symbol-collector/branch/master/tests)
-[![codecov](https://codecov.io/gh/getsentry/symbol-collector/branch/master/graph/badge.svg)](https://codecov.io/gh/getsentry/symbol-collector)
+[![Travis](https://travis-ci.com/getsentry/symbol-collector.svg?branch=main)](https://travis-ci.com/getsentry/symbol-collector)
+[![AppVeyor](https://ci.appveyor.com/api/projects/status/gldfulfd5kk2stst/branch/main?svg=true)](https://ci.appveyor.com/project/sentry/symbol-collector/branch/main)
+[![Tests](https://img.shields.io/appveyor/tests/sentry/symbol-collector/main?compact_message)](https://ci.appveyor.com/project/sentry/symbol-collector/branch/main/tests)
+[![codecov](https://codecov.io/gh/getsentry/symbol-collector/branch/main/graph/badge.svg)](https://codecov.io/gh/getsentry/symbol-collector)
 [![Discord Chat](https://img.shields.io/discord/621778831602221064.svg)](https://discord.gg/Ww9hbqr)
 
 This is a work in progress to collect system symbols from different devices like Android, macOS, Linux, etc.
