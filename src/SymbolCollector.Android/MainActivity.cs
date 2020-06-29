@@ -221,7 +221,9 @@ namespace SymbolCollector.Android
 
         public MainActivity()
         {
+#pragma warning disable 618
             _friendlyName = $"Android:{Build.Manufacturer}-{Build.CpuAbi}-{Build.Model}";
+#pragma warning restore 618
             StructUtsname? uname = null;
             try
             {
@@ -268,7 +270,9 @@ namespace SymbolCollector.Android
             SentrySdk.ConfigureScope(s =>
             {
                 s.User.Id = Build.Id;
+#pragma warning disable 618
                 s.Contexts.Device.Architecture = Build.CpuAbi;
+#pragma warning restore 618
                 s.Contexts.Device.Brand = Build.Brand;
                 s.Contexts.Device.Manufacturer = Build.Manufacturer;
                 s.Contexts.Device.Model = Build.Model;
@@ -282,12 +286,18 @@ namespace SymbolCollector.Android
                 s.SetTag("host", Build.Host);
                 s.SetTag("device", Build.Device);
                 s.SetTag("product", Build.Product);
+#pragma warning disable 618
                 s.SetTag("cpu-abi", Build.CpuAbi);
+#pragma warning restore 618
                 s.SetTag("fingerprint", Build.Fingerprint);
 
+#pragma warning disable 618
                 if (!string.IsNullOrEmpty(Build.CpuAbi2))
+#pragma warning restore 618
                 {
+#pragma warning disable 618
                     s.SetTag("cpu-abi2", Build.CpuAbi2);
+#pragma warning restore 618
                 }
 #if DEBUG
                 s.SetTag("build-type", "debug");

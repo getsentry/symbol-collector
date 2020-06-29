@@ -29,7 +29,6 @@ namespace SymbolCollector.Core
             FatBinaryReader? fatBinaryReader = null)
         {
             if (fatBinaryReader is null
-                && logger is {}
                 && RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
                 logger.LogWarning("No FatBinaryReader was provided while running on macOS.");
