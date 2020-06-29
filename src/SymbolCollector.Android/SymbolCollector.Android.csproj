@@ -91,7 +91,6 @@
     <PackageReference Include="Sentry.Extensions.Logging" Version="2.1.4" />
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
     <PackageReference Include="Xamarin.Google.Android.Material" Version="1.0.0.1" />
-<!--    <PackageReference Include="Xamarin.Android.Support.Design" Version="25.4.0.2" />-->
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SymbolCollector.Core\SymbolCollector.Core.csproj">
