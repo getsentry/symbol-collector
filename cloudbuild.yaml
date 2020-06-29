@@ -16,12 +16,12 @@ steps:
     '.'
   ]
 
-# Only tag "latest" when on master
+# Only tag "latest" when on main
 - name: 'gcr.io/cloud-builders/docker'
   entrypoint: 'bash'
   args: [
     '-c',
-    '[[ "$BRANCH_NAME" == "master" ]] && docker push us.gcr.io/$PROJECT_ID/symbol-collector:latest || true',
+    '[[ "$BRANCH_NAME" == "main" ]] && docker push us.gcr.io/$PROJECT_ID/symbol-collector:latest || true',
   ]
 
 - name: "us.gcr.io/$PROJECT_ID/symbol-collector:$COMMIT_SHA"

@@ -170,7 +170,7 @@ namespace SymbolCollector.Server
              var bundleId = _bundleIdGenerator.CreateBundleId(batch.FriendlyName);
              var symsorterPrefix = batch.BatchType.ToSymsorterPrefix();
 
-             var args = $"-zz -o {symsorterOutput} --prefix {symsorterPrefix} --bundle-id {bundleId} {batchLocation}";
+             var args = $"--ignore-errors -zz -o {symsorterOutput} --prefix {symsorterPrefix} --bundle-id {bundleId} {batchLocation}";
 
              var process = new Process
              {
@@ -209,7 +209,7 @@ namespace SymbolCollector.Server
                  {
                      continue;
                  }
-                 _logger.LogError(line);
+                 _logger.LogWarning(line);
                  lastLine = line;
              }
 

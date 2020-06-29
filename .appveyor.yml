@@ -6,7 +6,7 @@ environment:
 test: off
 branches:
   only:
-    - master
+    - main
     - /^release\/.*$/
 build_script:
   - cmd: build.cmd
