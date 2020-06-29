@@ -209,7 +209,7 @@ namespace SymbolCollector.Server
                  {
                      continue;
                  }
-                 _logger.LogError(line);
+                 _logger.LogWarning(line);
                  lastLine = line;
              }
 
