@@ -11,16 +11,12 @@ namespace SymbolCollector.Core
 
         public BundleIdGenerator(SuffixGenerator suffixGenerator)
         {
-            var invalidChars = Path.GetInvalidFileNameChars()
-                .Concat(new[] {' ', '*', '?', '"', '\n'});
-            var pattern = Regex.Escape(new string(invalidChars.ToArray()));
-            _removeCharsRegex = new Regex($"[{pattern}]", RegexOptions.Compiled);
+            // https://github.com/getsentry/symbolicator/blob/e21a5b103a1fcedd61c48f8120f661282ee67bc7/symsorter/src/utils.rs#L12
+            _removeCharsRegex = new Regex("[^a-zA-Z0-9.,-]+", RegexOptions.Compiled);
             _suffixGenerator = suffixGenerator;
         }
 
         public string CreateBundleId(string friendlyName) =>
-            _removeCharsRegex
-                .Replace(friendlyName, "_")
-                .Trim('.') + "_" + _suffixGenerator.Generate();
+            $"{_removeCharsRegex.Replace(friendlyName, "_").Trim('.', '_')}_{_suffixGenerator.Generate()}";
     }
 }
