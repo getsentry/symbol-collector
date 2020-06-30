@@ -249,6 +249,9 @@ namespace SymbolCollector.Android
                 o.SendDefaultPii = true;
                 o.AddInAppExclude("Polly");
                 o.AddInAppExclude("Mono");
+
+                o.AddExceptionFilterForType<OperationCanceledException>();
+
                 // TODO: This needs to be built-in
                 o.BeforeSend += @event =>
                 {
