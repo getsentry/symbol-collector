@@ -7,6 +7,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Sentry;
+using Sentry.Protocol;
 using SymbolCollector.Core;
 using SymbolCollector.Server.Models;
 
@@ -75,6 +77,13 @@ namespace SymbolCollector.Server
             // TODO: Turn into a job.
             var stopwatch = Stopwatch.StartNew();
             var gcsUploadCancellation = CancellationToken.None;
+
+            // Since we'll run the closing of the batch on a background thread, trigger an event
+            // (that will be dropped since Debug events are not captured in prod)
+            // in order to get the Sentry SDK to read the request data and add to the Scope. In case there's an error
+            // when closing the batch, the request data will already be available to add to outgoing events.
+            SentrySdk.CaptureMessage("To read Request data on the request thread", SentryLevel.Debug);
+
             var handle = _metrics.BeginGcsBatchUpload();
             _ = Task.Run(async () =>
             {
