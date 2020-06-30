@@ -82,6 +82,7 @@ namespace SymbolCollector.Server
                     {
                         o.AddInAppExclude("Serilog");
                         o.AddInAppExclude("Google");
+                        o.AddExceptionFilterForType<OperationCanceledException>();
                         o.BeforeSend = @event =>
                         {
                             // Stop raising warning that endpoint was overriden

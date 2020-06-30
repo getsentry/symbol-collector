@@ -207,6 +207,9 @@ namespace SymbolCollector.Console
                 o.AttachStacktrace = true;
                 o.SendDefaultPii = true;
                 o.AddInAppExclude("Polly");
+
+                o.AddExceptionFilterForType<OperationCanceledException>();
+
                 o.Dsn = new Dsn(Dsn);
                 // TODO: This needs to be built-in
                 o.BeforeSend += @event =>
