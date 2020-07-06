@@ -240,7 +240,7 @@ namespace SymbolCollector.Server
              _logger.LogInformation("Symsorter finished in {timespan} and logged last: {lastLine}",
                  sw.Elapsed, lastLine);
 
-             var match = Regex.Match(lastLine, "Done: sorted (?<count>\\d+) debug files");
+             var match = Regex.Match(lastLine, "Sorted (?<count>\\d+) debug files");
              if (!match.Success)
              {
                  _logger.LogError("Last line didn't match success: {lastLine}", lastLine);
