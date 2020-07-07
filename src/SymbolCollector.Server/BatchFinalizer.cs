@@ -189,7 +189,7 @@ namespace SymbolCollector.Server
                      RedirectStandardOutput = true,
                      RedirectStandardError = true,
                      CreateNoWindow = true,
-                     Environment = { {"RUST_BACKTRACE","1"} }
+                     Environment = { {"RUST_BACKTRACE","full"} }
                  }
              };
 
