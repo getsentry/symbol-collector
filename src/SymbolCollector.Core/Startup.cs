@@ -1,7 +1,6 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Net.Http;
 using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,7 +10,6 @@ using Microsoft.Extensions.Options;
 using Polly;
 using Polly.Extensions.Http;
 using Sentry;
-using Sentry.Protocol;
 
 namespace SymbolCollector.Core
 {
@@ -49,37 +47,19 @@ namespace SymbolCollector.Core
                             TimeSpan.FromSeconds(15)
 #endif
                         },
-                        onRetry: async (result, span, retryAttempt, context) =>
+                        (result, span, retryAttempt, context) =>
                         {
-                            var sentry = s.GetService<ISentryClient>();
-                            var evt = new SentryEvent(result.Exception)
-                            {
-                                Level = SentryLevel.Warning,
-                                LogEntry = new LogEntry
-                                {
-                                    Formatted =
-                                        $"Waiting {span} following attempt {retryAttempt} failed HTTP request.",
-                                    Message =
-                                        "Waiting {span} following attempt {retryAttempt} failed HTTP request.",
-                                }
-                            };
-                            evt.SetTag("Tag", "Polly");
-                            if (result.Result is { } request)
-                            {
-                                const string traceIdKey = "TraceIdentifier";
-                                if (request.Headers.TryGetValues(traceIdKey, out var traceIds))
-                                {
-                                    evt.SetTag(traceIdKey, traceIds.FirstOrDefault() ?? "unknown");
-                                }
+                            var sentry = s.GetService<IHub>();
 
-                                evt.SetTag("StatusCode", request.StatusCode.ToString());
-                                var responseBody = await request.Content.ReadAsStringAsync();
-                                if (!string.IsNullOrWhiteSpace(responseBody))
-                                {
-                                    evt.SetExtra("body", responseBody);
-                                }
+                            var data = new Dictionary<string, string> {{"PollyRetryCount", retryAttempt.ToString()}};
+                            if (result.Exception is Exception e)
+                            {
+                                data.Add("exception", e.ToString());
                             }
-                            sentry.CaptureEvent(evt);
+
+                            sentry.AddBreadcrumb(
+                                $"Waiting {span} following attempt {retryAttempt} failed HTTP request.",
+                                data: data);
                         }
                     ));
 
