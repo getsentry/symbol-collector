@@ -146,6 +146,8 @@ namespace SymbolCollector.Server
                             "Batch {batchId} with name {friendlyName} deleted sorted directory {symsorterOutput}.",
                             batch.BatchId, batch.FriendlyName, symsorterOutput);
                     }
+
+                    SentrySdk.CaptureMessage($"Batch {batch.BatchId} with name {batch.FriendlyName} completed in {stopwatch.Elapsed}");
                 }
                 catch (Exception e)
                 {

@@ -92,6 +92,12 @@ namespace SymbolCollector.Server
                                 return null;
                             }
 
+                            // Don't capture Debug events
+                            if (@event.Level == SentryLevel.Debug)
+                            {
+                                return null;
+                            }
+
                             return @event;
                         };
                     });
