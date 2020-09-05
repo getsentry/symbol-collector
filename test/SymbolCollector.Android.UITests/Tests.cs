@@ -4,6 +4,7 @@ using NUnit.Framework;
 using NUnit.Framework.Internal;
 using Xamarin.UITest;
 using Xamarin.UITest.Android;
+using Xamarin.UITest.Queries;
 
 namespace SymbolCollector.Android.UITests
 {
@@ -39,7 +40,18 @@ namespace SymbolCollector.Android.UITests
         [Test]
         public void AppLaunches()
         {
-            _app.Screenshot("First screen.");
+            var serverUrl = Environment.GetEnvironmentVariable("SYMBOL_COLLECTOR_SERVER_URL");
+            if (string.IsNullOrWhiteSpace(serverUrl))
+            {
+                serverUrl = "https://symbol-collector.test";
+            }
+
+            static AppQuery serverUrlTextBox(AppQuery query) => query.Id("server_url");
+            _app.ClearText(serverUrlTextBox);
+            _app.EnterText(serverUrlTextBox, serverUrl);
+            _app.Tap(query => query.Id("btnUpload").Button());
+            _app.WaitForElement(query => query.Id("done_text"));
+            _app.Screenshot("Done");
         }
     }
 }
