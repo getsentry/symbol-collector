@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Android.App;
@@ -73,7 +73,7 @@ namespace SymbolCollector.Android
                 var uploadTask = uploader.StartUpload(_friendlyName, source.Token);
                 var updateUiTask = StartUiUpdater(source.Token, metrics);
 
-                await Upload(uploadTask, updateUiTask, metrics, cancelButton, uploadButton, source);
+                await UploadAsync(uploadTask, updateUiTask, metrics, cancelButton, uploadButton, source);
             }
 
             void OnCancelButtonOnClick(object sender, EventArgs args)
@@ -92,7 +92,7 @@ namespace SymbolCollector.Android
             }
         }
 
-        private async Task Upload(
+        private async Task UploadAsync(
             Task uploadTask,
             Task updateUiTask,
             ClientMetrics metrics,
