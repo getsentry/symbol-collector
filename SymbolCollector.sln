@@ -1,22 +1,25 @@
-﻿Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.26124.0
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30523.141
 MinimumVisualStudioVersion = 15.0.26124.0
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SymbolCollector.Console", "src\SymbolCollector.Console\SymbolCollector.Console.csproj", "{906FC560-942F-4070-ADFB-3BFBE4A1DB35}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SymbolCollector.Console", "src\SymbolCollector.Console\SymbolCollector.Console.csproj", "{906FC560-942F-4070-ADFB-3BFBE4A1DB35}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SymbolCollector.Core", "src\SymbolCollector.Core\SymbolCollector.Core.csproj", "{5C904261-899C-4B8F-BEA4-5CF93FEDD505}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SymbolCollector.Core", "src\SymbolCollector.Core\SymbolCollector.Core.csproj", "{5C904261-899C-4B8F-BEA4-5CF93FEDD505}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SymbolCollector.Server", "src\SymbolCollector.Server\SymbolCollector.Server.csproj", "{74300E52-A354-4527-B666-4A0D3660C1EA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SymbolCollector.Server", "src\SymbolCollector.Server\SymbolCollector.Server.csproj", "{74300E52-A354-4527-B666-4A0D3660C1EA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SymbolCollector.Android", "src\SymbolCollector.Android\SymbolCollector.Android.csproj", "{B66B3A36-CE78-4278-998B-D43F6E0C63E8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SymbolCollector.Server.Tests", "test\SymbolCollector.Server.Tests\SymbolCollector.Server.Tests.csproj", "{DE51CE4F-0F0A-4573-B274-F94562DADDCF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SymbolCollector.Server.Tests", "test\SymbolCollector.Server.Tests\SymbolCollector.Server.Tests.csproj", "{DE51CE4F-0F0A-4573-B274-F94562DADDCF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SymbolCollector.Core.Tests", "test\SymbolCollector.Core.Tests\SymbolCollector.Core.Tests.csproj", "{7F808549-0A33-4858-B01C-D278ABEFECAA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SymbolCollector.Core.Tests", "test\SymbolCollector.Core.Tests\SymbolCollector.Core.Tests.csproj", "{7F808549-0A33-4858-B01C-D278ABEFECAA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ELFSharp", "src\ELFSharp\ELFSharp.csproj", "{2B98ED62-A2B8-436D-8D4C-F805DDEA712A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ELFSharp", "src\ELFSharp\ELFSharp.csproj", "{2B98ED62-A2B8-436D-8D4C-F805DDEA712A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SymbolCollector.Android.UITests", "test\SymbolCollector.Android.UITests\SymbolCollector.Android.UITests.csproj", "{48BB7372-FB0A-46DE-B66C-FDE208EB0508}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SymbolCollector.Tizen.Wearable", "src\SymbolCollector.Tizen.Wearable\SymbolCollector.Tizen.Wearable.csproj", "{7B3AD4D4-EEFE-4384-9693-F359DBBBC5D9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -26,9 +29,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{906FC560-942F-4070-ADFB-3BFBE4A1DB35}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -127,5 +127,23 @@ Global
 		{48BB7372-FB0A-46DE-B66C-FDE208EB0508}.Release|x64.Build.0 = Release|Any CPU
 		{48BB7372-FB0A-46DE-B66C-FDE208EB0508}.Release|x86.ActiveCfg = Release|Any CPU
 		{48BB7372-FB0A-46DE-B66C-FDE208EB0508}.Release|x86.Build.0 = Release|Any CPU
+		{7B3AD4D4-EEFE-4384-9693-F359DBBBC5D9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7B3AD4D4-EEFE-4384-9693-F359DBBBC5D9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7B3AD4D4-EEFE-4384-9693-F359DBBBC5D9}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{7B3AD4D4-EEFE-4384-9693-F359DBBBC5D9}.Debug|x64.Build.0 = Debug|Any CPU
+		{7B3AD4D4-EEFE-4384-9693-F359DBBBC5D9}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{7B3AD4D4-EEFE-4384-9693-F359DBBBC5D9}.Debug|x86.Build.0 = Debug|Any CPU
+		{7B3AD4D4-EEFE-4384-9693-F359DBBBC5D9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7B3AD4D4-EEFE-4384-9693-F359DBBBC5D9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7B3AD4D4-EEFE-4384-9693-F359DBBBC5D9}.Release|x64.ActiveCfg = Release|Any CPU
+		{7B3AD4D4-EEFE-4384-9693-F359DBBBC5D9}.Release|x64.Build.0 = Release|Any CPU
+		{7B3AD4D4-EEFE-4384-9693-F359DBBBC5D9}.Release|x86.ActiveCfg = Release|Any CPU
+		{7B3AD4D4-EEFE-4384-9693-F359DBBBC5D9}.Release|x86.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {593E0AE5-F0D6-4874-AE4C-ECDCF05DF23A}
 	EndGlobalSection
 EndGlobal
