@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Android.App;
@@ -30,21 +30,21 @@ namespace SymbolCollector.Android
         private readonly IHost _host;
         private readonly IServiceProvider _serviceProvider;
 
-        protected override void OnCreate(Bundle savedInstanceState)
+        protected override void OnCreate(Bundle? savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
             SetContentView(Resource.Layout.activity_main);
 
-            var footerText = (TextView)base.FindViewById(Resource.Id.footer);
-            var versionName = Application.Context.ApplicationContext.PackageManager
-                .GetPackageInfo(Application.Context.ApplicationContext.PackageName, 0).VersionName;
+            var footerText = (TextView)base.FindViewById(Resource.Id.footer)!;
+            var versionName = Application.Context.ApplicationContext?.PackageManager?
+                .GetPackageInfo(Application.Context.ApplicationContext?.PackageName ?? "", 0)?.VersionName;
             footerText.Text = $"Version: {versionName}\n" + footerText.Text;
 
             var uploader = _serviceProvider.GetRequiredService<AndroidUploader>();
             var metrics = _serviceProvider.GetRequiredService<ClientMetrics>();
-            var uploadButton = (Button)base.FindViewById(Resource.Id.btnUpload);
-            var cancelButton = (Button)base.FindViewById(Resource.Id.btnCancel);
-            var url = (EditText)base.FindViewById(Resource.Id.server_url);
+            var uploadButton = (Button)base.FindViewById(Resource.Id.btnUpload)!;
+            var cancelButton = (Button)base.FindViewById(Resource.Id.btnCancel)!;
+            var url = (EditText)base.FindViewById(Resource.Id.server_url)!;
             var source = new CancellationTokenSource();
 
             url.FocusChange += (sender, args) =>
@@ -73,7 +73,7 @@ namespace SymbolCollector.Android
                 var uploadTask = uploader.StartUpload(_friendlyName, source.Token);
                 var updateUiTask = StartUiUpdater(source.Token, metrics);
 
-                await Upload(uploadTask, updateUiTask, metrics, cancelButton, uploadButton, source);
+                await UploadAsync(uploadTask, updateUiTask, metrics, cancelButton, uploadButton, source);
             }
 
             void OnCancelButtonOnClick(object sender, EventArgs args)
@@ -92,7 +92,7 @@ namespace SymbolCollector.Android
             }
         }
 
-        private async Task Upload(
+        private async Task UploadAsync(
             Task uploadTask,
             Task updateUiTask,
             ClientMetrics metrics,
@@ -100,13 +100,13 @@ namespace SymbolCollector.Android
             View uploadButton,
             CancellationTokenSource source)
         {
-            var container = base.FindViewById(Resource.Id.metrics_container);
+            var container = base.FindViewById(Resource.Id.metrics_container)!;
             container.Visibility = ViewStates.Visible;
 
-            var doneText = (TextView)base.FindViewById(Resource.Id.done_text);
-            var ranForLabel = (TextView)base.FindViewById(Resource.Id.ran_for_label);
-            var ranForContainer = base.FindViewById(Resource.Id.ran_for_container);
-            var ranForView = base.FindViewById(Resource.Id.ran_for_view);
+            var doneText = (TextView)base.FindViewById(Resource.Id.done_text)!;
+            var ranForLabel = (TextView)base.FindViewById(Resource.Id.ran_for_label)!;
+            var ranForContainer = base.FindViewById(Resource.Id.ran_for_container)!;
+            var ranForView = base.FindViewById(Resource.Id.ran_for_view)!;
 
             try
             {
@@ -146,18 +146,18 @@ namespace SymbolCollector.Android
         private Task StartUiUpdater(CancellationToken token, ClientMetrics metrics) =>
             Task.Run(async () =>
             {
-                var uploadedCount = (TextView)base.FindViewById(Resource.Id.uploaded_count);
-                var startedTime = (TextView)base.FindViewById(Resource.Id.started_time);
-                var alreadyExisted = (TextView)base.FindViewById(Resource.Id.already_existed);
-                var filesProcessed = (TextView)base.FindViewById(Resource.Id.files_processed);
-                var successfullyUpload = (TextView)base.FindViewById(Resource.Id.successfully_upload);
-                var elfFiles = (TextView)base.FindViewById(Resource.Id.elf_files);
-                var failedParsing = (TextView)base.FindViewById(Resource.Id.failed_parsing);
-                var failedUploading = (TextView)base.FindViewById(Resource.Id.failed_uploading);
-                var jobsInFlight = (TextView)base.FindViewById(Resource.Id.jobs_in_flight);
-                var directoryNotFound = (TextView)base.FindViewById(Resource.Id.directory_not_found);
-                var fileNotFound = (TextView)base.FindViewById(Resource.Id.file_not_found);
-                var unauthorizedAccess = (TextView)base.FindViewById(Resource.Id.unauthorized_access);
+                var uploadedCount = (TextView)base.FindViewById(Resource.Id.uploaded_count)!;
+                var startedTime = (TextView)base.FindViewById(Resource.Id.started_time)!;
+                var alreadyExisted = (TextView)base.FindViewById(Resource.Id.already_existed)!;
+                var filesProcessed = (TextView)base.FindViewById(Resource.Id.files_processed)!;
+                var successfullyUpload = (TextView)base.FindViewById(Resource.Id.successfully_upload)!;
+                var elfFiles = (TextView)base.FindViewById(Resource.Id.elf_files)!;
+                var failedParsing = (TextView)base.FindViewById(Resource.Id.failed_parsing)!;
+                var failedUploading = (TextView)base.FindViewById(Resource.Id.failed_uploading)!;
+                var jobsInFlight = (TextView)base.FindViewById(Resource.Id.jobs_in_flight)!;
+                var directoryNotFound = (TextView)base.FindViewById(Resource.Id.directory_not_found)!;
+                var fileNotFound = (TextView)base.FindViewById(Resource.Id.file_not_found)!;
+                var unauthorizedAccess = (TextView)base.FindViewById(Resource.Id.unauthorized_access)!;
 
                 while (!token.IsCancellationRequested)
                 {
@@ -198,8 +198,8 @@ namespace SymbolCollector.Android
                 e = ae.InnerExceptions[0];
             }
 
-            var uploadButton = (Button)base.FindViewById(Resource.Id.btnUpload);
-            var cancelButton = (Button)base.FindViewById(Resource.Id.btnCancel);
+            var uploadButton = (Button)base.FindViewById(Resource.Id.btnUpload)!;
+            var cancelButton = (Button)base.FindViewById(Resource.Id.btnCancel)!;
 
             var lastEvent = SentrySdk.LastEventId;
             // TODO: SentryId.Empty should operator overload ==
@@ -207,16 +207,19 @@ namespace SymbolCollector.Android
                 ? e?.ToString() ?? "Something didn't quite work."
                 : $"Sentry id {lastEvent}:\n{e}";
 
-            var builder = new AlertDialog.Builder(this);
-            builder
+            var builder = new AlertDialog.Builder(this)
                 .SetTitle("Error")
-                .SetMessage(message)
-                .SetNeutralButton("Ironic eh?", (o, eventArgs) =>
+                ?.SetMessage(message)
+                ?.SetNeutralButton("Ironic eh?", (o, eventArgs) =>
                 {
                     uploadButton.Enabled = true;
                     cancelButton.Enabled = false;
-                })
-                .Show();
+                });
+            if (builder is null)
+            {
+                throw new InvalidOperationException("Couldn't get a dialog built.");
+            }
+            builder.Show();
         }
 
         public MainActivity()
@@ -228,7 +231,7 @@ namespace SymbolCollector.Android
             try
             {
                 uname = Os.Uname();
-                _friendlyName += $"-kernel-{uname.Release}";
+                _friendlyName += $"-kernel-{uname?.Release ?? "??"}";
             }
             catch
             {
