@@ -10,14 +10,22 @@ using ELFSharp.ELF.Sections;
 using ELFSharp.ELF.Segments;
 using ELFSharp.MachO;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using FileType = ELFSharp.ELF.FileType;
 using ELFMachine = ELFSharp.ELF.Machine;
 using MachOMachine = ELFSharp.MachO.Machine;
 
 namespace SymbolCollector.Core
 {
+    public class ObjectFileParserOptions
+    {
+        public bool UseFallbackObjectFileParser { get; set; } = true;
+        public bool IncludeHash { get; set; } = true;
+    }
+
     public class ObjectFileParser
     {
+        private readonly ObjectFileParserOptions _options;
         private readonly FatBinaryReader? _fatBinaryReader;
         private readonly ILogger<ObjectFileParser> _logger;
 
@@ -25,6 +33,7 @@ namespace SymbolCollector.Core
 
         public ObjectFileParser(
             ClientMetrics metrics,
+            IOptions<ObjectFileParserOptions> options,
             ILogger<ObjectFileParser> logger,
             FatBinaryReader? fatBinaryReader = null)
         {
@@ -33,7 +42,7 @@ namespace SymbolCollector.Core
             {
                 logger.LogWarning("No FatBinaryReader was provided while running on macOS.");
             }
-
+            _options = options.Value;
             _fatBinaryReader = fatBinaryReader;
             _logger = logger;
             Metrics = metrics;
@@ -44,48 +53,9 @@ namespace SymbolCollector.Core
             var parsed = false;
             try
             {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                {
-                    // On macOS look for Mach-O first
-                    if (TryParseMachOFile(file, out var machO) && machO is {})
-                    {
-                        result = machO;
-                        parsed = true;
-                    }
-                    else if (TryParseFatMachO(file, out var fatMachO) && fatMachO is {})
-                    {
-                        result = fatMachO;
-                        parsed = true;
-                    }
-                    else if (TryParseElfFile(file, out var elf) && elf is {})
-                    {
-                        result = elf;
-                        parsed = true;
-                    }
-                    else
-                    {
-                        result = null;
-                    }
-                }
-                else if (TryParseElfFile(file, out var elf) && elf is {})
-                {
-                    result = elf;
-                    parsed = true;
-                }
-                else if (TryParseMachOFile(file, out var machO) && machO is {})
-                {
-                    result = machO;
-                    parsed = true;
-                }
-                else if (TryParseFatMachO(file, out var fatMachO) && fatMachO is {})
-                {
-                    result = fatMachO;
-                    parsed = true;
-                }
-                else
-                {
-                    result = null;
-                }
+                parsed = RuntimeInformation.IsOSPlatform(OSPlatform.OSX)
+                    ? TryMachO(file, out result)
+                    : TryElf(file, out result);
             }
             catch (UnauthorizedAccessException ua)
             {
@@ -117,6 +87,56 @@ namespace SymbolCollector.Core
             }
 
             Metrics.FileProcessed();
+            return parsed;
+        }
+        private bool TryElf(string file, out ObjectFileResult? result)
+        {
+            var parsed = false;
+            result = null;
+            if (TryParseElfFile(file, out var elf) && elf is {})
+            {
+                result = elf;
+                parsed = true;
+            }
+            else if (_options.UseFallbackObjectFileParser)
+            {
+                if (TryParseMachOFile(file, out var machO) && machO is {})
+                {
+                    result = machO;
+                    parsed = true;
+                }
+                else if (TryParseFatMachO(file, out var fatMachO) && fatMachO is {})
+                {
+                    result = fatMachO;
+                    parsed = true;
+                }
+            }
+
+            return parsed;
+        }
+
+        private bool TryMachO(string file, out ObjectFileResult? result)
+        {
+            result = null;
+            var parsed = false;
+            // On macOS look for Mach-O first
+            if (TryParseMachOFile(file, out var machO) && machO is {})
+            {
+                result = machO;
+                parsed = true;
+            }
+            else if (TryParseFatMachO(file, out var fatMachO) && fatMachO is {})
+            {
+                result = fatMachO;
+                parsed = true;
+            }
+            else if (_options.UseFallbackObjectFileParser
+                     && TryParseElfFile(file, out var elf) && elf is {})
+            {
+                result = elf;
+                parsed = true;
+            }
+
             return parsed;
         }
 
@@ -461,17 +481,22 @@ namespace SymbolCollector.Core
             };
         }
 
-        private static string GetSha256Hash(string file)
+        private string GetSha256Hash(string file)
         {
-            using var algorithm = SHA256.Create();
-            var hashingAlgo = algorithm.ComputeHash(File.ReadAllBytes(file));
-            var builder = new StringBuilder();
-            foreach (var b in hashingAlgo)
+            var hash = string.Empty;
+            if (_options.IncludeHash)
             {
-                builder.Append(b.ToString("x2"));
+                using var algorithm = SHA256.Create();
+                var hashingAlgo = algorithm.ComputeHash(File.ReadAllBytes(file));
+                var builder = new StringBuilder();
+                foreach (var b in hashingAlgo)
+                {
+                    builder.Append(b.ToString("x2"));
+                }
+
+                hash = builder.ToString();
             }
 
-            var hash = builder.ToString();
             return hash;
         }
 

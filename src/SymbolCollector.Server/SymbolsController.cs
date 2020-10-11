@@ -104,11 +104,11 @@ namespace SymbolCollector.Server
             return NoContent();
         }
 
-        [HttpHead(Route + "/batch/{batchId}/check/{unifiedId}/{hash}")]
+        [HttpHead(Route + "/batch/{batchId}/check/{unifiedId}/{hash?}")]
         public async Task<IActionResult> IsSymbolMissing(
             [FromRoute] Guid batchId,
             [FromRoute] string unifiedId,
-            [FromRoute] string hash,
+            [FromRoute] string? hash,
             CancellationToken token)
         {
             using var _ = _metrics.BeginSymbolMissingCheck();

@@ -283,6 +283,52 @@ namespace SymbolCollector.Server.Tests
         }
 
         [Fact]
+        public async Task IsSymbolMissing_WithoutHash_Supported()
+        {
+            var registration = new BatchStartRequestModel
+            {
+                BatchFriendlyName = "Test batch", BatchType = BatchType.Android
+            };
+
+            var batchId = Guid.NewGuid();
+            var client = _fixture.GetClient();
+            var resp = await client.SendAsync(
+                new HttpRequestMessage(HttpMethod.Post, SymbolsController.Route + $"/batch/{batchId}/start")
+                {
+                    Content = new JsonContent(registration)
+                });
+
+            resp.AssertStatusCode(HttpStatusCode.OK);
+
+            var testFile = Path.Combine("TestFiles", "libxamarin-app.so");
+            const string unifiedId = "f59d3adfa8263dd688ad820f74a325b540dcf6b4"; // CodeId
+            resp = await client.SendAsync(new HttpRequestMessage(HttpMethod.Head,
+                SymbolsController.Route + $"/batch/{batchId}/check/{unifiedId}"));
+            resp.AssertStatusCode(HttpStatusCode.OK);
+
+            resp = await client.SendAsync(
+                new HttpRequestMessage(HttpMethod.Post, SymbolsController.Route + $"/batch/{batchId}/upload/")
+                {
+                    Content = new MultipartFormDataContent
+                    {
+                        {
+                            new ByteArrayContent(File.ReadAllBytes(testFile)), testFile, Path.GetFileName(testFile)
+                        }
+                    }
+                });
+
+            resp.AssertStatusCode(HttpStatusCode.Created);
+
+            var responseModel = await resp.Content.ToJsonElement();
+            Assert.Equal(1, responseModel.GetProperty("filesCreated").GetInt32());
+
+            // Check again if needed.
+            resp = await client.SendAsync(new HttpRequestMessage(HttpMethod.Head,
+                SymbolsController.Route + $"/batch/{batchId}/check/{unifiedId}/"));
+            resp.AssertStatusCode(HttpStatusCode.Conflict);
+        }
+
+        [Fact]
         public async Task UploadSymbol_GzipedSymbol_SymbolAdded()
         {
             var registration = new BatchStartRequestModel

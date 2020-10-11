@@ -44,9 +44,9 @@
                     tools:text="left"/>
 
             <EditText android:layout_width="match_parent"
-                      android:text="https://symbol-collector.services"
+                      android:text="https://symbol-collector.services.sentry.io"
                       android:id="@+id/server_url"
-                      android:inputType="textWebEmailAddress"
+                      android:inputType="textUri"
                       android:layout_height="match_parent" />
 
             <!-- Buttons -->

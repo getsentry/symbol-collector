@@ -354,6 +354,11 @@ namespace SymbolCollector.Android
                     o.BlackListedPaths.Add("/system/vendor/bin/netstat");
                     o.BlackListedPaths.Add("/system/vendor/bin/swapoff");
                 });
+                c.AddOptions().Configure<ObjectFileParserOptions>(o =>
+                {
+                    o.IncludeHash = true; // Backing store sorted format does not support hash distinction yet.
+                    o.UseFallbackObjectFileParser = false; // Android only, use only ELF parser.
+                });
             });
             _serviceProvider = _host.Services;
 
