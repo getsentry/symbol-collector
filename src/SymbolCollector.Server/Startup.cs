@@ -41,8 +41,14 @@ namespace SymbolCollector.Server
 
             services.AddSingleton<ISentryEventProcessor, SymbolServiceEventProcessor>();
 
+            services.AddOptions<SymbolServiceOptions>();
+            services.AddOptions<ObjectFileParserOptions>();
+
             services.AddOptions<JsonCredentialParameters>()
                 .Configure<IConfiguration>((o, c) => c.Bind("GoogleCloud:JsonCredentialParameters", o));
+
+            services.AddOptions<ObjectFileParserOptions>()
+                .Configure<IConfiguration>((o, c) => c.Bind("ObjectFileParser", o));
 
             services.AddOptions<SymbolServiceOptions>()
                 .Configure<IConfiguration>((o, c) =>

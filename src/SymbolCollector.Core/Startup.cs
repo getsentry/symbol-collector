@@ -74,6 +74,8 @@ namespace SymbolCollector.Core
                 .Configure<IConfiguration>((o, f) => f.Bind("SymbolClient", o))
                 .Validate(o => o.BaseAddress is {}, "BaseAddress is required.");
 
+            services.AddOptions<ObjectFileParserOptions>();
+
             services.AddOptions<SymsorterOptions>()
                 .Configure<IConfiguration>((o, f) => f.Bind("Symsorter", o));
 

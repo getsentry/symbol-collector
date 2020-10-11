@@ -8,7 +8,7 @@ namespace SymbolCollector.Core.Tests
 {
     public class ObjectFileResultTestCases : IEnumerable<object[]>
     {
-        private static IEnumerable<ObjectFileResultTestCase> GetObjectFileResultTestCases()
+        internal static IEnumerable<ObjectFileResultTestCase> GetObjectFileResultTestCases()
         {
             yield return new ObjectFileResultTestCase(Path.GetTempFileName()); // A new, 0 byte file
             yield return new ObjectFileResultTestCase(Path.GetRandomFileName()); // file doesn't exist

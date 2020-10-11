@@ -7,6 +7,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using NSubstitute;
 using Sentry;
 using Xunit;
@@ -20,6 +21,7 @@ namespace SymbolCollector.Core.Tests
             public Uri ServiceUri { get; set; } = new Uri("https://test.sentry/");
 
             public ObjectFileParser ObjectFileParser { get; set; }
+            public ObjectFileParserOptions ObjectFileParserOptions { get; set; } = new ObjectFileParserOptions();
 
             public HttpMessageHandler? HttpMessageHandler { get; set; }
             public ClientMetrics Metrics { get; set; } = new ClientMetrics();
@@ -36,7 +38,9 @@ namespace SymbolCollector.Core.Tests
             {
                 HttpMessageHandler = new TestMessageHandler((message, token) =>
                     Task.FromResult(new HttpResponseMessage(HttpStatusCode.Created)));
-                ObjectFileParser = new ObjectFileParser(Metrics, Substitute.For<ILogger<ObjectFileParser>>());
+                ObjectFileParser = new ObjectFileParser(Metrics,
+                    Options.Create(ObjectFileParserOptions),
+                    Substitute.For<ILogger<ObjectFileParser>>());
             }
 
             public Client GetSut() =>
@@ -55,6 +59,7 @@ namespace SymbolCollector.Core.Tests
         {
             var counter = 0;
             _fixture.ObjectFileParser = new ObjectFileParser(_fixture.Metrics,
+                Options.Create(new ObjectFileParserOptions()),
                 Substitute.For<ILogger<ObjectFileParser>>(), new FatBinaryReader());
             _fixture.HttpMessageHandler = new TestMessageHandler((message, token) =>
             {
@@ -82,6 +87,7 @@ namespace SymbolCollector.Core.Tests
         public async Task UploadAllPathsAsync_TestFilesDirectory_FileCorrectlySent()
         {
             _fixture.ObjectFileParser = new ObjectFileParser(_fixture.Metrics,
+                Options.Create(new ObjectFileParserOptions()),
                 Substitute.For<ILogger<ObjectFileParser>>(), new FatBinaryReader());
 
             var sut = _fixture.GetSut();

@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using NUnit.Framework;
-using NUnit.Framework.Internal;
 using Xamarin.UITest;
 using Xamarin.UITest.Android;
 
@@ -16,30 +15,30 @@ namespace SymbolCollector.Android.UITests
         public void BeforeEachTest()
         {
             var setup = ConfigureApp.Android;
-            var apkPath = Environment.GetEnvironmentVariable("SYMBOL_COLLECTOR_APK");
-
-            if (apkPath is { })
+            const string apkPath = "../../../../src/SymbolCollector.Android/bin/Release/io.sentry.symbol.collector-Signed.apk";
+            if (File.Exists(apkPath))
             {
-                if (File.Exists(apkPath))
-                {
-                    setup = setup.ApkFile(apkPath);
-                    Console.WriteLine($"Using APK: {apkPath}");
-                }
-                else
-                {
-                    var msg = $"APK path defined but no file exists at this path: {apkPath}";
-                    Console.WriteLine(msg);
-                    Assert.Fail(msg);
-                }
+                setup = setup.ApkFile(apkPath);
+                Console.WriteLine($"Using APK: {apkPath}");
+            }
+            else
+            {
+                var msg = $"APK path defined but no file exists at this path: {apkPath}";
+                Console.WriteLine(msg);
+                Assert.Fail(msg);
             }
 
-            _app = setup.StartApp();
+            _app = setup
+                .PreferIdeSettings()
+                .StartApp();
         }
 
         [Test]
-        public void AppLaunches()
+        public void CollectSymbols()
         {
-            _app.Screenshot("First screen.");
+            _app.Tap(q => q.Id("btnUpload"));
+            _app.WaitForElement(query => query.Id("done_text"), timeout: TimeSpan.FromMinutes(30));
+            _app.Screenshot("💯");
         }
     }
 }

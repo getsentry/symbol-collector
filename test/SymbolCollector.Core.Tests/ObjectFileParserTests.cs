@@ -1,6 +1,8 @@
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using NSubstitute;
 using Xunit;
 
@@ -10,6 +12,7 @@ namespace SymbolCollector.Core.Tests
     {
         private class Fixture
         {
+            public ObjectFileParserOptions ObjectFileParserOptions { get; set; } = new ObjectFileParserOptions();
             public FatBinaryReader? FatBinaryReader { get; set; } =
                 new FatBinaryReader(Substitute.For<ILogger<FatBinaryReader>>());
 
@@ -19,6 +22,7 @@ namespace SymbolCollector.Core.Tests
             public ObjectFileParser GetSut() =>
                 new ObjectFileParser(
                     Metrics,
+                    Options.Create(ObjectFileParserOptions),
                     Logger,
                     FatBinaryReader);
         }
@@ -70,6 +74,26 @@ namespace SymbolCollector.Core.Tests
 
         [Fact]
         public void GetFallbackDebugId_NullArg_ReturnsNull() => Assert.Null(_fixture.GetSut().GetFallbackDebugId(null!));
+
+        [Fact]
+        public void TryParse_NoFallback_DoesntParse()
+        {
+            var files = ObjectFileResultTestCases.GetObjectFileResultTestCases().ToList();
+            _fixture.ObjectFileParserOptions.UseFallbackObjectFileParser = false;
+            var sut = _fixture.GetSut();
+            var elf = files.First(f => f.Expected?.FileFormat == FileFormat.Elf);
+            var machO = files.First(f => f.Expected?.FileFormat == FileFormat.MachO);
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                Assert.False(sut.TryParse(elf.Path, out _));
+                Assert.True(sut.TryParse(machO.Path, out _));
+            }
+            else
+            {
+                Assert.True(sut.TryParse(elf.Path, out _));
+                Assert.False(sut.TryParse(machO.Path, out _));
+            }
+        }
 
         [Fact]
         public void GetFallbackDebugId_EmptyArg_ReturnsNull() => Assert.Null(_fixture.GetSut().GetFallbackDebugId(new byte[0]));
