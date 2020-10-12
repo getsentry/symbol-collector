@@ -131,6 +131,7 @@ namespace SymbolCollector.Server
                 if (options.DeleteBaseWorkingPathOnStartup)
                 {
                     Directory.Delete(options.BaseWorkingPath, true);
+                    Directory.CreateDirectory(options.BaseWorkingPath);
                 }
             }
 
