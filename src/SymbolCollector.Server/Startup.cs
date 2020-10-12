@@ -127,6 +127,11 @@ namespace SymbolCollector.Server
             using (var s = app.ApplicationServices.CreateScope())
             {
                 _ = s.ServiceProvider.GetRequiredService<ISymbolService>();
+                var options = s.ServiceProvider.GetRequiredService<IOptions<SymbolServiceOptions>>().Value;
+                if (options.DeleteBaseWorkingPathOnStartup)
+                {
+                    Directory.Delete(options.BaseWorkingPath, true);
+                }
             }
 
             app.Use(async (context, func) =>

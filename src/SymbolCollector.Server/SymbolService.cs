@@ -75,6 +75,7 @@ namespace SymbolCollector.Server
 
         public bool DeleteDoneDirectory { get; set; }
         public bool DeleteSymsortedDirectory { get; set; }
+        public bool DeleteBaseWorkingPathOnStartup { get; set; }
     }
 
     internal class InMemorySymbolService : ISymbolService, IDisposable

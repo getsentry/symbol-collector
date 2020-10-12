@@ -87,11 +87,11 @@ namespace SymbolCollector.Server
             var handle = _metrics.BeginGcsBatchUpload();
             _ = Task.Run(async () =>
             {
+                // get logger factory and create a logger for symsorter
+                var symsorterOutput = Path.Combine(_symsorterOutputPath, batch.BatchId.ToString());
+
                 try
                 {
-                    // get logger factory and create a logger for symsorter
-                    var symsorterOutput = Path.Combine(_symsorterOutputPath, batch.BatchId.ToString());
-
                     Directory.CreateDirectory(symsorterOutput);
 
                     if (SortSymbols(batchLocation, batch, symsorterOutput))
@@ -138,15 +138,6 @@ namespace SymbolCollector.Server
                         throw;
                     }
 
-                    if (_options.DeleteSymsortedDirectory)
-                    {
-                        Directory.Delete(symsorterOutput, true);
-
-                        _logger.LogInformation(
-                            "Batch {batchId} with name {friendlyName} deleted sorted directory {symsorterOutput}.",
-                            batch.BatchId, batch.FriendlyName, symsorterOutput);
-                    }
-
                     SentrySdk.CaptureMessage($"Batch {batch.BatchId} with name {batch.FriendlyName} completed in {stopwatch.Elapsed}");
                 }
                 catch (Exception e)
@@ -157,6 +148,21 @@ namespace SymbolCollector.Server
                 }
                 finally
                 {
+                    try
+                    {
+                        if (_options.DeleteSymsortedDirectory)
+                        {
+                            Directory.Delete(symsorterOutput, true);
+
+                            _logger.LogInformation(
+                                "Batch {batchId} with name {friendlyName} deleted sorted directory {symsorterOutput}.",
+                                batch.BatchId, batch.FriendlyName, symsorterOutput);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.LogError(e, "Failed attempting to delete symsorter directory.");
+                    }
                     handle.Dispose();
                 }
 
