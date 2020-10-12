@@ -262,7 +262,7 @@ namespace SymbolCollector.Android
                     switch (@event.Exception)
                     {
                         case var e when e is OperationCanceledException:
-                            return null;
+                            return null!;
                         case var e when e?.Data.Contains(traceIdKey) == true:
                             @event.SetTag(traceIdKey, e.Data[traceIdKey]?.ToString() ?? "unknown");
                             break;
@@ -289,20 +289,20 @@ namespace SymbolCollector.Android
 
                 s.SetTag("API", ((int)Build.VERSION.SdkInt).ToString());
                 s.SetTag("app", "SymbolCollector.Android");
-                s.SetTag("host", Build.Host);
-                s.SetTag("device", Build.Device);
-                s.SetTag("product", Build.Product);
+                s.SetTag("host", Build.Host ?? "?");
+                s.SetTag("device", Build.Device ?? "?");
+                s.SetTag("product", Build.Product ?? "?");
 #pragma warning disable 618
-                s.SetTag("cpu-abi", Build.CpuAbi);
+                s.SetTag("cpu-abi", Build.CpuAbi ?? "?");
 #pragma warning restore 618
-                s.SetTag("fingerprint", Build.Fingerprint);
+                s.SetTag("fingerprint", Build.Fingerprint ?? "?");
 
 #pragma warning disable 618
                 if (!string.IsNullOrEmpty(Build.CpuAbi2))
 #pragma warning restore 618
                 {
 #pragma warning disable 618
-                    s.SetTag("cpu-abi2", Build.CpuAbi2);
+                    s.SetTag("cpu-abi2", Build.CpuAbi2 ?? "?");
 #pragma warning restore 618
                 }
 #pragma warning restore 618

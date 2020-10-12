@@ -89,13 +89,13 @@ namespace SymbolCollector.Server
                             if (@event.LogEntry?.Formatted?.Contains(@"Binding to endpoints defined in") == true
                                 && @event.Level == SentryLevel.Warning)
                             {
-                                return null;
+                                return null!;
                             }
 
                             // Don't capture Debug events
                             if (@event.Level == SentryLevel.Debug)
                             {
-                                return null;
+                                return null!;
                             }
 
                             return @event;
