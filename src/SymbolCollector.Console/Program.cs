@@ -203,7 +203,7 @@ namespace SymbolCollector.Console
             using var _ = SentrySdk.Init(o =>
             {
                 o.Debug = true;
-                o.DiagnosticsLevel = Sentry.Protocol.SentryLevel.Warning;
+                o.DiagnosticsLevel = SentryLevel.Warning;
                 o.AttachStacktrace = true;
                 o.SendDefaultPii = true;
                 o.AddInAppExclude("Polly");
@@ -218,7 +218,7 @@ namespace SymbolCollector.Console
                     switch (@event.Exception)
                     {
                         case var e when e is OperationCanceledException:
-                            return null;
+                            return null!;
                         case var e when e?.Data.Contains(traceIdKey) == true:
                             @event.SetTag(traceIdKey, e.Data[traceIdKey]?.ToString() ?? "unknown");
                             break;
@@ -230,7 +230,7 @@ namespace SymbolCollector.Console
             {
                 SentrySdk.ConfigureScope(s =>
                 {
-                    s.SetTag("app", typeof(Program).Assembly.GetName().Name);
+                    s.SetTag("app", typeof(Program).Assembly.GetName().Name ?? "SymbolCollector");
                     s.SetTag("user-agent", args.UserAgent);
                     if (args.ServerEndpoint is {})
                     {

@@ -6,7 +6,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SymbolCollector.Core\SymbolCollector.Core.csproj" />
-    <PackageReference Include="Sentry.AspNetCore" Version="2.1.5-beta" />
+    <PackageReference Include="Sentry.AspNetCore" Version="3.0.0-alpha.0" />
     <PackageReference Include="Sentry.Serilog" Version="2.1.5-beta" />
     <PackageReference Include="Google.Cloud.Storage.V1" Version="3.1.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="3.2.0" />
