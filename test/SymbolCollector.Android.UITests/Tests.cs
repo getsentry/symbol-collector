@@ -21,12 +21,16 @@ namespace SymbolCollector.Android.UITests
                 setup = setup.ApkFile(apkPath);
                 Console.WriteLine($"Using APK: {apkPath}");
             }
+
+            // Quick feedback in debug, not running on a farm:
+#if DEBUG
             else
             {
                 var msg = $"APK path defined but no file exists at this path: {apkPath}";
                 Console.WriteLine(msg);
                 Assert.Fail(msg);
             }
+#endif
 
             _app = setup
                 .PreferIdeSettings()
