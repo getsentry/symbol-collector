@@ -131,15 +131,16 @@ namespace SymbolCollector.Server
                 var logger = s.ServiceProvider.GetRequiredService<ILogger<Core.Startup>>();
                 if (options.DeleteBaseWorkingPathOnStartup)
                 {
-                    try
-                    {
-                        Directory.Delete(options.BaseWorkingPath, true);
-                        Directory.CreateDirectory(options.BaseWorkingPath);
-                    }
-                    catch (Exception e)
-                    {
-                        logger.LogError(e, "Failed to delete/recreated work path.");
-                    }
+                    logger.LogDebug("DeleteBaseWorkingPathOnStartup");
+                    // try
+                    // {
+                    //     Directory.Delete(options.BaseWorkingPath, true);
+                    //     Directory.CreateDirectory(options.BaseWorkingPath);
+                    // }
+                    // catch (Exception e)
+                    // {
+                    //     logger.LogError(e, "Failed to delete/recreated work path.");
+                    // }
                 }
             }
 
