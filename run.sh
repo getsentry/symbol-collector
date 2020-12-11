@@ -22,4 +22,4 @@ appcenter test run uitest --app $SC_APP \
     --test-series "master" \
     --locale "en_US" \
     --build-dir . \
-    --uitest-tools-dir ~/.nuget/packages/xamarin.uitest/3.0.7/tools/
+    --uitest-tools-dir ~/.nuget/packages/xamarin.uitest/3.0.12/tools/
