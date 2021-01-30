@@ -40,8 +40,8 @@
     <Compile Include="Tests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="NUnit" Version="3.12.0" />
-    <PackageReference Include="Xamarin.UITest" Version="3.0.12" />
+    <PackageReference Include="NUnit" Version="3.13.0" />
+    <PackageReference Include="Xamarin.UITest" Version="3.0.13" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\SymbolCollector.Android\SymbolCollector.Android.csproj">

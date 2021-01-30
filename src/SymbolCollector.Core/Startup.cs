@@ -28,7 +28,7 @@ namespace SymbolCollector.Core
                 .ConfigureLogging(l =>
                 {
                     l.AddSentry(o => o.InitializeSdk = false);
-                    l.AddConsole(o => o.DisableColors = true);
+                    // l.AddConsole(o => o.DisableColors = true);
                 })
                 .Build();
 
@@ -49,7 +49,7 @@ namespace SymbolCollector.Core
                         },
                         (result, span, retryAttempt, context) =>
                         {
-                            var sentry = s.GetService<IHub>();
+                            var sentry = s.GetRequiredService<IHub>();
 
                             var data = new Dictionary<string, string> {{"PollyRetryCount", retryAttempt.ToString()}};
                             if (result.Exception is Exception e)

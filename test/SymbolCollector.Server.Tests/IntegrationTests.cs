@@ -190,7 +190,7 @@ namespace SymbolCollector.Server.Tests
                     Content = new MultipartFormDataContent
                     {
                         {
-                            new ByteArrayContent(File.ReadAllBytes(testFile)), testFile, Path.GetFileName(testFile)
+                            new ByteArrayContent(await File.ReadAllBytesAsync(testFile)), testFile, Path.GetFileName(testFile)
                         }
                     }
                 });
@@ -202,13 +202,13 @@ namespace SymbolCollector.Server.Tests
                     Content = new MultipartFormDataContent
                     {
                         {
-                            new ByteArrayContent(File.ReadAllBytes(testFile)), testFile, Path.GetFileName(testFile)
+                            new ByteArrayContent(await File.ReadAllBytesAsync(testFile)), testFile, Path.GetFileName(testFile)
                         }
                     }
                 });
             resp.AssertStatusCode(HttpStatusCode.AlreadyReported);
 
-            var symbolService = _fixture.ServiceProvider.GetRequiredService<ISymbolService>();
+            var symbolService = _fixture.ServiceProvider!.GetRequiredService<ISymbolService>();
             var symbol = await symbolService.GetSymbol(unifiedId, CancellationToken.None);
 
             var batch1 = await symbolService.GetBatch(batchId1, CancellationToken.None);
@@ -239,7 +239,7 @@ namespace SymbolCollector.Server.Tests
                 });
 
             resp.AssertStatusCode(HttpStatusCode.OK);
-            var symbolService = _fixture.ServiceProvider.GetRequiredService<ISymbolService>();
+            var symbolService = _fixture.ServiceProvider!.GetRequiredService<ISymbolService>();
             var batch = await symbolService.GetBatch(batchId, CancellationToken.None);
             Assert.Equal(batchId, batch!.BatchId);
             Assert.Empty(batch.Symbols);
@@ -256,7 +256,7 @@ namespace SymbolCollector.Server.Tests
                     Content = new MultipartFormDataContent
                     {
                         {
-                            new ByteArrayContent(File.ReadAllBytes(testFile)), testFile, Path.GetFileName(testFile)
+                            new ByteArrayContent(await File.ReadAllBytesAsync(testFile)), testFile, Path.GetFileName(testFile)
                         }
                     }
                 });
@@ -267,7 +267,7 @@ namespace SymbolCollector.Server.Tests
             Assert.Equal("5fb23797a8cb482bac325eabdcb3d7e70b89fe0ec51035010e9be3a7b76fff84", symbol.Hash);
             Assert.Equal(unifiedId, symbol.UnifiedId);
             Assert.EndsWith( Path.GetFileName(testFile), symbol.Path);
-            var baseWorking = _fixture.ServiceProvider.GetRequiredService<IOptions<SymbolServiceOptions>>().Value.BaseWorkingPath;
+            var baseWorking = _fixture.ServiceProvider!.GetRequiredService<IOptions<SymbolServiceOptions>>().Value.BaseWorkingPath;
             Assert.StartsWith(Path.Combine(baseWorking!, "processing", batch.BatchType.ToSymsorterPrefix(), batchId.ToString()), symbol.Path);
             Assert.Equal(batchId, symbol.BatchIds.Single());
 
@@ -312,7 +312,7 @@ namespace SymbolCollector.Server.Tests
                     Content = new MultipartFormDataContent
                     {
                         {
-                            new ByteArrayContent(File.ReadAllBytes(testFile)), testFile, Path.GetFileName(testFile)
+                            new ByteArrayContent(await File.ReadAllBytesAsync(testFile)), testFile, Path.GetFileName(testFile)
                         }
                     }
                 });
@@ -345,7 +345,7 @@ namespace SymbolCollector.Server.Tests
                 });
 
             resp.AssertStatusCode(HttpStatusCode.OK);
-            var symbolService = _fixture.ServiceProvider.GetRequiredService<ISymbolService>();
+            var symbolService = _fixture.ServiceProvider!.GetRequiredService<ISymbolService>();
             var batch = await symbolService.GetBatch(batchId, CancellationToken.None);
             Assert.Equal(batchId, batch!.BatchId);
             Assert.Empty(batch.Symbols);
@@ -356,7 +356,7 @@ namespace SymbolCollector.Server.Tests
             var testFile = Path.Combine("TestFiles", "libxamarin-app-arm64-v8a.so");
             const string unifiedId = "7621750937f30bf8e756cec46b960391f9f57b26";
 
-            var fileBytes = File.ReadAllBytes(testFile);
+            var fileBytes = await File.ReadAllBytesAsync(testFile);
             resp = await client.SendAsync(
                 new HttpRequestMessage(HttpMethod.Post, SymbolsController.Route + $"/batch/{batchId}/upload/")
                 {
@@ -374,10 +374,10 @@ namespace SymbolCollector.Server.Tests
             Assert.Equal("5fb23797a8cb482bac325eabdcb3d7e70b89fe0ec51035010e9be3a7b76fff84", symbol.Hash);
             Assert.Equal(unifiedId, symbol.UnifiedId);
             Assert.EndsWith( Path.GetFileName(testFile), symbol.Path);
-            var baseWorking = _fixture.ServiceProvider.GetRequiredService<IOptions<SymbolServiceOptions>>().Value.BaseWorkingPath;
+            var baseWorking = _fixture.ServiceProvider!.GetRequiredService<IOptions<SymbolServiceOptions>>().Value.BaseWorkingPath;
             Assert.StartsWith(Path.Combine(baseWorking!, "processing", batch.BatchType.ToSymsorterPrefix(), batchId.ToString()), symbol.Path);
             Assert.Equal(batchId, symbol.BatchIds.Single());
-            var actualBytes = File.ReadAllBytes(symbol.Path);
+            var actualBytes = await File.ReadAllBytesAsync(symbol.Path);
             Assert.True(fileBytes.SequenceEqual(actualBytes));
 
             Assert.Equal(FileFormat.Elf, symbol.FileFormat);
@@ -422,7 +422,7 @@ namespace SymbolCollector.Server.Tests
                     Content = new MultipartFormDataContent
                     {
                         {
-                            new ByteArrayContent(File.ReadAllBytes(testFile)), testFile, Path.GetFileName(testFile)
+                            new ByteArrayContent(await File.ReadAllBytesAsync(testFile)), testFile, Path.GetFileName(testFile)
                         }
                     }
                 });
@@ -448,7 +448,7 @@ namespace SymbolCollector.Server.Tests
                     Content = new MultipartFormDataContent
                     {
                         {
-                            new ByteArrayContent(File.ReadAllBytes(testFile)), testFile, Path.GetFileName(testFile)
+                            new ByteArrayContent(await File.ReadAllBytesAsync(testFile)), testFile, Path.GetFileName(testFile)
                         }
                     }
                 });
@@ -474,7 +474,7 @@ namespace SymbolCollector.Server.Tests
 
             resp.AssertStatusCode(HttpStatusCode.NoContent);
 
-            var symbolService = _fixture.ServiceProvider.GetRequiredService<ISymbolService>();
+            var symbolService = _fixture.ServiceProvider!.GetRequiredService<ISymbolService>();
             var batch = await symbolService.GetBatch(batchId, CancellationToken.None);
 
             Assert.True(batch!.IsClosed);
