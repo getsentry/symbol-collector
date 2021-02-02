@@ -1,0 +1,43 @@
+name: build
+on:
+  push:
+    branches:
+      - main
+      - release/*
+
+  pull_request:
+jobs:
+  build:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+        include:
+          - os: windows-latest
+            build_script: .\build.ps1
+          - os: macos-latest
+            build_script: ./build.sh
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v1.7.2
+        with:
+          dotnet-version: '3.1.405'
+
+      - name: Run build script
+        run: ${{ matrix.build_script }}
+
+      - name: Archive Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ github.sha }}
+          path: |
+            ${{ github.workspace }}/src/SymbolCollector.Android/bin/release/*Signed.apk
+            ${{ github.workspace }}/src/SymbolCollector.Console/osx-x64/
+            ${{ github.workspace }}/src/SymbolCollector.Console/linux-x64/
+            ${{ github.workspace }}/src/SymbolCollector.Console/linux-musl-x64/
+            ${{ github.workspace }}/src/SymbolCollector.Console/linux-arm/
+            ${{ github.workspace }}/src/SymbolCollector.Server/server/
