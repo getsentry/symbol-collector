@@ -6,9 +6,7 @@
 </p>
 
 # Symbol Collector
-[![Travis](https://travis-ci.com/getsentry/symbol-collector.svg?branch=main)](https://travis-ci.com/getsentry/symbol-collector)
-[![AppVeyor](https://ci.appveyor.com/api/projects/status/gldfulfd5kk2stst/branch/main?svg=true)](https://ci.appveyor.com/project/sentry/symbol-collector/branch/main)
-[![Tests](https://img.shields.io/appveyor/tests/sentry/symbol-collector/main?compact_message)](https://ci.appveyor.com/project/sentry/symbol-collector/branch/main/tests)
+[![build](https://github.com/getsentry/symbol-collector/workflows/build/badge.svg?branch=main)](https://github.com/getsentry/symbol-collector/actions?query=branch%3Amain)
 [![codecov](https://codecov.io/gh/getsentry/symbol-collector/branch/main/graph/badge.svg)](https://codecov.io/gh/getsentry/symbol-collector)
 [![Discord Chat](https://img.shields.io/discord/621778831602221064.svg)](https://discord.gg/Ww9hbqr)
 
