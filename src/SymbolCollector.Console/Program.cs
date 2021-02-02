@@ -203,14 +203,14 @@ namespace SymbolCollector.Console
             using var _ = SentrySdk.Init(o =>
             {
                 o.Debug = true;
-                o.DiagnosticsLevel = SentryLevel.Warning;
+                o.DiagnosticLevel = SentryLevel.Warning;
                 o.AttachStacktrace = true;
                 o.SendDefaultPii = true;
                 o.AddInAppExclude("Polly");
 
                 o.AddExceptionFilterForType<OperationCanceledException>();
 
-                o.Dsn = new Dsn(Dsn);
+                o.Dsn = Dsn;
                 // TODO: This needs to be built-in
                 o.BeforeSend += @event =>
                 {

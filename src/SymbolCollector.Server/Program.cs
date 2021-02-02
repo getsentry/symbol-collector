@@ -86,7 +86,7 @@ namespace SymbolCollector.Server
                         o.BeforeSend = @event =>
                         {
                             // Stop raising warning that endpoint was overriden
-                            if (@event.LogEntry?.Formatted?.Contains(@"Binding to endpoints defined in") == true
+                            if (@event.Message?.Formatted?.Contains(@"Binding to endpoints defined in") == true
                                 && @event.Level == SentryLevel.Warning)
                             {
                                 return null!;
