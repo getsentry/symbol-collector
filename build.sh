@@ -25,8 +25,8 @@ popd
 
 pushd test/SymbolCollector.Android.UITests/
 msbuild /restore /p:Configuration=Release /t:Build
-# Don't run emulator tests on Travis-CI
-if [ -z ${TRAVIS_JOB_ID+x} ]; then
+# Don't run emulator tests on CI
+if [ -z ${CI+x} ]; then
     pushd bin/Release
     export SYMBOL_COLLECTOR_APK=../../../../src/SymbolCollector.Android/bin/Release/io.sentry.symbol.collector.apk
     mono ../../tools/nunit/net35/nunit3-console.exe SymbolCollector.Android.UITests.dll
