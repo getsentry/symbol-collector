@@ -242,12 +242,12 @@ namespace SymbolCollector.Android
             _sentry = SentrySdk.Init(o =>
             {
                 o.Debug = true;
-                o.DiagnosticsLevel = SentryLevel.Info;
+                o.DiagnosticLevel = SentryLevel.Info;
                 o.AttachStacktrace = true;
 #if DEBUG
-                o.Dsn = new Dsn("https://02619ad38bcb40d0be5167e1fb335954@sentry.io/1847454");
+                o.Dsn = "https://02619ad38bcb40d0be5167e1fb335954@sentry.io/1847454";
 #else
-                o.Dsn = new Dsn("https://2262a4fa0a6d409c848908ec90c3c5b4@sentry.io/1886021");
+                o.Dsn = "https://2262a4fa0a6d409c848908ec90c3c5b4@sentry.io/1886021";
 #endif
                 o.SendDefaultPii = true;
                 o.AddInAppExclude("Polly");
