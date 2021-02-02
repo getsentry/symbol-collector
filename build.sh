@@ -25,7 +25,7 @@ popd
 
 pushd test/SymbolCollector.Android.UITests/
 msbuild /restore /p:Configuration=Release /t:Build
-# Don't run emulator tests on Travis-CI
+# Don't run emulator tests on CI
 if [ -z ${CI+x} ]; then
     pushd bin/Release
     export SYMBOL_COLLECTOR_APK=../../../../src/SymbolCollector.Android/bin/Release/io.sentry.symbol.collector.apk

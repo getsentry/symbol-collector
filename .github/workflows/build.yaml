@@ -18,6 +18,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      - uses: microsoft/setup-msbuild@v1.0.2
+        if: matrix.os == 'windows-latest'
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v1.7.2
         with:
@@ -32,14 +34,17 @@ jobs:
         if: matrix.os == 'macos-latest'
         run: ./build.sh
 
+      - name: Publish coverage report
+        uses: codecov/codecov-action@v1
+
       - name: Archive Artifacts
         uses: actions/upload-artifact@v2
         with:
           name: ${{ github.sha }}
           path: |
             ${{ github.workspace }}/src/SymbolCollector.Android/bin/release/*Signed.apk
-            ${{ github.workspace }}/src/SymbolCollector.Console/osx-x64/
-            ${{ github.workspace }}/src/SymbolCollector.Console/linux-x64/
-            ${{ github.workspace }}/src/SymbolCollector.Console/linux-musl-x64/
-            ${{ github.workspace }}/src/SymbolCollector.Console/linux-arm/
-            ${{ github.workspace }}/src/SymbolCollector.Server/server/
+            ${{ github.workspace }}/src/SymbolCollector.Console/osx-x64/*
+            ${{ github.workspace }}/src/SymbolCollector.Console/linux-x64/*
+            ${{ github.workspace }}/src/SymbolCollector.Console/linux-musl-x64/*
+            ${{ github.workspace }}/src/SymbolCollector.Console/linux-arm/*
+            ${{ github.workspace }}/src/SymbolCollector.Server/server/*
