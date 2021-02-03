@@ -14,7 +14,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Sentry;
 using Sentry.Extensibility;
-using Sentry.Protocol;
 using SymbolCollector.Core;
 using AlertDialog = Android.App.AlertDialog;
 using OperationCanceledException = System.OperationCanceledException;
@@ -25,7 +24,6 @@ namespace SymbolCollector.Android
         ScreenOrientation = ScreenOrientation.Portrait)]
     public class MainActivity : AppCompatActivity
     {
-        private readonly IDisposable _sentry;
         private readonly string _friendlyName;
         private readonly IHost _host;
         private readonly IServiceProvider _serviceProvider;
@@ -239,7 +237,7 @@ namespace SymbolCollector.Android
                 // Java.Lang.NoClassDefFoundError: android/system/Os ---> Java.Lang.ClassNotFoundException: Didn't find class "android.system.Os" on path: DexPathList[[zip file "/data/app/SymbolCollector.Android.SymbolCollector.Android-1.apk"],nativeLibraryDirectories=[/data/app-lib/SymbolCollector.Android.SymbolCollector.Android-1, /vendor/lib, /system/lib]]
             }
 
-            _sentry = SentrySdk.Init(o =>
+            SentryXamarin.Init(o =>
             {
                 o.Debug = true;
                 o.DiagnosticLevel = SentryLevel.Info;
@@ -373,7 +371,6 @@ namespace SymbolCollector.Android
         {
             base.Dispose(disposing);
             _host.Dispose();
-            _sentry.Dispose();
         }
     }
 }

@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Sentry;
-using Sentry.Protocol;
 using SymbolCollector.Core;
 using SymbolCollector.Server.Models;
 
