@@ -14,7 +14,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Sentry;
 using Sentry.Extensibility;
-using Sentry.Protocol;
 using SymbolCollector.Core;
 using AlertDialog = Android.App.AlertDialog;
 using OperationCanceledException = System.OperationCanceledException;
