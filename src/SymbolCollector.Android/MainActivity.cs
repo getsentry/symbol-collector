@@ -14,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Sentry;
 using Sentry.Extensibility;
+using Sentry.Protocol;
 using SymbolCollector.Core;
 using AlertDialog = Android.App.AlertDialog;
 using OperationCanceledException = System.OperationCanceledException;
@@ -243,10 +244,10 @@ namespace SymbolCollector.Android
                 o.DiagnosticLevel = SentryLevel.Info;
                 o.AttachStacktrace = true;
 #if DEBUG
-                o.Dsn = "https://02619ad38bcb40d0be5167e1fb335954@sentry.io/1847454";
-#else
-                o.Dsn = "https://2262a4fa0a6d409c848908ec90c3c5b4@sentry.io/1886021";
+                // It's 'production' by default otherwise
+                o.Environment = "development";
 #endif
+                o.Dsn = "https://2262a4fa0a6d409c848908ec90c3c5b4@sentry.io/1886021";
                 o.SendDefaultPii = true;
                 o.AddInAppExclude("Polly");
                 o.AddInAppExclude("Mono");
@@ -281,9 +282,7 @@ namespace SymbolCollector.Android
                 s.Contexts.Device.Manufacturer = Build.Manufacturer;
                 s.Contexts.Device.Model = Build.Model;
 
-                s.Contexts.OperatingSystem.Name = "Android";
                 s.Contexts.OperatingSystem.KernelVersion = uname?.Release;
-                s.Contexts.OperatingSystem.Version = Build.VERSION.SdkInt.ToString();
 
                 s.SetTag("API", ((int)Build.VERSION.SdkInt).ToString());
                 s.SetTag("app", "SymbolCollector.Android");
@@ -331,10 +330,9 @@ namespace SymbolCollector.Android
             // TODO: doesn't the AppDomain hook is invoked in all cases?
             AndroidEnvironment.UnhandledExceptionRaiser += (s, e) =>
             {
-                var evt = new SentryEvent(e.Exception);
-                evt.SetTag("Handler", "UnhandledExceptionRaiser");
-                evt.SetTag("Handled", e.Handled.ToString());
-                SentrySdk.CaptureEvent(evt);
+                e.Exception.Data[Mechanism.HandledKey] = e.Handled;
+                e.Exception.Data[Mechanism.MechanismKey] = "UnhandledExceptionRaiser";
+                SentrySdk.CaptureException(e.Exception);
                 if (!e.Handled)
                 {
                     SentrySdk.Close();
