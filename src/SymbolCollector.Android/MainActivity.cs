@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Android.App;
@@ -14,6 +15,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Sentry;
 using Sentry.Extensibility;
+using Sentry.Protocol;
 using SymbolCollector.Core;
 using AlertDialog = Android.App.AlertDialog;
 using OperationCanceledException = System.OperationCanceledException;
@@ -24,60 +26,78 @@ namespace SymbolCollector.Android
         ScreenOrientation = ScreenOrientation.Portrait)]
     public class MainActivity : AppCompatActivity
     {
-        private readonly string _friendlyName;
+        private string _friendlyName;
         private readonly IHost _host;
         private readonly IServiceProvider _serviceProvider;
+        private readonly ITransaction _startupTransaction;
 
         protected override void OnCreate(Bundle? savedInstanceState)
         {
-            base.OnCreate(savedInstanceState);
-            SetContentView(Resource.Layout.activity_main);
-
-            var footerText = (TextView)base.FindViewById(Resource.Id.footer)!;
-            var versionName = Application.Context.ApplicationContext?.PackageManager?
-                .GetPackageInfo(Application.Context.ApplicationContext?.PackageName ?? "", 0)?.VersionName;
-            footerText.Text = $"Version: {versionName}\n" + footerText.Text;
-
-            var uploader = _serviceProvider.GetRequiredService<AndroidUploader>();
-            var metrics = _serviceProvider.GetRequiredService<ClientMetrics>();
-            var uploadButton = (Button)base.FindViewById(Resource.Id.btnUpload)!;
-            var cancelButton = (Button)base.FindViewById(Resource.Id.btnCancel)!;
-            var url = (EditText)base.FindViewById(Resource.Id.server_url)!;
-            var source = new CancellationTokenSource();
-
-            url.FocusChange += (sender, args) =>
+            var span = _startupTransaction.StartChild("OnCreate");
+            try
             {
-                if (!args.HasFocus)
+                base.OnCreate(savedInstanceState);
+                SetContentView(Resource.Layout.activity_main);
+
+                var footerText = (TextView)base.FindViewById(Resource.Id.footer)!;
+                var versionName = Application.Context.ApplicationContext?.PackageManager?
+                    .GetPackageInfo(Application.Context.ApplicationContext?.PackageName ?? "", 0)?.VersionName;
+                footerText.Text = $"Version: {versionName}\n" + footerText.Text;
+
+                var uploader = _serviceProvider.GetRequiredService<AndroidUploader>();
+                var metrics = _serviceProvider.GetRequiredService<ClientMetrics>();
+                var uploadButton = (Button)base.FindViewById(Resource.Id.btnUpload)!;
+                var cancelButton = (Button)base.FindViewById(Resource.Id.btnCancel)!;
+                var url = (EditText)base.FindViewById(Resource.Id.server_url)!;
+                var source = new CancellationTokenSource();
+
+                url.FocusChange += (sender, args) =>
                 {
+                    if (!args.HasFocus)
+                    {
+                        SentrySdk.AddBreadcrumb("Unfocus", category: "ui.event");
+                        Unfocus();
+                    }
+                };
+
+                uploadButton.Click += OnUploadButtonOnClick;
+                cancelButton.Click += OnCancelButtonOnClick;
+
+                async void OnUploadButtonOnClick(object sender, EventArgs args)
+                {
+                    SentrySdk.AddBreadcrumb("OnUploadButtonOnClick", category: "ui.event");
+                    var options = _serviceProvider.GetRequiredService<SymbolClientOptions>();
+                    options.BaseAddress = new Uri(url.Text); // TODO validate
+
+                    SentrySdk.ConfigureScope(s => s.SetTag("server-endpoint", options.BaseAddress.AbsoluteUri));
+
                     Unfocus();
+
+                    uploadButton.Enabled = false;
+                    source = new CancellationTokenSource();
+
+                    var uploadTask = uploader.StartUpload(_friendlyName, source.Token);
+                    var updateUiTask = StartUiUpdater(source.Token, metrics);
+
+                    await UploadAsync(uploadTask, updateUiTask, metrics, cancelButton, uploadButton, source);
                 }
-            };
 
-            uploadButton.Click += OnUploadButtonOnClick;
-            cancelButton.Click += OnCancelButtonOnClick;
+                void OnCancelButtonOnClick(object sender, EventArgs args)
+                {
+                    SentrySdk.AddBreadcrumb("OnCancelButtonOnClick", category: "ui.event");
+                    Unfocus();
+                    source.Cancel();
+                }
 
-            async void OnUploadButtonOnClick(object sender, EventArgs args)
-            {
-                var options = _serviceProvider.GetRequiredService<SymbolClientOptions>();
-                options.BaseAddress = new Uri(url.Text); // TODO validate
-
-                SentrySdk.ConfigureScope(s => s.SetTag("server-endpoint", options.BaseAddress.AbsoluteUri));
-
-                Unfocus();
-
-                uploadButton.Enabled = false;
-                source = new CancellationTokenSource();
-
-                var uploadTask = uploader.StartUpload(_friendlyName, source.Token);
-                var updateUiTask = StartUiUpdater(source.Token, metrics);
-
-                await UploadAsync(uploadTask, updateUiTask, metrics, cancelButton, uploadButton, source);
+                span.Finish();
+                _startupTransaction.Finish();
             }
-
-            void OnCancelButtonOnClick(object sender, EventArgs args)
+            catch
             {
-                Unfocus();
-                source.Cancel();
+                // TODO: How do I pass the exception so it can connect span to error event later?
+                span.Finish(SpanStatus.InternalError);
+                _startupTransaction.Finish(SpanStatus.InternalError);
+                throw;
             }
         }
 
@@ -226,32 +246,19 @@ namespace SymbolCollector.Android
             _friendlyName = $"Android:{Build.Manufacturer}-{Build.CpuAbi}-{Build.Model}";
 #pragma warning restore 618
             StructUtsname? uname = null;
-            try
-            {
-                uname = Os.Uname();
-                _friendlyName += $"-kernel-{uname?.Release ?? "??"}";
-            }
-            catch
-            {
-                // android.runtime.JavaProxyThrowable: System.NotSupportedException: Could not activate JNI Handle 0x7ed00025 (key_handle 0x4192edf8) of Java type 'md5eb7159ad9d3514ee216d1abd14b6d16a/MainActivity' as managed type 'SymbolCollector.Android.MainActivity'. --->
-                // Java.Lang.NoClassDefFoundError: android/system/Os ---> Java.Lang.ClassNotFoundException: Didn't find class "android.system.Os" on path: DexPathList[[zip file "/data/app/SymbolCollector.Android.SymbolCollector.Android-1.apk"],nativeLibraryDirectories=[/data/app-lib/SymbolCollector.Android.SymbolCollector.Android-1, /vendor/lib, /system/lib]]
-            }
 
             SentryXamarin.Init(o =>
             {
+                o.TracesSampleRate = 1.0;
                 o.Debug = true;
-                o.DiagnosticLevel = SentryLevel.Info;
+                o.DiagnosticLevel = SentryLevel.Debug;
                 o.AttachStacktrace = true;
 #if DEBUG
                 // It's 'production' by default otherwise
                 o.Environment = "development";
 #endif
-                o.Dsn = "https://2262a4fa0a6d409c848908ec90c3c5b4@sentry.io/1886021";
+                o.Dsn = "http://2262a4fa0a6d409c848908ec90c3c5b4@sentry.garcia.in/1886021";
                 o.SendDefaultPii = true;
-                o.AddInAppExclude("Polly");
-                o.AddInAppExclude("Mono");
-
-                o.AddExceptionFilterForType<OperationCanceledException>();
 
                 // TODO: This needs to be built-in
                 o.BeforeSend += @event =>
@@ -270,9 +277,13 @@ namespace SymbolCollector.Android
                 };
             });
 
+            var tran = SentrySdk.StartTransaction("AppStart", "activity.load");
+            _startupTransaction = tran;
+
             // TODO: This should be part of a package: Sentry.Xamarin.Android
             SentrySdk.ConfigureScope(s =>
             {
+                s.Transaction = tran;
                 s.User.Id = Build.Id;
 #pragma warning disable 618
                 s.Contexts.Device.Architecture = Build.CpuAbi;
@@ -310,6 +321,17 @@ namespace SymbolCollector.Android
 #else
                 s.SetTag("build-type", "other");
 #endif
+                try
+                {
+                    uname = Os.Uname();
+                    _friendlyName += $"-kernel-{uname?.Release ?? "??"}";
+                }
+                catch (Exception e)
+                {
+                    SentrySdk.AddBreadcrumb("Couldn't run uname", category: "exec", data: new Dictionary<string, string> { { "exception", e.Message } }, level: BreadcrumbLevel.Error);
+                    // android.runtime.JavaProxyThrowable: System.NotSupportedException: Could not activate JNI Handle 0x7ed00025 (key_handle 0x4192edf8) of Java type 'md5eb7159ad9d3514ee216d1abd14b6d16a/MainActivity' as managed type 'SymbolCollector.Android.MainActivity'. --->
+                    // Java.Lang.NoClassDefFoundError: android/system/Os ---> Java.Lang.ClassNotFoundException: Didn't find class "android.system.Os" on path: DexPathList[[zip file "/data/app/SymbolCollector.Android.SymbolCollector.Android-1.apk"],nativeLibraryDirectories=[/data/app-lib/SymbolCollector.Android.SymbolCollector.Android-1, /vendor/lib, /system/lib]]
+                }
                 if (uname is { })
                 {
                     s.Contexts["uname"] = new
@@ -338,6 +360,8 @@ namespace SymbolCollector.Android
                 }
             };
 
+
+            var iocSpan = tran.StartChild("container.init", "Initializing the IoC container");
             var userAgent = "Android/" + GetType().Assembly.GetName().Version;
             _host = Startup.Init(c =>
             {
@@ -355,6 +379,7 @@ namespace SymbolCollector.Android
                     o.UseFallbackObjectFileParser = false; // Android only, use only ELF parser.
                 });
             });
+            iocSpan.Finish();
             _serviceProvider = _host.Services;
 
             SentrySdk.ConfigureScope(s =>

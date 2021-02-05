@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -44,6 +45,7 @@ namespace SymbolCollector.Server
         private readonly ILogger<SymsorterBatchFinalizer> _logger;
         private readonly ISymbolGcsWriter _gcsWriter;
         private readonly BundleIdGenerator _bundleIdGenerator;
+        private readonly IHub _hub;
         private readonly string _symsorterOutputPath;
 
         public SymsorterBatchFinalizer(
@@ -51,6 +53,7 @@ namespace SymbolCollector.Server
             IOptions<SymbolServiceOptions> options,
             ISymbolGcsWriter gcsWriter,
             BundleIdGenerator bundleIdGenerator,
+            IHub hub,
             ILogger<SymsorterBatchFinalizer> logger)
         {
             _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
@@ -58,7 +61,7 @@ namespace SymbolCollector.Server
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _gcsWriter = gcsWriter ?? throw new ArgumentNullException(nameof(gcsWriter));
             _bundleIdGenerator = bundleIdGenerator;
-
+            _hub = hub;
             if (!File.Exists(_options.SymsorterPath))
             {
                 throw new ArgumentException($"Symsorter not found at: {_options.SymsorterPath}");
@@ -83,6 +86,9 @@ namespace SymbolCollector.Server
             // when closing the batch, the request data will already be available to add to outgoing events.
             SentrySdk.CaptureMessage("To read Request data on the request thread", SentryLevel.Debug);
 
+            // TODO: Create it from current open transaction? (trace-parent)
+            // TODO: Why isn't this optional?
+            var closeBatchTransaction = _hub.StartTransaction(new TransactionContext("CloseBatch", "batch.close"), new Dictionary<string, object?>());
             var handle = _metrics.BeginGcsBatchUpload();
             _ = Task.Run(async () =>
             {
@@ -91,13 +97,16 @@ namespace SymbolCollector.Server
 
                 try
                 {
+                    var symsortarSpan = closeBatchTransaction.StartChild("symsorter", "sorts symbols for symbolicator format");
                     Directory.CreateDirectory(symsorterOutput);
 
                     if (SortSymbols(batchLocation, batch, symsorterOutput))
                     {
+                        symsortarSpan.Finish(SpanStatus.UnknownError);
                         return;
                     }
-
+                    symsortarSpan.Finish();
+                    
                     if (_options.DeleteDoneDirectory)
                     {
                         Directory.Delete(batchLocation, true);
@@ -105,14 +114,29 @@ namespace SymbolCollector.Server
 
                     var trimDown = symsorterOutput + "/";
 
-                    async Task UploadToGoogle(string filePath)
+                    async Task UploadToGoogle(string filePath, ISpan parent)
                     {
-                        var destinationName = filePath.Replace(trimDown, string.Empty);
-                        await using var file = File.OpenRead(filePath);
-                        await _gcsWriter.WriteAsync(destinationName, file,
-                            // The client disconnecting at this point shouldn't affect closing this batch.
-                            // This should anyway be a background job queued by the batch finalizer
-                            gcsUploadCancellation);
+                        var span = parent.StartChild("UploadGroup", "Uploading a group of symbols to GCP");
+                        try
+                        {
+                            var destinationName = filePath.Replace(trimDown!, string.Empty);
+                            await using var file = File.OpenRead(filePath);
+                            await _gcsWriter.WriteAsync(destinationName, file,
+                                // The client disconnecting at this point shouldn't affect closing this batch.
+                                // This should anyway be a background job queued by the batch finalizer
+                                gcsUploadCancellation);
+
+                            span.Finish();
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            // TODO: Timeout? connection reset by peer?
+                            span.Finish(SpanStatus.Cancelled);
+                        }
+                        catch (Exception)
+                        {
+                            span.Finish(SpanStatus.InternalError);
+                        }
                     }
 
                     var counter = 0;
@@ -124,23 +148,29 @@ namespace SymbolCollector.Server
                         into fileGroup
                         select fileGroup.ToList();
 
+                    var gcpUploadSpan = closeBatchTransaction.StartChild("GcpUpload");
                     try
                     {
                         foreach (var group in groups)
                         {
-                            await Task.WhenAll(group.Select(UploadToGoogle));
+                            await Task.WhenAll(group.Select(g => UploadToGoogle(g, gcpUploadSpan)));
                         }
                     }
                     catch (Exception e)
                     {
+                        // TODO: Ex?
+                        gcpUploadSpan.Finish(SpanStatus.InternalError);
                         _logger.LogError(e, "Failed uploading files to GCS.");
                         throw;
                     }
+                    gcpUploadSpan.Finish();
 
                     SentrySdk.CaptureMessage($"Batch {batch.BatchId} with name {batch.FriendlyName} completed in {stopwatch.Elapsed}");
                 }
                 catch (Exception e)
                 {
+                    // TODO: Assing ex to Span
+                    closeBatchTransaction.Finish(SpanStatus.InternalError);
                     _logger.LogError(e, "Batch {batchId} with name {friendlyName} completed in {stopwatch}.",
                         batch.BatchId, batch.FriendlyName, stopwatch.Elapsed);
                     throw;
@@ -173,7 +203,12 @@ namespace SymbolCollector.Server
 
                     if (t.IsFaulted)
                     {
+                        closeBatchTransaction.Finish(SpanStatus.InternalError);
                         _logger.LogError(t.Exception, "GCS upload Task failed.");
+                    }
+                    else
+                    {
+                        closeBatchTransaction.Finish();
                     }
 
                 }, gcsUploadCancellation);
