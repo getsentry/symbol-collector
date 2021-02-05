@@ -3,3 +3,7 @@ github:
   repo: symbol-collector
 targets:
   - name: github
+statusProvider:
+  name: github
+artifactProvider:
+  name: github
