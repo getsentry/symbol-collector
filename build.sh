@@ -52,7 +52,7 @@ archs=(
     linux-arm
 )
 for arch in "${archs[@]}"; do
-    dotnet publish -c release /p:PublishSingleFile=true --self-contained -r $arch
-    zip -j symbolcollector-console-$arch.zip bin/release/netcoreapp3.1/$arch/publish/SymbolCollector.Console
+    dotnet publish -c release /p:PublishSingleFile=true --self-contained -r $arch -o publish-$arch
+    zip -j symbolcollector-console-$arch.zip publish-$arch/SymbolCollector.Console
 done
 popd
