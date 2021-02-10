@@ -257,7 +257,7 @@ namespace SymbolCollector.Android
                 // It's 'production' by default otherwise
                 o.Environment = "development";
 #endif
-                o.Dsn = "http://2262a4fa0a6d409c848908ec90c3c5b4@sentry.garcia.in/1886021";
+                o.Dsn = "https://2262a4fa0a6d409c848908ec90c3c5b4@sentry.io/1886021";
                 o.SendDefaultPii = true;
 
                 // TODO: This needs to be built-in
