@@ -10,6 +10,10 @@ popd
 pushd src/SymbolCollector.Server/
 # Restore packages, builds it, runs smoke-test.
 dotnet run -c Release -- --smoke-test
+dotnet publish -c Release --no-build -o publish
+pushd publish/
+zip symbolcollector-server.zip ./*
+popd
 popd
 
 # clean up old test results
@@ -40,8 +44,15 @@ pushd src/SymbolCollector.Console/
 dotnet run -c release -- \
     --check ../../test/TestFiles/System.Net.Http.Native.dylib \
     | grep c5ff520a-e05c-3099-921e-a8229f808696 || echo -e "Failed testing console 'check' command"
-dotnet publish -c release /p:PublishSingleFile=true --self-contained -r osx-x64
-dotnet publish -c release /p:PublishSingleFile=true --self-contained -r linux-x64
-dotnet publish -c release /p:PublishSingleFile=true --self-contained -r linux-musl-x64
-dotnet publish -c release /p:PublishSingleFile=true --self-contained -r linux-arm
+
+archs=(
+    osx-x64
+    linux-x64
+    linux-musl-x64
+    linux-arm
+)
+for arch in "${archs[@]}"; do
+    dotnet publish -c release /p:PublishSingleFile=true --self-contained -r $arch -o publish-$arch
+    zip -j symbolcollector-console-$arch.zip publish-$arch/SymbolCollector.Console
+done
 popd

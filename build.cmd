@@ -8,7 +8,7 @@ popd
 pushd src\SymbolCollector.Server\
 :Restore packages, builds it, runs smoke-test.
 dotnet run -c release -- --smoke-test
-dotnet publish -c release -o server
+dotnet publish -c release -o publish --no-build
 if "%errorlevel%" NEQ "0" exit /b %errorlevel%
 popd
 
@@ -23,7 +23,6 @@ if "%errorlevel%" NEQ "0" exit /b %errorlevel%
 popd
 
 pushd src\SymbolCollector.Console\
-:Artifacts are picked up by appveyor (see .appveyor.yml)
 :Smoke test the console app
 dotnet run -c release -- ^
     --check ..\..\test\TestFiles\System.Net.Http.Native.dylib ^
