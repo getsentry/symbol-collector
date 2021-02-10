@@ -43,8 +43,5 @@ jobs:
           name: ${{ github.sha }}
           path: |
             ${{ github.workspace }}/src/SymbolCollector.Android/bin/release/*Signed.apk
-            ${{ github.workspace }}/src/SymbolCollector.Console/osx-x64/*
-            ${{ github.workspace }}/src/SymbolCollector.Console/linux-x64/*
-            ${{ github.workspace }}/src/SymbolCollector.Console/linux-musl-x64/*
-            ${{ github.workspace }}/src/SymbolCollector.Console/linux-arm/*
-            ${{ github.workspace }}/src/SymbolCollector.Server/server/*
+            ${{ github.workspace }}/src/SymbolCollector.Console/*.zip
+            ${{ github.workspace }}/src/SymbolCollector.Server/publish/*.zip
