@@ -245,7 +245,16 @@ namespace SymbolCollector.Server
                 }
                 else
                 {
-                    invalidContentDispositions.Add(section.ContentDisposition);
+                    if (section.ContentDisposition is null)
+                    {
+                        _logger.LogWarning("ContentDisposition is null");
+                    }
+                    else
+                    {
+                        invalidContentDispositions.Add(section.ContentDisposition);
+                        _logger.LogWarning("ContentDisposition not supported: {contentDisposition}",
+                            section.ContentDisposition);
+                    }
                     _logger.LogWarning("ContentDisposition not supported: {contentDisposition}",
                         section.ContentDisposition);
                 }
@@ -302,7 +311,7 @@ namespace SymbolCollector.Server
             {
                 fileName = contentDisposition.FileName.Value;
 
-                if (section.Headers.TryGetValue("Content-Encoding", out var contentType)
+                if (section.Headers!.TryGetValue("Content-Encoding", out var contentType)
                     && contentType == "gzip")
                 {
                     await using var gzipStream = new GZipStream(section.Body, CompressionMode.Decompress);

@@ -63,7 +63,7 @@ namespace SymbolCollector.Core.Tests
                 Substitute.For<ILogger<ObjectFileParser>>(), new FatBinaryReader());
             _fixture.HttpMessageHandler = new TestMessageHandler((message, token) =>
             {
-                if (message.RequestUri.PathAndQuery.EndsWith("upload"))
+                if (message.RequestUri!.PathAndQuery.EndsWith("upload"))
                 {
                     Interlocked.Increment(ref counter);
                 }

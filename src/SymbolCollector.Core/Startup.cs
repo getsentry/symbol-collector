@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Options;
 using Polly;
 using Polly.Extensions.Http;
@@ -28,7 +29,7 @@ namespace SymbolCollector.Core
                 .ConfigureLogging(l =>
                 {
                     l.AddSentry(o => o.InitializeSdk = false);
-                    l.AddConsole(o => o.DisableColors = true);
+                    l.AddSimpleConsole(o => o.ColorBehavior = LoggerColorBehavior.Disabled);
                 })
                 .Build();
 
@@ -49,7 +50,7 @@ namespace SymbolCollector.Core
                         },
                         (result, span, retryAttempt, context) =>
                         {
-                            var sentry = s.GetService<IHub>();
+                            var sentry = s.GetRequiredService<IHub>();
 
                             var data = new Dictionary<string, string> {{"PollyRetryCount", retryAttempt.ToString()}};
                             if (result.Exception is Exception e)

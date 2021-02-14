@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using NUnit.Framework;
 using Xamarin.UITest;
 using Xamarin.UITest.Android;
@@ -41,8 +42,34 @@ namespace SymbolCollector.Android.UITests
         public void CollectSymbols()
         {
             _app.Tap(q => q.Id("btnUpload"));
-            _app.WaitForElement(query => query.Id("done_text"), timeout: TimeSpan.FromMinutes(30));
-            _app.Screenshot("💯");
+            var totalWaitTimeSeconds = 40 * 60;
+            var retryCounter = 200;
+            var iterationTimeout = TimeSpan.FromSeconds(totalWaitTimeSeconds / retryCounter);
+            while (true)
+            {
+                try
+                {
+                    _app.WaitForElement(query => query.Id("done_text"), timeout: iterationTimeout);
+                    _app.Screenshot("💯");
+                    break;
+                }
+                catch (Exception e) when (e.InnerException is TimeoutException)
+                {
+                    if (--retryCounter == 0)
+                    {
+                        _app.Screenshot("Timeout");
+                        throw;
+                    }
+
+                    // Check if it failed
+                    var result = _app.Query(p => p.Id("alertTitle"));
+                    if (result?.Any() == true)
+                    {
+                        _app.Screenshot("Error");
+                        throw new Exception("Error modal found, app errored.");
+                    }
+                }
+            }
         }
     }
 }
