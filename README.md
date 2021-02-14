@@ -80,7 +80,7 @@ The build script `build.sh` is focused on building **all** the components which 
 
 ### Server and Console app
 To build the Server, Libraries and the Console app (aka: everything except the Android app) you'll need:
-* [.NET Core 3.1 SDK](https://dot.net)
+* [.NET Core 5 SDK](https://dot.net)
 
 ### Android app
 To build the Android project you need:

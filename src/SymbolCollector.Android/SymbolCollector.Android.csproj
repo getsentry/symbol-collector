@@ -93,7 +93,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Logging" Version="5.0.0" />
     <PackageReference Include="Sentry" Version="3.0.6" />
-    <PackageReference Include="Sentry.Xamarin" Version="1.0.1" />
+    <PackageReference Include="Sentry.Xamarin" Version="1.0.2" />
     <PackageReference Include="Sentry.Extensions.Logging" Version="3.0.6" />
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
     <PackageReference Include="Xamarin.Google.Android.Material" Version="1.2.1.1" />
