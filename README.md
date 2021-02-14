@@ -78,8 +78,6 @@ This project allows collecting these libraries so that native crash processing c
 This project includes an Android app (Xamarin), as well as a ASP.NET Core and a Console application.
 The build script `build.sh` is focused on building **all** the components which means you'd need all the dependencies below.
 
-Travis-CI build installs all dependencies and runs the `build.sh` script and is a good source of information if needed.
-
 ### Server and Console app
 To build the Server, Libraries and the Console app (aka: everything except the Android app) you'll need:
 * [.NET Core 3.1 SDK](https://dot.net)
