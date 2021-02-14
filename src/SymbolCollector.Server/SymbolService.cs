@@ -156,7 +156,12 @@ namespace SymbolCollector.Server
                 _random.Next().ToString(CultureInfo.InvariantCulture),
                 fileName);
             var tempDestination = Path.Combine(Path.GetTempPath(), destination);
-            Directory.CreateDirectory(Path.GetDirectoryName(tempDestination));
+            var path = Path.GetDirectoryName(tempDestination);
+            if (path is null)
+            {
+                throw new InvalidOperationException("Couldn't get the path from tempDestination: " + tempDestination);
+            }
+            Directory.CreateDirectory(path);
 
             await using (var file = File.OpenWrite(tempDestination))
             {
@@ -207,7 +212,12 @@ namespace SymbolCollector.Server
                         {"new-file-name", Path.GetFileName(fileResult.Path)}
                     }))
                     {
-                        Directory.CreateDirectory(Path.GetDirectoryName(conflictDestination));
+                        path = Path.GetDirectoryName(conflictDestination);
+                        if (path is null)
+                        {
+                            throw new InvalidOperationException("Couldn't get the path from conflictDestination: " + conflictDestination);
+                        }
+                        Directory.CreateDirectory(path);
                         _logger.LogInformation(
                             "File with the same debug id and un-matching hashes. File stored at: {path}",
                             conflictDestination);
@@ -245,7 +255,12 @@ namespace SymbolCollector.Server
 
             batch.Symbols[metadata.UnifiedId] = metadata;
 
-            Directory.CreateDirectory(Path.GetDirectoryName(destination));
+            path = Path.GetDirectoryName(destination);
+            if (path is null)
+            {
+                throw new InvalidOperationException("Couldn't get the path from destination: " + destination);
+            }
+            Directory.CreateDirectory(path);
             File.Move(tempDestination, destination);
 
             _logger.LogDebug("File {fileName} created.", metadata.Name);
@@ -296,7 +311,12 @@ namespace SymbolCollector.Server
                     options: new JsonSerializerOptions {WriteIndented = true});
             }
 
-            Directory.CreateDirectory(Path.GetDirectoryName(destination));
+            var path = Path.GetDirectoryName(destination);
+            if (path is null)
+            {
+                throw new InvalidOperationException("Couldn't get the path from destination: " + destination);
+            }
+            Directory.CreateDirectory(path);
             Directory.Move(processingLocation, destination);
 
             _logger.LogInformation("Batch {batchId} is now closed at {location}.",
