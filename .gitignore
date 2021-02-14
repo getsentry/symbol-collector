@@ -8,3 +8,5 @@ TestResults/
 *.user
 dev-data/
 TestResult.xml
+**/publish*
+**/*.zip
