@@ -13,6 +13,7 @@ using Android.Widget;
 using AndroidX.AppCompat.App;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Http;
 using Sentry;
 using Sentry.Extensibility;
 using Sentry.Protocol;
@@ -267,7 +268,7 @@ namespace SymbolCollector.Android
                     switch (@event.Exception)
                     {
                         case var e when e is OperationCanceledException:
-                            return null!;
+                            return null;
                         case var e when e?.Data.Contains(traceIdKey) == true:
                             @event.SetTag(traceIdKey, e.Data[traceIdKey]?.ToString() ?? "unknown");
                             break;
@@ -334,14 +335,22 @@ namespace SymbolCollector.Android
                 }
                 if (uname is { })
                 {
-                    s.Contexts["uname"] = new
-                    {
-                        uname.Machine,
-                        uname.Nodename,
-                        uname.Release,
-                        uname.Sysname,
-                        uname.Version
-                    };
+                    // Not serializing properly: https://github.com/getsentry/sentry-dotnet/issues/822
+                    // s.Contexts["uname"] = new
+                    // {
+                    //     uname.Machine,
+                    //     uname.Nodename,
+                    //     uname.Release,
+                    //     uname.Sysname,
+                    //     uname.Version
+                    // };
+
+                    // Until ^ is resolved
+                    s.SetExtra("uname:Machine", uname.Machine);
+                    s.SetExtra("uname:Nodename", uname.Nodename);
+                    s.SetExtra("uname:Release", uname.Release);
+                    s.SetExtra("uname:Sysname", uname.Sysname);
+                    s.SetExtra("uname:Version", uname.Version);
                 }
             });
 
@@ -360,11 +369,13 @@ namespace SymbolCollector.Android
                 }
             };
 
-
             var iocSpan = tran.StartChild("container.init", "Initializing the IoC container");
             var userAgent = "Android/" + GetType().Assembly.GetName().Version;
             _host = Startup.Init(c =>
             {
+                // Can be removed once addressed: https://github.com/getsentry/sentry-dotnet/issues/824
+                c.AddSingleton<IHttpMessageHandlerBuilderFilter, SentryHttpMessageHandlerBuilderFilter>();
+
                 c.AddSingleton<AndroidUploader>();
                 c.AddOptions().Configure<SymbolClientOptions>(o =>
                 {

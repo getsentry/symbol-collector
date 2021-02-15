@@ -83,6 +83,7 @@ namespace SymbolCollector.Core
                 result = null;
                 Metrics.FailedToParse();
                 // You would expect TryLoad doesn't throw but that's not the case
+                e.Data[$"Sentry:Attach:Path:{file}"] = file;
                 _logger.LogError(e, "Failed processing file {file}.", file);
             }
 
@@ -207,7 +208,6 @@ namespace SymbolCollector.Core
         {
             IELF? elf = null;
             try
-
             {
                 // TODO: find an async API if this is used by the server
                 if (ELFReader.TryLoad(file, out elf))
