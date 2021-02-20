@@ -83,7 +83,6 @@ namespace SymbolCollector.Core
                 result = null;
                 Metrics.FailedToParse();
                 // You would expect TryLoad doesn't throw but that's not the case
-                e.Data[$"Sentry:Attach:Path:{file}"] = file;
                 _logger.LogError(e, "Failed processing file {file}.", file);
             }
 

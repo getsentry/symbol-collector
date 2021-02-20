@@ -51,7 +51,7 @@ namespace SymbolCollector.Server
                 }
                 else
                 {
-                    host.Run();
+                    await host.RunAsync();
                 }
 
                 return 0;
@@ -78,8 +78,6 @@ namespace SymbolCollector.Server
                 {
                     webBuilder.UseSentry(o =>
                     {
-                        o.AddInAppExclude("Serilog");
-                        o.AddInAppExclude("Google");
                         o.AddExceptionFilterForType<OperationCanceledException>();
                         o.BeforeSend = @event =>
                         {
