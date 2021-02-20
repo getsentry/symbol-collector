@@ -15,5 +15,5 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // Until Xamarin supports SDK style csproj
-[assembly: AssemblyVersion("1.2.1")]
-[assembly: AssemblyFileVersion("1.2.1")]
+[assembly: AssemblyVersion("1.2.2")]
+[assembly: AssemblyFileVersion("1.2.2")]
