@@ -335,22 +335,14 @@ namespace SymbolCollector.Android
                 }
                 if (uname is { })
                 {
-                    // Not serializing properly: https://github.com/getsentry/sentry-dotnet/issues/822
-                    // s.Contexts["uname"] = new
-                    // {
-                    //     uname.Machine,
-                    //     uname.Nodename,
-                    //     uname.Release,
-                    //     uname.Sysname,
-                    //     uname.Version
-                    // };
-
-                    // Until ^ is resolved
-                    s.SetExtra("uname:Machine", uname.Machine);
-                    s.SetExtra("uname:Nodename", uname.Nodename);
-                    s.SetExtra("uname:Release", uname.Release);
-                    s.SetExtra("uname:Sysname", uname.Sysname);
-                    s.SetExtra("uname:Version", uname.Version);
+                    s.Contexts["uname"] = new
+                    {
+                        uname.Machine,
+                        uname.Nodename,
+                        uname.Release,
+                        uname.Sysname,
+                        uname.Version
+                    };
                 }
             });
 
