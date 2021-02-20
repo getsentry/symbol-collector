@@ -11,6 +11,7 @@ using ELFSharp.ELF.Segments;
 using ELFSharp.MachO;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Sentry;
 using FileType = ELFSharp.ELF.FileType;
 using ELFMachine = ELFSharp.ELF.Machine;
 using MachOMachine = ELFSharp.MachO.Machine;
@@ -83,7 +84,11 @@ namespace SymbolCollector.Core
                 result = null;
                 Metrics.FailedToParse();
                 // You would expect TryLoad doesn't throw but that's not the case
-                _logger.LogError(e, "Failed processing file {file}.", file);
+                SentrySdk.WithScope(s =>
+                {
+                    s.AddAttachment(file);
+                    _logger.LogError(e, "Failed processing file {file}.", file);
+                });
             }
 
             Metrics.FileProcessed();
@@ -207,7 +212,6 @@ namespace SymbolCollector.Core
         {
             IELF? elf = null;
             try
-
             {
                 // TODO: find an async API if this is used by the server
                 if (ELFReader.TryLoad(file, out elf))
