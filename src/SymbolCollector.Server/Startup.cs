@@ -155,7 +155,9 @@ namespace SymbolCollector.Server
             });
 
             app.UseRouting();
-            app.UseSentryTracing();
+            app.UseWhen(
+                c => !c.Request.Path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase),
+                c => c.UseSentryTracing());
 
             app.UseEndpoints(endpoints =>
             {
