@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Android.App;
@@ -20,6 +21,7 @@ using Sentry.Protocol;
 using SymbolCollector.Core;
 using AlertDialog = Android.App.AlertDialog;
 using OperationCanceledException = System.OperationCanceledException;
+using Xamarin.Essentials;
 
 namespace SymbolCollector.Android
 {
@@ -38,6 +40,8 @@ namespace SymbolCollector.Android
             try
             {
                 base.OnCreate(savedInstanceState);
+                Platform.Init(this, savedInstanceState);
+
                 SetContentView(Resource.Layout.activity_main);
 
                 var footerText = (TextView)base.FindViewById(Resource.Id.footer)!;
@@ -104,7 +108,7 @@ namespace SymbolCollector.Android
 
         private void Unfocus()
         {
-            if (CurrentFocus?.WindowToken is {} windowToken)
+            if (CurrentFocus?.WindowToken is { } windowToken)
             {
                 (GetSystemService(InputMethodService) as InputMethodManager)
                     ?.HideSoftInputFromWindow(windowToken, 0);
@@ -238,6 +242,7 @@ namespace SymbolCollector.Android
             {
                 throw new InvalidOperationException("Couldn't get a dialog built.");
             }
+
             builder.Show();
         }
 
@@ -251,6 +256,7 @@ namespace SymbolCollector.Android
             SentryXamarin.Init(o =>
             {
                 o.TracesSampleRate = 1.0;
+                o.MaxBreadcrumbs = 200;
                 o.Debug = true;
                 o.DiagnosticLevel = SentryLevel.Debug;
                 o.AttachStacktrace = true;
@@ -329,10 +335,12 @@ namespace SymbolCollector.Android
                 }
                 catch (Exception e)
                 {
-                    SentrySdk.AddBreadcrumb("Couldn't run uname", category: "exec", data: new Dictionary<string, string> { { "exception", e.Message } }, level: BreadcrumbLevel.Error);
+                    SentrySdk.AddBreadcrumb("Couldn't run uname", category: "exec",
+                        data: new Dictionary<string, string> {{"exception", e.Message}}, level: BreadcrumbLevel.Error);
                     // android.runtime.JavaProxyThrowable: System.NotSupportedException: Could not activate JNI Handle 0x7ed00025 (key_handle 0x4192edf8) of Java type 'md5eb7159ad9d3514ee216d1abd14b6d16a/MainActivity' as managed type 'SymbolCollector.Android.MainActivity'. --->
                     // Java.Lang.NoClassDefFoundError: android/system/Os ---> Java.Lang.ClassNotFoundException: Didn't find class "android.system.Os" on path: DexPathList[[zip file "/data/app/SymbolCollector.Android.SymbolCollector.Android-1.apk"],nativeLibraryDirectories=[/data/app-lib/SymbolCollector.Android.SymbolCollector.Android-1, /vendor/lib, /system/lib]]
                 }
+
                 if (uname is { })
                 {
                     s.Contexts["uname"] = new
@@ -389,6 +397,7 @@ namespace SymbolCollector.Android
             {
                 s.SetTag("user-agent", userAgent);
                 s.SetTag("friendly-name", _friendlyName);
+                s.AddAttachment(new ScreenshotAttachment());
             });
         }
 
@@ -396,6 +405,36 @@ namespace SymbolCollector.Android
         {
             base.Dispose(disposing);
             _host.Dispose();
+        }
+
+        private class ScreenshotAttachment : Attachment
+        {
+            public ScreenshotAttachment()
+                : this(
+                AttachmentType.Default,
+                new ScreenshotAttachmentContent(),
+                "screenshot",
+                 "image/png")
+            {
+
+            }
+            private ScreenshotAttachment(
+                AttachmentType type,
+                IAttachmentContent content,
+                string fileName,
+                string? contentType)
+                : base(type, content, fileName, contentType)
+            {
+            }
+
+            private class ScreenshotAttachmentContent : IAttachmentContent
+            {
+                public Stream GetStream()
+                {
+                    var screenshot = Screenshot.CaptureAsync().GetAwaiter().GetResult();
+                    return screenshot.OpenReadAsync().GetAwaiter().GetResult();
+                }
+            }
         }
     }
 }
