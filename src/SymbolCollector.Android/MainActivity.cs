@@ -416,7 +416,6 @@ namespace SymbolCollector.Android
                 "screenshot",
                  "image/png")
             {
-
             }
             private ScreenshotAttachment(
                 AttachmentType type,
