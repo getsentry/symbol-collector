@@ -152,7 +152,7 @@ namespace SymbolCollector.Server
                 return Ok();
             }
 
-            if (!symbol.BatchIds.Contains(batchId))
+            if (!symbol.BatchIds.TryGetValue(batchId, out var _))
             {
                 await _symbolService.Relate(batchId, symbol, token);
             }

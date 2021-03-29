@@ -226,7 +226,7 @@ namespace SymbolCollector.Server
                 }
                 else
                 {
-                    if (symbol.BatchIds.Any(b => b == batchId))
+                    if (symbol.BatchIds.TryGetValue(batchId, out _))
                     {
                         _logger.LogDebug(
                             "Client uploading the same file {fileName} as part of the same batch {batchId}",
@@ -243,6 +243,9 @@ namespace SymbolCollector.Server
                 return StoreResult.AlreadyExisted;
             }
 
+            var map = new ConcurrentDictionary<Guid, object?>();
+            map.TryAdd(batchId, null);
+
             var metadata = new SymbolMetadata(
                 fileResult.UnifiedId,
                 fileResult.Hash,
@@ -251,7 +254,7 @@ namespace SymbolCollector.Server
                 fileName,
                 fileResult.Architecture,
                 fileResult.FileFormat,
-                new HashSet<Guid> {batchId});
+                map);
 
             batch.Symbols[metadata.UnifiedId] = metadata;
 
@@ -272,7 +275,7 @@ namespace SymbolCollector.Server
         {
             var batch = await GetOpenBatch(batchId, token);
             batch.Symbols[symbolMetadata.UnifiedId] = symbolMetadata;
-            symbolMetadata.BatchIds.Add(batchId);
+            symbolMetadata.BatchIds.TryAdd(batchId, null);
 
             _logger.LogDebug("Symbol {debugId} is now related to batch {batchId}.",
                 symbolMetadata.UnifiedId, batchId);
