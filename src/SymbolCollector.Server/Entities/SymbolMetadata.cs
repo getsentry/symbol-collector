@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using SymbolCollector.Core;
 
@@ -23,7 +24,7 @@ namespace SymbolCollector.Server.Models
         // file_format= elf, macho
         public FileFormat FileFormat { get; set; }
 
-        public HashSet<Guid> BatchIds { get; }
+        public ConcurrentDictionary<Guid, object?> BatchIds { get; }
 
         public SymbolMetadata(
             string unifiedId,
@@ -33,7 +34,7 @@ namespace SymbolCollector.Server.Models
             string name,
             Architecture arch,
             FileFormat fileFormat,
-            HashSet<Guid> batchIds)
+            ConcurrentDictionary<Guid, object?> batchIds)
         {
             UnifiedId = unifiedId;
             Hash = hash;

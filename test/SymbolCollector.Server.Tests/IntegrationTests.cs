@@ -269,7 +269,7 @@ namespace SymbolCollector.Server.Tests
             Assert.EndsWith( Path.GetFileName(testFile), symbol.Path);
             var baseWorking = _fixture.ServiceProvider!.GetRequiredService<IOptions<SymbolServiceOptions>>().Value.BaseWorkingPath;
             Assert.StartsWith(Path.Combine(baseWorking!, "processing", batch.BatchType.ToSymsorterPrefix(), batchId.ToString()), symbol.Path);
-            Assert.Equal(batchId, symbol.BatchIds.Single());
+            Assert.Equal(batchId, symbol.BatchIds.Single().Key);
 
             Assert.Equal(FileFormat.Elf, symbol.FileFormat);
             // TODO: Add the other info
@@ -376,7 +376,7 @@ namespace SymbolCollector.Server.Tests
             Assert.EndsWith( Path.GetFileName(testFile), symbol.Path);
             var baseWorking = _fixture.ServiceProvider!.GetRequiredService<IOptions<SymbolServiceOptions>>().Value.BaseWorkingPath;
             Assert.StartsWith(Path.Combine(baseWorking!, "processing", batch.BatchType.ToSymsorterPrefix(), batchId.ToString()), symbol.Path);
-            Assert.Equal(batchId, symbol.BatchIds.Single());
+            Assert.Equal(batchId, symbol.BatchIds.Single().Key);
             var actualBytes = await File.ReadAllBytesAsync(symbol.Path);
             Assert.True(fileBytes.SequenceEqual(actualBytes));
 
