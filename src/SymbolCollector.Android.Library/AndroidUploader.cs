@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -6,7 +6,7 @@ using Sentry;
 using SymbolCollector.Core;
 using Exception = System.Exception;
 
-namespace SymbolCollector.Android
+namespace SymbolCollector.Android.Library
 {
     public class AndroidUploader
     {
@@ -22,7 +22,7 @@ namespace SymbolCollector.Android
         public Task StartUpload(string friendlyName, CancellationToken token) =>
             Task.Run(async () =>
             {
-                var paths = new[] {"/system/lib", "/system/lib64", "/system/", "/vendor/lib"};
+                var paths = new[] { "/system/lib", "/system/lib64", "/system/", "/vendor/lib" };
 
                 _logger.LogInformation("Using friendly name: {friendlyName} and paths: {paths}",
                     friendlyName, paths);

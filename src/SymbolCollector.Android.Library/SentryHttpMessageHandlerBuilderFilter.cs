@@ -2,10 +2,10 @@ using System;
 using Microsoft.Extensions.Http;
 using Sentry;
 
-namespace SymbolCollector.Android
+namespace SymbolCollector.Android.Library
 {
     // can be deleted once https://github.com/getsentry/sentry-dotnet/issues/824 is fixed
-    internal class SentryHttpMessageHandlerBuilderFilter : IHttpMessageHandlerBuilderFilter
+    public class SentryHttpMessageHandlerBuilderFilter : IHttpMessageHandlerBuilderFilter
     {
         private readonly Func<IHub> _getHub;
 

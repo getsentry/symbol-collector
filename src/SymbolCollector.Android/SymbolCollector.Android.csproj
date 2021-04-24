@@ -74,10 +74,8 @@
     <Reference Include="Mono.Android" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AndroidUploader.cs" />
     <Compile Include="MainActivity.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SentryHttpMessageHandlerBuilderFilter.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Properties\AndroidManifest.xml" />
@@ -107,6 +105,10 @@
     <ProjectReference Include="..\SymbolCollector.Core\SymbolCollector.Core.csproj">
       <Project>{5c904261-899c-4b8f-bea4-5cf93fedd505}</Project>
       <Name>SymbolCollector.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\SymbolCollector.Android.Library\SymbolCollector.Android.Library.csproj">
+      <Project>{66444A27-B1C2-479F-9BE5-9B74113C1BE6}</Project>
+      <Name>SymbolCollector.Android.Library</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.CSharp.targets" />
