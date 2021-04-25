@@ -52,7 +52,7 @@
     <Compile Include="SentryHttpMessageHandlerBuilderFilter.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Xamarin.AndroidX.AppCompat" Version="1.2.0.5" />
+    <PackageReference Include="Xamarin.AndroidX.AppCompat" Version="1.2.0.7" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="5.0.0" />
     <PackageReference Include="Sentry" Version="3.3.3" />
     <PackageReference Include="Sentry.Extensions.Logging" Version="3.3.3" />
