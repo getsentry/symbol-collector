@@ -5,7 +5,7 @@ using Sentry;
 namespace SymbolCollector.Android.Library
 {
     // can be deleted once https://github.com/getsentry/sentry-dotnet/issues/824 is fixed
-    public class SentryHttpMessageHandlerBuilderFilter : IHttpMessageHandlerBuilderFilter
+    internal class SentryHttpMessageHandlerBuilderFilter : IHttpMessageHandlerBuilderFilter
     {
         private readonly Func<IHub> _getHub;
 

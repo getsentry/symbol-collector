@@ -15,7 +15,7 @@ namespace SymbolCollector.Android.Library
     /// <summary>
     /// Symbol Collector client Host.
     /// </summary>
-    public static class Host
+    public class Host
     {
         /// <summary>
         /// Initializes <see cref="IHost"/> with Sentry monitoring.
