@@ -111,18 +111,38 @@ namespace SymbolCollector.Server
             [FromRoute] string? hash,
             CancellationToken token)
         {
+            var (wanted,result) = await CheckSymbolExistsAsync(batchId, unifiedId, hash, token);
+            return wanted
+                ? result
+                : Conflict();
+        }
+
+        [HttpHead(Route + "/batch/{batchId}/check/v2/{unifiedId}/{hash?}")]
+        public async Task<IActionResult> IsSymbolMissingV2(
+            [FromRoute] Guid batchId,
+            [FromRoute] string unifiedId,
+            [FromRoute] string? hash,
+            CancellationToken token)
+        {
+            var (wanted,result) = await CheckSymbolExistsAsync(batchId, unifiedId, hash, token);
+            return wanted
+                ? result
+                : new StatusCodeResult(208);
+        }
+
+        private async Task<(bool,IActionResult)> CheckSymbolExistsAsync(Guid batchId, string unifiedId, string? hash, CancellationToken token)
+        {
             using var _ = _metrics.BeginSymbolMissingCheck();
             await ValidateBatch(batchId, ModelState, token);
 
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState);
+                {
+                    return (true, BadRequest(ModelState));
+                }
             }
 
-            _hub.ConfigureScope(s =>
-            {
-                s.SetTag("batchId", batchId.ToString());
-            });
+            _hub.ConfigureScope(s => { s.SetTag("batchId", batchId.ToString()); });
 
             var symbol = await _symbolService.GetSymbol(unifiedId, token);
             if (symbol is null)
@@ -130,10 +150,12 @@ namespace SymbolCollector.Server
                 _logger.LogDebug("{batchId} looked for {unifiedId} and {hash} which is a missing symbol.",
                     batchId, unifiedId, hash);
                 _metrics.SymbolCheckMissing();
-                return Ok();
+                {
+                    return (true, Ok());
+                }
             }
 
-            if (hash is {} && symbol.Hash is {} && string.CompareOrdinal(hash, symbol.Hash) != 0)
+            if (hash is { } && symbol.Hash is { } && string.CompareOrdinal(hash, symbol.Hash) != 0)
             {
                 using (_logger.BeginScope(new Dictionary<string, string>()
                 {
@@ -149,7 +171,9 @@ namespace SymbolCollector.Server
                         unifiedId, batchId);
                 }
 
-                return Ok();
+                {
+                    return (true, Ok());
+                }
             }
 
             if (!symbol.BatchIds.TryGetValue(batchId, out var _))
@@ -158,7 +182,7 @@ namespace SymbolCollector.Server
             }
 
             _metrics.SymbolCheckExists();
-            return Conflict();
+            return false;
         }
 
         [HttpPost(Route + "/batch/{batchId}/upload/")]
