@@ -161,6 +161,20 @@ namespace SymbolCollector.Server
             return Conflict();
         }
 
+        [HttpHead(Route + "/batch/{batchId}/check/v2/{unifiedId}/{hash?}")]
+        public async Task<IActionResult> IsSymbolMissingV2(
+            [FromRoute] Guid batchId,
+            [FromRoute] string unifiedId,
+            [FromRoute] string? hash,
+            CancellationToken token)
+        {
+            var result = await IsSymbolMissing(batchId, unifiedId, hash, token);
+            return result is ConflictResult
+                // It's an expected scenario so returning something on the 2xx range
+                ? new StatusCodeResult(208)
+                : result;
+        }
+
         [HttpPost(Route + "/batch/{batchId}/upload/")]
         [DisableFormValueModelBinding]
         public async Task<IActionResult> UploadSymbol(

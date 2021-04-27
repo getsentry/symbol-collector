@@ -169,7 +169,7 @@ namespace SymbolCollector.Core
 
             async Task<bool> IsSymbolMissing()
             {
-                var checkUrl = $"{_options.BaseAddress.AbsoluteUri}symbol/batch/{batchId}/check/{unifiedId}/{hash}";
+                var checkUrl = $"{_options.BaseAddress.AbsoluteUri}symbol/batch/{batchId}/check/v2/{unifiedId}/{hash}";
                 try
                 {
                     var checkResponse =

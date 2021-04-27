@@ -326,6 +326,10 @@ namespace SymbolCollector.Server.Tests
             resp = await client.SendAsync(new HttpRequestMessage(HttpMethod.Head,
                 SymbolsController.Route + $"/batch/{batchId}/check/{unifiedId}/"));
             resp.AssertStatusCode(HttpStatusCode.Conflict);
+            // Check again on v2 endpoint (different status code)
+            resp = await client.SendAsync(new HttpRequestMessage(HttpMethod.Head,
+                SymbolsController.Route + $"/batch/{batchId}/check/v2/{unifiedId}/"));
+            resp.AssertStatusCode(HttpStatusCode.AlreadyReported);
         }
 
         [Fact]
