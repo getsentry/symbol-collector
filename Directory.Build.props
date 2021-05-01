@@ -15,7 +15,15 @@
     <NoWarn Condition="'$(Configuration)' == 'Debug'">$(NoWarn);CS1998;CS8321;CS1591;CS0162</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
+<!--    Microsoft.Build.Tasks.Git.targets(24, 5): [MSB4018] The "Microsoft.Build.Tasks.Git.LocateRepository" task failed unexpectedly.-->
+<!--    System.InvalidCastException: [A]System.Runtime.CompilerServices.StrongBox`1[Microsoft.Build.Tasks.Git.GitRepository] cannot be cast to [B]System.Runtime.CompilerServices.StrongBox`1[Microsoft.Build.Tasks.Git.GitRepository]. Type A originates from 'System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e' in the context 'Default' at location '/usr/local/share/dotnet/shared/Microsoft.NETCore.App/6.0.0-preview.3.21201.4/System.Private.CoreLib.dll'. Type B originates from 'System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e' in the context 'Default' at location '/usr/local/share/dotnet/shared/Microsoft.NETCore.App/6.0.0-preview.3.21201.4/System.Private.CoreLib.dll'.-->
+<!--    at Microsoft.Build.Tasks.Git.RepositoryTask.TryGetCachedRepositoryInstance(String cacheKey, Boolean requireCached, GitRepository& repository)-->
+<!--    at Microsoft.Build.Tasks.Git.RepositoryTask.GetOrCreateRepositoryInstance()-->
+<!--    at Microsoft.Build.Tasks.Git.RepositoryTask.ExecuteImpl()-->
+<!--    at Microsoft.Build.Tasks.Git.RepositoryTask.Execute()-->
+<!--    at Microsoft.Build.BackEnd.TaskExecutionHost.Microsoft.Build.BackEnd.ITaskExecutionHost.Execute()-->
+<!--    at Microsoft.Build.BackEnd.TaskBuilder.ExecuteInstantiatedTask(ITaskExecutionHost taskExecutionHost, TaskLoggingContext taskLoggingContext, TaskHost taskHost, ItemBucket bucket, TaskExecutionMode howToExecuteTask)-->
+<!--    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />-->
     <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="3.3.2" PrivateAssets="All" />
   </ItemGroup>
 </Project>
