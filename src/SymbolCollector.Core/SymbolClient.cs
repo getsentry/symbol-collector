@@ -176,7 +176,8 @@ namespace SymbolCollector.Core
                         await _httpClient.SendAsync(
                             new HttpRequestMessage(HttpMethod.Head, checkUrl) {Version = _httpVersion}, token);
 
-                    if (checkResponse.StatusCode == HttpStatusCode.Conflict)
+                    if (checkResponse.StatusCode == HttpStatusCode.Conflict
+                        || checkResponse.StatusCode == HttpStatusCode.AlreadyReported)
                     {
                         _logger.LogDebug("Server returns {statusCode} for {buildId}",
                             checkResponse.StatusCode, unifiedId);
