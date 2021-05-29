@@ -22,9 +22,11 @@ using Host = SymbolCollector.Android.Library.Host;
 
 namespace SymbolCollector.Android
 {
-    [Activity(Label = "@string/app_name", Theme = "@style/AppTheme", MainLauncher = true,
+    [Activity(
+        Name = "io.sentry.symbolcollector.MainActivity",
+        Label = "@string/app_name", Theme = "@style/AppTheme", MainLauncher = true,
         ScreenOrientation = ScreenOrientation.Portrait)]
-    public class MainActivity : Activity
+    public class MainActivity : AppCompatActivity
     {
         private readonly string _friendlyName;
         private readonly IHost _host;
