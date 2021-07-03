@@ -2,9 +2,10 @@
 set -e
 
 pushd src/SymbolCollector.Android/
-msbuild /restore /p:Configuration=Release \
-    /p:AndroidBuildApplicationPackage=true \
-    /t:Clean\;Build\;SignAndroidPackage
+#msbuild /restore /p:Configuration=Release \
+#    /p:AndroidBuildApplicationPackage=true \
+#    /t:Clean\;Build\;SignAndroidPackage
+dotnet publish -c Release
 popd
 
 pushd src/SymbolCollector.Server/

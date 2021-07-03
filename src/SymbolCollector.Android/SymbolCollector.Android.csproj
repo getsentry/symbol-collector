@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net6.0-android</TargetFramework>
 <!--    <ApplicationId>io.sentry.symbolcollector.android</ApplicationId>-->
@@ -15,7 +15,8 @@
 
   <!-- https://github.com/dotnet/net6-mobile-samples/blob/ad4980b9f818486106842fd596f6bc59e6963f9f/HelloAndroid/HelloAndroid.csproj -->
   <ItemGroup>
-    <PackageReference Include="Xamarin.Google.Android.Material" Version="1.3.0.1-net6preview03.4680155" />
+    <PackageReference Include="Xamarin.AndroidX.AppCompat" Version="1.3.0" />
+    <PackageReference Include="Xamarin.Google.Android.Material" Version="1.3.0.1" />
   </ItemGroup>
 
   <ItemGroup>
