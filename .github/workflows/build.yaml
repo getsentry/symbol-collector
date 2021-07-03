@@ -26,6 +26,9 @@ jobs:
         with:
           dotnet-version: '6.0.100-preview.5.21302.13'
 
+      - name: Install Android workload
+        run: sudo dotnet workload install microsoft-android-sdk-full
+
       - name: Run batch build script
         if: matrix.os == 'windows-latest'
         shell: cmd
