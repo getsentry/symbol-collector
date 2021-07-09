@@ -14,3 +14,5 @@ dotnet run -- --upload directory --path outputs/ --batch-type android --bundle-i
 ```sh
 dotnet run -- --symsorter ../SymbolCollector.Server/dev-data/done/macos --bundle-id test-symsorter --batch-type macos --path output --dryrun true
 ```
+
+Note that this CLI is [used by `craft`](https://github.com/getsentry/craft) through the [`symbol-collector` target](https://github.com/getsentry/craft/pull/266).
