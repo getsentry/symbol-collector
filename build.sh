@@ -27,6 +27,10 @@ pushd test/SymbolCollector.Core.Tests/
 dotnet test -c Release --collect:"XPlat Code Coverage" --settings ../coverletArgs.runsettings
 popd
 
+pushd test/SymbolCollector.Console.Tests/
+dotnet test -c Release --collect:"XPlat Code Coverage" --settings ../coverletArgs.runsettings
+popd
+
 pushd test/SymbolCollector.Android.UITests/
 msbuild /restore /p:Configuration=Release /t:Build
 # Don't run emulator tests on CI
