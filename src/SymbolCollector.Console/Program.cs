@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.IO;
-using System.Linq;
 using System.Threading;
-using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -95,6 +92,7 @@ namespace SymbolCollector.Console
                     await uploader.StartUploadSymbols(
                         DefaultSymbolPathProvider.GetDefaultPaths(),
                         args.BundleId,
+                        args.BatchType,
                         args.Cancellation.Token);
                     return;
                 case "directory":
@@ -114,7 +112,11 @@ namespace SymbolCollector.Console
                     }
 
                     logger.LogInformation("Uploading stuff from directory: '{path}'.", args.Path);
-                    await uploader.StartUploadSymbols(new[] {args.Path}, args.BundleId, args.Cancellation.Token);
+                    await uploader.StartUploadSymbols(
+                        new[] {args.Path},
+                        args.BundleId,
+                        args.BatchType,
+                        args.Cancellation.Token);
                     break;
             }
 
@@ -166,7 +168,7 @@ namespace SymbolCollector.Console
                 return;
             }
 
-            if (args.Symsorter is { } && args.BatchType is {} && args.BundleId is {} && args.Path is {})
+            if (args.Symsorter is {} && args.BatchType is {} batchType && args.BundleId is {} && args.Path is {})
             {
                 if (string.IsNullOrWhiteSpace(args.BundleId))
                 {
@@ -183,7 +185,11 @@ namespace SymbolCollector.Console
                 var sorter = host.Services.GetRequiredService<Symsorter>();
 
                 await sorter.ProcessBundle(
-                    new SymsorterParameters(args.Path, args.BatchType, args.BundleId, args.DryRun),
+                    new SymsorterParameters(
+                        args.Path,
+                        batchType.ToString(),
+                        args.BundleId,
+                        args.DryRun),
                     args.Symsorter,
                     args.Cancellation.Token);
 
@@ -270,7 +276,11 @@ namespace SymbolCollector.Console
             Path = path;
             Symsorter = symsorter;
             BundleId = bundleId;
-            BatchType = batchType;
+            if (Enum.TryParse<BatchType>(batchType, true, out var result) &&
+                result != Core.BatchType.Unknown)
+            {
+                BatchType = result;
+            }
             ServerEndpoint = serverEndpoint;
             UserAgent = userAgent;
             DryRun = dryRun;
@@ -282,7 +292,7 @@ namespace SymbolCollector.Console
         public string? Path { get; }
         public string? Symsorter { get; }
         public string? BundleId { get; }
-        public string? BatchType { get; }
+        public BatchType? BatchType { get; }
         public Uri? ServerEndpoint { get; }
         public string UserAgent { get; }
         public bool DryRun { get; }

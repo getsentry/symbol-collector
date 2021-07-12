@@ -26,7 +26,7 @@ namespace SymbolCollector.Console
             _logger = logger;
         }
 
-        public async Task StartUploadSymbols(IEnumerable<string> paths, string bundleId, CancellationToken token)
+        public async Task StartUploadSymbols(IEnumerable<string> paths, string bundleId, BatchType? batchType, CancellationToken token)
         {
             SentrySdk.ConfigureScope(s =>
             {
@@ -54,7 +54,7 @@ namespace SymbolCollector.Console
 
             try
             {
-                var type = DeviceBatchType();
+                var type = batchType ?? DeviceBatchType();
                 _logger.LogInformation("Uploading bundle {bundleId} of type {type} and paths: {paths}",
                     bundleId, type, paths);
                 await _client.UploadAllPathsAsync(bundleId, type, paths, token);

@@ -6,6 +6,7 @@
     <!-- This should be picked up from Directory.Build.props but after adding a dependency to-->
     <!-- System.CommandLine.DragonFruit it will fail to `dotnet run` without it set here:-->
     <NoWarn Condition="'$(Configuration)' == 'Debug'">$(NoWarn);CS1591</NoWarn>
+    <LangVersion>9.0</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
