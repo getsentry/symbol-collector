@@ -168,7 +168,7 @@ namespace SymbolCollector.Console
                 return;
             }
 
-            if (args.Symsorter is {} && args.BatchType is {} batchType && args.BundleId is {} && args.Path is {})
+            if (args.Symsorter is {} && args.BatchType is {} && args.BundleId is {} && args.Path is {})
             {
                 if (string.IsNullOrWhiteSpace(args.BundleId))
                 {
@@ -187,7 +187,7 @@ namespace SymbolCollector.Console
                 await sorter.ProcessBundle(
                     new SymsorterParameters(
                         args.Path,
-                        batchType.ToString(),
+                        args.BatchType?.ToString() ?? string.Empty,
                         args.BundleId,
                         args.DryRun),
                     args.Symsorter,
