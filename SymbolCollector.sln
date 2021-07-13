@@ -2,7 +2,7 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.31205.134
-MinimumVisualStudioVersion = 15.0.26124.0
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SymbolCollector.Console", "src\SymbolCollector.Console\SymbolCollector.Console.csproj", "{906FC560-942F-4070-ADFB-3BFBE4A1DB35}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SymbolCollector.Core", "src\SymbolCollector.Core\SymbolCollector.Core.csproj", "{5C904261-899C-4B8F-BEA4-5CF93FEDD505}"
