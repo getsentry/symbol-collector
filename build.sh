@@ -59,4 +59,12 @@ for arch in "${archs[@]}"; do
     dotnet publish -c release /p:PublishSingleFile=true --self-contained -r $arch -o publish-$arch
     zip -j symbolcollector-console-$arch.zip publish-$arch/SymbolCollector.Console
 done
+
+# Validate if SymbolCollector is starting on Mac OS X
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    echo "Validating if generated SymbolCollector.Console starts..."
+    cli=./publish-osx-x64/SymbolCollector.Console
+    chmod +x $cli
+    ./$cli --version -h
+fi
 popd
