@@ -39,9 +39,11 @@ namespace SymbolCollector.Console.Tests
         [InlineData("Android", BatchType.Android)]
         [InlineData("ANDROID", BatchType.Android)]
         [InlineData("ios", BatchType.IOS)]
+        [InlineData("iOS", BatchType.IOS)]
         [InlineData("watchos", BatchType.WatchOS)]
         [InlineData("linux", BatchType.Linux)]
         [InlineData("macos", BatchType.MacOS)]
+        [InlineData("macOS", BatchType.MacOS)]
         public void Ctor_ValidBatchType_BatchTypeSet(string batchType, BatchType expectedType )
         {
             //Act
