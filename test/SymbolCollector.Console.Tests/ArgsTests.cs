@@ -12,7 +12,7 @@ namespace SymbolCollector.Console.Tests
                 => new Args(null, null, null, null, null, batchType, null, string.Empty, default, new CancellationTokenSource());
         }
 
-        private readonly Fixture _fixture = new();
+        private readonly Fixture _fixture = new Fixture();
 
         [Fact]
         public void Ctor_NullBatchType_BatchTypeNotSet()
