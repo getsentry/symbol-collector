@@ -24,6 +24,8 @@ namespace SymbolCollector.Android.Library
         {
             SentryXamarin.Init(o =>
             {
+                // System.UnauthorizedAccessException: Access to the path '/proc/stat' is denied.
+                o.DetectStartupTime = StartupTimeDetectionMode.Fast;
                 o.TracesSampleRate = 1.0;
                 o.MaxBreadcrumbs = 200;
                 o.Debug = true;

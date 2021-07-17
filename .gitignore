@@ -10,3 +10,4 @@ dev-data/
 TestResult.xml
 **/publish*
 **/*.zip
+packages/
