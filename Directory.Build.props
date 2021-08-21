@@ -13,6 +13,8 @@
     <!-- CS1591: Missing XML comment for public member -->
     <!-- CS0162: Code is unreachable. -->
     <NoWarn Condition="'$(Configuration)' == 'Debug'">$(NoWarn);CS1998;CS8321;CS1591;CS0162</NoWarn>
+    <!-- After preview 7 it'll be opt-in again -->
+    <DisableImplicitNamespaceImports>true</DisableImplicitNamespaceImports>
   </PropertyGroup>
   <ItemGroup>
 <!--    Microsoft.Build.Tasks.Git.targets(24, 5): [MSB4018] The "Microsoft.Build.Tasks.Git.LocateRepository" task failed unexpectedly.-->
