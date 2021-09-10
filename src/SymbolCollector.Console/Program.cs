@@ -3,8 +3,10 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Sentry;
+using Sentry.Protocol;
 using SymbolCollector.Core;
 using static System.Console;
 
@@ -12,12 +14,6 @@ namespace SymbolCollector.Console
 {
     internal class Program
     {
-#if DEBUG
-        private const string Dsn = "https://02619ad38bcb40d0be5167e1fb335954@sentry.io/1847454";
-#else
-        private const string Dsn = "https://2262a4fa0a6d409c848908ec90c3c5b4@sentry.io/1886021";
-#endif
-
         private static readonly ClientMetrics _metrics = new ClientMetrics();
 
         static async Task Main(
@@ -38,23 +34,6 @@ namespace SymbolCollector.Console
 
             Bootstrap(args);
 
-            try
-            {
-                await Run(args);
-            }
-            catch (Exception e)
-            {
-                WriteLine(e);
-                SentrySdk.CaptureException(e);
-            }
-            finally
-            {
-                await SentrySdk.FlushAsync(TimeSpan.FromSeconds(2));
-            }
-        }
-
-        private static async Task Run(Args args)
-        {
             using var host = Startup.Init(s =>
             {
                 if (args.ServerEndpoint != null)
@@ -71,6 +50,32 @@ namespace SymbolCollector.Console
                 s.AddSingleton<ConsoleUploader>();
             });
 
+            try
+            {
+                await Run(host, args);
+            }
+            catch (Exception e)
+            {
+                WriteLine(e);
+                // DragonFruit library hooks outside if this main on its own main
+                e.Data[Mechanism.HandledKey] = false;
+                e.Data[Mechanism.MechanismKey] = "Main.UnhandledException";
+                var evt = new SentryEvent(e) { SentryExceptions = new[]
+                    {
+                        // Work around until this is resolved: https://github.com/getsentry/sentry-dotnet/issues/1190
+                        new SentryException { Mechanism = new Mechanism { Handled = false } }
+                    }
+                };
+                SentrySdk.CaptureEvent(evt);
+            }
+            finally
+            {
+                await SentrySdk.FlushAsync(TimeSpan.FromSeconds(2));
+            }
+        }
+
+        private static async Task Run(IHost host, Args args)
+        {
             var logger = host.Services.GetRequiredService<ILogger<Program>>();
             var uploader = host.Services.GetRequiredService<ConsoleUploader>();
 
@@ -206,24 +211,29 @@ namespace SymbolCollector.Console
 
         private static void Bootstrap(Args args)
         {
-            using var _ = SentrySdk.Init(o =>
+            SentrySdk.Init(o =>
             {
+                o.Dsn = "https://10ca21ff6838474e9b4ba8c789e79756@o1.ingest.sentry.io/5953213";
                 o.Debug = true;
+#if DEBUG
+                o.Environment = "development";
+#else
                 o.DiagnosticLevel = SentryLevel.Warning;
+#endif
                 o.AttachStacktrace = true;
                 o.SendDefaultPii = true;
-                o.AddInAppExclude("Polly");
+                o.TracesSampleRate = 1.0;
+                o.AutoSessionTracking = true;
 
                 o.AddExceptionFilterForType<OperationCanceledException>();
 
-                o.Dsn = Dsn;
                 // TODO: This needs to be built-in
                 o.BeforeSend += @event =>
                 {
                     const string traceIdKey = "TraceIdentifier";
                     switch (@event.Exception)
                     {
-                        case var e when e is OperationCanceledException:
+                        case OperationCanceledException _:
                             return null!;
                         case var e when e?.Data.Contains(traceIdKey) == true:
                             @event.SetTag(traceIdKey, e.Data[traceIdKey]?.ToString() ?? "unknown");

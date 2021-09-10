@@ -20,17 +20,23 @@ namespace SymbolCollector.Android.Library
         /// <summary>
         /// Initializes <see cref="IHost"/> with Sentry monitoring.
         /// </summary>
-        public static IHost Init()
+        public static IHost Init(string dsn)
         {
             SentryXamarin.Init(o =>
             {
                 o.TracesSampleRate = 1.0;
-                o.MaxBreadcrumbs = 200;
+                o.MaxBreadcrumbs = 100;
                 o.Debug = true;
-                o.DiagnosticLevel = SentryLevel.Debug;
+#if DEBUG
+                o.Environment = "development";
+#else
+                o.DiagnosticLevel = SentryLevel.Warning;
+#endif
                 o.AttachStacktrace = true;
-                o.Dsn = "https://2262a4fa0a6d409c848908ec90c3c5b4@sentry.io/1886021";
+                o.AttachScreenshots = true;
+                o.Dsn = dsn;
                 o.SendDefaultPii = true;
+                o.AutoSessionTracking = true;
 
                 // TODO: This needs to be built-in
                 o.BeforeSend += @event =>
