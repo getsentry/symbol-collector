@@ -36,7 +36,6 @@ namespace SymbolCollector.Android.Library
             var friendlyName = $"Android:{Build.Manufacturer}-{Build.CpuAbi}-{Build.Model}";
 #pragma warning restore 618
 
-
             StructUtsname? uname = null;
             try
             {

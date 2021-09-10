@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -55,16 +54,24 @@ namespace SymbolCollector.Core
             groupsSpan?.Finish();
 
             var startSpan = SentrySdk.GetSpan()?.StartChild("batch.start");
-            var batchId = await _symbolClient.Start(friendlyName, type, cancellationToken);
-            SentrySdk.ConfigureScope(s => s.SetTag("BatchId", batchId.ToString()));
-            startSpan?.Finish(SpanStatus.Ok);
-
+            Guid batchId;
             try
             {
-                var uploadSpan = SentrySdk.GetSpan()?.StartChild("batch.upload");
-                uploadSpan?.SetTag("groups", groups.Count.ToString());
-                uploadSpan?.SetTag("total_items", counter.ToString());
+                batchId = await _symbolClient.Start(friendlyName, type, cancellationToken);
+                SentrySdk.ConfigureScope(s => s.SetTag("BatchId", batchId.ToString()));
+                startSpan?.Finish(SpanStatus.Ok);
+            }
+            catch (Exception e)
+            {
+                startSpan?.Finish(e);
+                throw;
+            }
 
+            var uploadSpan = SentrySdk.GetSpan()?.StartChild("batch.upload");
+            uploadSpan?.SetTag("groups", groups.Count.ToString());
+            uploadSpan?.SetTag("total_items", counter.ToString());
+            try
+            {
                 foreach (var group in groups)
                 {
                     await UploadParallel(batchId, group, cancellationToken);
@@ -73,6 +80,7 @@ namespace SymbolCollector.Core
             }
             catch (Exception e)
             {
+                uploadSpan?.Finish(e);
                 _logger.LogError(e, "Failed processing files for {batchId}. Rethrowing and leaving the batch open.",
                     batchId);
                 throw;

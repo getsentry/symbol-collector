@@ -42,7 +42,6 @@ namespace SymbolCollector.Console
                 });
             });
 
-
             _ = Task.Run(() =>
             {
                 WriteLine("Press Ctrl+C to exit or 'p' to print the status.");
@@ -66,6 +65,7 @@ namespace SymbolCollector.Console
             catch (Exception e)
             {
                 transaction.Finish(e);
+                throw;
             }
             finally
             {

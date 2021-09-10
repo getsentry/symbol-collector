@@ -34,30 +34,29 @@ namespace SymbolCollector.Console
 
             Bootstrap(args);
 
-            using var host = Startup.Init(s =>
-            {
-                if (args.ServerEndpoint != null)
-                {
-                    s.AddOptions()
-                        .PostConfigure<SymbolClientOptions>(o =>
-                        {
-                            o.UserAgent = args.UserAgent;
-                            o.BaseAddress = args.ServerEndpoint;
-                        });
-                }
-
-                s.AddSingleton(_metrics);
-                s.AddSingleton<ConsoleUploader>();
-            });
-
             try
             {
+                using var host = Startup.Init(s =>
+                {
+                    if (args.ServerEndpoint != null)
+                    {
+                        s.AddOptions()
+                            .PostConfigure<SymbolClientOptions>(o =>
+                            {
+                                o.UserAgent = args.UserAgent;
+                                o.BaseAddress = args.ServerEndpoint;
+                            });
+                    }
+
+                    s.AddSingleton(_metrics);
+                    s.AddSingleton<ConsoleUploader>();
+                });
+
                 await Run(host, args);
             }
             catch (Exception e)
             {
                 WriteLine(e);
-                // DragonFruit library hooks outside if this main on its own main
                 e.Data[Mechanism.HandledKey] = false;
                 e.Data[Mechanism.MechanismKey] = "Main.UnhandledException";
                 var evt = new SentryEvent(e) { SentryExceptions = new[]
@@ -88,10 +87,7 @@ namespace SymbolCollector.Console
                         return;
                     }
 
-                    SentrySdk.ConfigureScope(s =>
-                    {
-                        s.SetTag("friendly-name", args.BundleId);
-                    });
+                    SentrySdk.ConfigureScope(s => s.SetTag("friendly-name", args.BundleId));
 
                     logger.LogInformation("Uploading images from this device.");
                     await uploader.StartUploadSymbols(
@@ -215,6 +211,7 @@ namespace SymbolCollector.Console
             {
                 o.Dsn = "https://10ca21ff6838474e9b4ba8c789e79756@o1.ingest.sentry.io/5953213";
                 o.Debug = true;
+                o.IsGlobalModeEnabled = true;
 #if DEBUG
                 o.Environment = "development";
 #else
@@ -259,9 +256,12 @@ namespace SymbolCollector.Console
 
             CancelKeyPress += (s, ev) =>
             {
+                // TODO: Make it Built-in?
+                SentrySdk.AddBreadcrumb("App received CTLR+C", category: "app.lifecycle", type: "user");
                 _metrics.Write(Out);
                 WriteLine("Shutting down.");
-                ev.Cancel = false;
+                // 'true' so it can terminate gracefully and report session status any errors while doing so.
+                ev.Cancel = true;
                 args.Cancellation.Cancel();
             };
         }
