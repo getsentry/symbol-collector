@@ -14,7 +14,7 @@ namespace SymbolCollector.Console
 {
     internal class Program
     {
-        private static readonly ClientMetrics _metrics = new ClientMetrics();
+        private static readonly ClientMetrics Metrics = new ClientMetrics();
 
         static async Task Main(
             string? upload = null,
@@ -48,7 +48,7 @@ namespace SymbolCollector.Console
                             });
                     }
 
-                    s.AddSingleton(_metrics);
+                    s.AddSingleton(Metrics);
                     s.AddSingleton<ConsoleUploader>();
                 });
 
@@ -57,15 +57,10 @@ namespace SymbolCollector.Console
             catch (Exception e)
             {
                 WriteLine(e);
+                // if rethrown, System.CommandLine.DragonFruit will capture handle instead of piping to AppDomain
                 e.Data[Mechanism.HandledKey] = false;
                 e.Data[Mechanism.MechanismKey] = "Main.UnhandledException";
-                var evt = new SentryEvent(e) { SentryExceptions = new[]
-                    {
-                        // Work around until this is resolved: https://github.com/getsentry/sentry-dotnet/issues/1190
-                        new SentryException { Mechanism = new Mechanism { Handled = false } }
-                    }
-                };
-                SentrySdk.CaptureEvent(evt);
+                SentrySdk.CaptureException(e);
             }
             finally
             {
@@ -243,7 +238,6 @@ namespace SymbolCollector.Console
             {
                 SentrySdk.ConfigureScope(s =>
                 {
-                    s.SetTag("app", typeof(Program).Assembly.GetName().Name ?? "SymbolCollector");
                     s.SetTag("user-agent", args.UserAgent);
                     if (args.ServerEndpoint is {})
                     {
@@ -258,7 +252,7 @@ namespace SymbolCollector.Console
             {
                 // TODO: Make it Built-in?
                 SentrySdk.AddBreadcrumb("App received CTLR+C", category: "app.lifecycle", type: "user");
-                _metrics.Write(Out);
+                Metrics.Write(Out);
                 WriteLine("Shutting down.");
                 // 'true' so it can terminate gracefully and report session status any errors while doing so.
                 ev.Cancel = true;

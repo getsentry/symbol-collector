@@ -1,14 +1,10 @@
-using System.IO;
 using Android.OS;
-using Android.Runtime;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Http;
 using Sentry;
-using Sentry.Extensibility;
-using Sentry.Protocol;
 using SymbolCollector.Core;
-using Xamarin.Essentials;
+using OperationCanceledException = Android.OS.OperationCanceledException;
 
 namespace SymbolCollector.Android.Library
 {
@@ -24,6 +20,9 @@ namespace SymbolCollector.Android.Library
         {
             SentryXamarin.Init(o =>
             {
+                // Reset the Sentry Xamarin SDK detection in favor of keeping it consistent with Console/Server
+                o.Release = null;
+
                 o.TracesSampleRate = 1.0;
                 o.MaxBreadcrumbs = 100;
                 o.Debug = true;
@@ -36,7 +35,6 @@ namespace SymbolCollector.Android.Library
                 o.AttachScreenshots = true;
                 o.Dsn = dsn;
                 o.SendDefaultPii = true;
-                o.AutoSessionTracking = true;
 
                 // TODO: This needs to be built-in
                 o.BeforeSend += @event =>
@@ -70,8 +68,7 @@ namespace SymbolCollector.Android.Library
                 s.Contexts.Device.Model = Build.Model;
 
                 s.SetTag("API", ((int) Build.VERSION.SdkInt).ToString());
-                s.SetTag("app", "SymbolCollector.Android");
-                s.SetTag("host", Build.Host ?? "?");
+                s.SetExtra("host", Build.Host ?? "?");
                 s.SetTag("device", Build.Device ?? "?");
                 s.SetTag("product", Build.Product ?? "?");
 #pragma warning disable 618
@@ -90,21 +87,7 @@ namespace SymbolCollector.Android.Library
 #pragma warning restore 618
             });
 
-            // Don't let logging scopes drop records TODO: review this API
-            HubAdapter.Instance.LockScope();
-
-            // TODO: doesn't the AppDomain hook is invoked in all cases?
-            AndroidEnvironment.UnhandledExceptionRaiser += (s, e) =>
-            {
-                e.Exception.Data[Mechanism.HandledKey] = e.Handled;
-                e.Exception.Data[Mechanism.MechanismKey] = "UnhandledExceptionRaiser";
-                SentrySdk.CaptureException(e.Exception);
-                if (!e.Handled)
-                {
-                    SentrySdk.Close();
-                }
-            };
-
+            // TODO: Where is this span?
             var iocSpan = tran.StartChild("container.init", "Initializing the IoC container");
             var userAgent = "Android/" + typeof(Host).Assembly.GetName().Version;
             var host = Startup.Init(c =>
@@ -122,48 +105,14 @@ namespace SymbolCollector.Android.Library
                 });
                 c.AddOptions().Configure<ObjectFileParserOptions>(o =>
                 {
-                    o.IncludeHash = true; // Backing store sorted format does not support hash distinction yet.
+                    o.IncludeHash = false;
                     o.UseFallbackObjectFileParser = false; // Android only, use only ELF parser.
                 });
             });
             iocSpan.Finish();
 
-            SentrySdk.ConfigureScope(s =>
-            {
-                s.SetTag("user-agent", userAgent);
-                s.AddAttachment(new ScreenshotAttachment());
-            });
+            SentrySdk.ConfigureScope(s => s.SetTag("user-agent", userAgent));
             return host;
-        }
-
-        private class ScreenshotAttachment : Attachment
-        {
-            public ScreenshotAttachment()
-                : this(
-                    AttachmentType.Default,
-                    new ScreenshotAttachmentContent(),
-                    "screenshot",
-                    "image/png")
-            {
-            }
-
-            private ScreenshotAttachment(
-                AttachmentType type,
-                IAttachmentContent content,
-                string fileName,
-                string? contentType)
-                : base(type, content, fileName, contentType)
-            {
-            }
-
-            private class ScreenshotAttachmentContent : IAttachmentContent
-            {
-                public Stream GetStream()
-                {
-                    var screenshot = Screenshot.CaptureAsync().GetAwaiter().GetResult();
-                    return screenshot.OpenReadAsync().GetAwaiter().GetResult();
-                }
-            }
         }
     }
 }

@@ -13,6 +13,7 @@ using AndroidX.AppCompat.App;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Sentry;
+using Sentry.Protocol;
 using SymbolCollector.Core;
 using SymbolCollector.Android.Library;
 using AlertDialog = Android.App.AlertDialog;
@@ -94,11 +95,20 @@ namespace SymbolCollector.Android
                 span.Finish();
                 _startupTransaction.Finish();
             }
-            catch
+            catch (Exception e)
             {
-                // TODO: How do I pass the exception so it can connect span to error event later?
-                span.Finish(SpanStatus.InternalError);
-                _startupTransaction.Finish(SpanStatus.InternalError);
+                span.Finish(e);
+                _startupTransaction.Finish(e);
+
+                e.Data[Mechanism.HandledKey] = false;
+                e.Data[Mechanism.MechanismKey] = "Main.UnhandledException";
+                var evt = new SentryEvent(e) { SentryExceptions = new[]
+                    {
+                        // Work around until this is resolved: https://github.com/getsentry/sentry-dotnet/issues/1190
+                        new SentryException { Mechanism = new Mechanism { Handled = false } }
+                    }
+                };
+                SentrySdk.CaptureEvent(evt);
                 throw;
             }
         }
