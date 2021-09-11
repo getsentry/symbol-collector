@@ -12,7 +12,6 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyCopyright("Copyright Sentry © 2020")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
-//[assembly: AssemblyInformationalVersion("")]
 [assembly: ComVisible(false)]
 
 // Until Xamarin supports SDK style csproj

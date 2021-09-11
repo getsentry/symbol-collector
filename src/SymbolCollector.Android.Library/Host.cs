@@ -1,3 +1,4 @@
+using System;
 using Android.OS;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -46,40 +47,59 @@ namespace SymbolCollector.Android.Library
                             break;
                     }
 
+                    try
+                    {
+                        // TODO Add to Sentry.Xamarin
+#pragma warning disable 618
+                        @event.Contexts.Device.Architecture = Build.CpuAbi;
+#pragma warning restore 618
+                        // TODO: Same as Brand though?
+                        @event.Contexts.Device.Manufacturer = Build.Manufacturer;
+
+                        // Auto tag at least on error events:
+                        // @event.SetTag("device", Build.Device ?? "?");
+                    }
+                    catch
+                    {
+                        // Capture the event without these values
+                    }
+
                     return @event;
                 };
+                o.BeforeBreadcrumb = breadcrumb
+                    // This logger adds 3 crumbs for each HTTP request and we already have a Sentry integration for HTTP
+                    // Which shows the right category, status code and a link
+                    => string.Equals(breadcrumb.Category, "System.Net.Http.HttpClient.ISymbolClient.LogicalHandler")
+                       || string.Equals(breadcrumb.Category, "System.Net.Http.HttpClient.ISymbolClient.ClientHandler")
+                        ? null
+                        : breadcrumb;
             });
 
             var tran = SentrySdk.StartTransaction("AppStart", "activity.load");
 
-            // TODO: This should be part of a package: Sentry.Xamarin.Android
             SentrySdk.ConfigureScope(s =>
             {
                 s.Transaction = tran;
+
+                // TODO: Remove once device data added to transactions on Sentry.Xamarin:
                 s.User.Id = Build.Id;
-#pragma warning disable 618
+                #pragma warning disable 618
                 s.Contexts.Device.Architecture = Build.CpuAbi;
-#pragma warning restore 618
+                #pragma warning restore 618
                 s.Contexts.Device.Brand = Build.Brand;
                 s.Contexts.Device.Manufacturer = Build.Manufacturer;
                 s.Contexts.Device.Model = Build.Model;
 
-                s.SetTag("API", ((int) Build.VERSION.SdkInt).ToString());
+                s.SetExtra("fingerprint", Build.Fingerprint ?? "?");
                 s.SetExtra("host", Build.Host ?? "?");
-                s.SetTag("device", Build.Device ?? "?");
-                s.SetTag("product", Build.Product ?? "?");
+                s.SetExtra("product", Build.Product ?? "?");
+
+                s.SetTag("API", ((int) Build.VERSION.SdkInt).ToString());
 #pragma warning disable 618
                 s.SetTag("cpu-abi", Build.CpuAbi ?? "?");
-#pragma warning restore 618
-                s.SetTag("fingerprint", Build.Fingerprint ?? "?");
-
-#pragma warning disable 618
                 if (!string.IsNullOrEmpty(Build.CpuAbi2))
-#pragma warning restore 618
                 {
-#pragma warning disable 618
                     s.SetTag("cpu-abi2", Build.CpuAbi2 ?? "?");
-#pragma warning restore 618
                 }
 #pragma warning restore 618
             });

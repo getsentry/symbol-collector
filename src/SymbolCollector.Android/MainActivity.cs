@@ -79,6 +79,7 @@ namespace SymbolCollector.Android
                         Unfocus();
 
                         uploadButton.Enabled = false;
+                        // TODO: finish transaction as cancelled through a callback here
                         source = new CancellationTokenSource();
 
                         var startSpan = uploadTransaction.StartChild("batch.start");
