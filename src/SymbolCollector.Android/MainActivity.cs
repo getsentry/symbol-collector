@@ -81,7 +81,6 @@ namespace SymbolCollector.Android
                         uploadButton.Enabled = false;
                         source = new CancellationTokenSource();
 
-                        uploadTransaction.SetTag("friendly_name", _friendlyName);
                         var uploadTask = uploader.StartUpload(_friendlyName, source.Token);
                         var updateUiTask = StartUiUpdater(source.Token, metrics);
 
