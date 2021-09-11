@@ -101,8 +101,8 @@ namespace SymbolCollector.Android
                     source.Cancel();
                 }
 
-                span.Finish();
-                _startupTransaction.Finish();
+                span.Finish(SpanStatus.Ok);
+                _startupTransaction.Finish(SpanStatus.Ok);
             }
             catch (Exception e)
             {
