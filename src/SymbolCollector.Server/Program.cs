@@ -78,6 +78,7 @@ namespace SymbolCollector.Server
                 {
                     webBuilder.UseSentry(o =>
                     {
+                        o.Dsn = "https://2262a4fa0a6d409c848908ec90c3c5b4@sentry.io/1886021";
                         o.AddExceptionFilterForType<OperationCanceledException>();
                         o.BeforeSend = @event =>
                         {

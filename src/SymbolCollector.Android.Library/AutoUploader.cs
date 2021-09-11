@@ -21,7 +21,7 @@ namespace SymbolCollector.Android.Library
         /// </summary>
         public void Run()
         {
-            var host = Host.Init();
+            var host = Host.Init("https://656e2e78d37d4511a4ea2cb3602e7a65@o1.ingest.sentry.io/5953206");
             var tran = SentrySdk.StartTransaction("SymbolUpload", "symbol.upload");
             var options = host.Services.GetRequiredService<SymbolClientOptions>();
             options.BaseAddress = new Uri("https://symbol-collector.services.sentry.io");
@@ -35,7 +35,6 @@ namespace SymbolCollector.Android.Library
 #pragma warning disable 618
             var friendlyName = $"Android:{Build.Manufacturer}-{Build.CpuAbi}-{Build.Model}";
 #pragma warning restore 618
-
 
             StructUtsname? uname = null;
             try
@@ -53,7 +52,6 @@ namespace SymbolCollector.Android.Library
 
             SentrySdk.ConfigureScope(s =>
             {
-                s.Transaction = tran;
                 s.SetTag("friendly-name", friendlyName);
 
                 if (uname is { })

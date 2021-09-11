@@ -67,21 +67,31 @@ namespace SymbolCollector.Android
 
                 async void OnUploadButtonOnClick(object sender, EventArgs args)
                 {
-                    SentrySdk.AddBreadcrumb("OnUploadButtonOnClick", category: "ui.event");
-                    var options = _serviceProvider.GetRequiredService<SymbolClientOptions>();
-                    options.BaseAddress = new Uri(url.Text); // TODO validate
+                    var uploadTransaction = SentrySdk.StartTransaction("BatchUpload", "batch.upload");
+                    try
+                    {
+                        SentrySdk.AddBreadcrumb("OnUploadButtonOnClick", category: "ui.event");
+                        var options = _serviceProvider.GetRequiredService<SymbolClientOptions>();
+                        options.BaseAddress = new Uri(url.Text); // TODO validate
 
-                    SentrySdk.ConfigureScope(s => s.SetTag("server-endpoint", options.BaseAddress.AbsoluteUri));
+                        SentrySdk.ConfigureScope(s => s.SetTag("server-endpoint", options.BaseAddress.AbsoluteUri));
 
-                    Unfocus();
+                        Unfocus();
 
-                    uploadButton.Enabled = false;
-                    source = new CancellationTokenSource();
+                        uploadButton.Enabled = false;
+                        source = new CancellationTokenSource();
 
-                    var uploadTask = uploader.StartUpload(_friendlyName, source.Token);
-                    var updateUiTask = StartUiUpdater(source.Token, metrics);
+                        uploadTransaction.SetTag("friendly_name", _friendlyName);
+                        var uploadTask = uploader.StartUpload(_friendlyName, source.Token);
+                        var updateUiTask = StartUiUpdater(source.Token, metrics);
 
-                    await UploadAsync(uploadTask, updateUiTask, metrics, cancelButton, uploadButton, source);
+                        await UploadAsync(uploadTask, updateUiTask, metrics, cancelButton, uploadButton, uploadTransaction, source);
+                    }
+                    catch (Exception e)
+                    {
+                        uploadTransaction.Finish(e);
+                        throw;
+                    }
                 }
 
                 void OnCancelButtonOnClick(object sender, EventArgs args)
@@ -91,14 +101,13 @@ namespace SymbolCollector.Android
                     source.Cancel();
                 }
 
-                span.Finish();
-                _startupTransaction.Finish();
+                span.Finish(SpanStatus.Ok);
+                _startupTransaction.Finish(SpanStatus.Ok);
             }
-            catch
+            catch (Exception e)
             {
-                // TODO: How do I pass the exception so it can connect span to error event later?
-                span.Finish(SpanStatus.InternalError);
-                _startupTransaction.Finish(SpanStatus.InternalError);
+                span.Finish(e);
+                _startupTransaction.Finish(e);
                 throw;
             }
         }
@@ -118,6 +127,7 @@ namespace SymbolCollector.Android
             ClientMetrics metrics,
             View cancelButton,
             View uploadButton,
+            ISpan span,
             CancellationTokenSource source)
         {
             var container = base.FindViewById(Resource.Id.metrics_container)!;
@@ -142,20 +152,24 @@ namespace SymbolCollector.Android
                     ranForContainer.Visibility = ViewStates.Visible;
 
                     ranForLabel.Text = metrics.RanFor.ToString();
+                    span.Finish(SpanStatus.Ok);
                 }
                 else if (uploadTask.IsFaulted)
                 {
                     ShowError(uploadTask.Exception);
+                    span.Finish(SpanStatus.InternalError);
                 }
                 else
                 {
                     cancelButton.Enabled = false;
                     uploadButton.Enabled = true;
+                    span.Finish(SpanStatus.Cancelled);
                 }
             }
             catch (Exception e)
             {
                 ShowError(e);
+                span.Finish(e);
             }
             finally
             {
@@ -212,6 +226,10 @@ namespace SymbolCollector.Android
             {
                 SentrySdk.CaptureMessage("ShowError called but no Exception instance provided.", SentryLevel.Error);
             }
+            else
+            {
+                SentrySdk.CaptureException(e);
+            }
 
             if (e is AggregateException ae && ae.InnerExceptions.Count == 1)
             {
@@ -248,7 +266,7 @@ namespace SymbolCollector.Android
 #pragma warning disable 618
             _friendlyName = $"Android:{Build.Manufacturer}-{Build.CpuAbi}-{Build.Model}";
 #pragma warning restore 618
-            _host = Host.Init();
+            _host = Host.Init("https://656e2e78d37d4511a4ea2cb3602e7a65@o1.ingest.sentry.io/5953206");
             _serviceProvider = _host.Services;
 
             var tran = SentrySdk.StartTransaction("AppStart", "activity.load");

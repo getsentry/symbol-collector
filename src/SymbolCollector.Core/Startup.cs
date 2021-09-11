@@ -11,6 +11,8 @@ using Microsoft.Extensions.Options;
 using Polly;
 using Polly.Extensions.Http;
 using Sentry;
+using Sentry.Extensions.Logging;
+using Sentry.Extensions.Logging.Extensions.DependencyInjection;
 
 namespace SymbolCollector.Core
 {
@@ -23,11 +25,21 @@ namespace SymbolCollector.Core
                 .ConfigureHostConfiguration(c => c.AddJsonFile(GetAppSettingsFilePath()))
                 .ConfigureServices((hostBuilderContext, services) =>
                 {
+                    // Adds services such as SentryHttpMessageHandler
+                    // https://github.com/getsentry/sentry-dotnet/blob/a9304a0a4b4702d0e62e2703d55c66483d27a0e5/src/Sentry.Extensions.Logging/Extensions/DependencyInjection/ServiceCollectionExtensions.cs#L46
+                    // TODO: This should  be built in for console apps, added via IHostBuilder extension
+
+                    // Results in a span for each HTTP request which currently means a HEAD request to check if symbol is needed
+                    // and a post to upload it. In high latency scenarios this is anyway suboptimal and these HEAD requests should be batched
+                    // Until then we're better off with a single span for the whole upload process
+                    // services.AddSentry<SentryLoggingOptions>();
+
                     ConfigureServices(services);
                     configureServices?.Invoke(services);
                 })
                 .ConfigureLogging(l =>
                 {
+                    // TODO: Should also be added via IHostBuilder extension
                     l.AddSentry(o => o.InitializeSdk = false);
                     l.AddSimpleConsole(o => o.ColorBehavior = LoggerColorBehavior.Disabled);
                 })

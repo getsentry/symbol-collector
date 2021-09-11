@@ -3,8 +3,10 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Sentry;
+using Sentry.Protocol;
 using SymbolCollector.Core;
 using static System.Console;
 
@@ -12,13 +14,7 @@ namespace SymbolCollector.Console
 {
     internal class Program
     {
-#if DEBUG
-        private const string Dsn = "https://02619ad38bcb40d0be5167e1fb335954@sentry.io/1847454";
-#else
-        private const string Dsn = "https://2262a4fa0a6d409c848908ec90c3c5b4@sentry.io/1886021";
-#endif
-
-        private static readonly ClientMetrics _metrics = new ClientMetrics();
+        private static readonly ClientMetrics Metrics = new ClientMetrics();
 
         static async Task Main(
             string? upload = null,
@@ -40,11 +36,30 @@ namespace SymbolCollector.Console
 
             try
             {
-                await Run(args);
+                using var host = Startup.Init(s =>
+                {
+                    if (args.ServerEndpoint != null)
+                    {
+                        s.AddOptions()
+                            .PostConfigure<SymbolClientOptions>(o =>
+                            {
+                                o.UserAgent = args.UserAgent;
+                                o.BaseAddress = args.ServerEndpoint;
+                            });
+                    }
+
+                    s.AddSingleton(Metrics);
+                    s.AddSingleton<ConsoleUploader>();
+                });
+
+                await Run(host, args);
             }
             catch (Exception e)
             {
                 WriteLine(e);
+                // if rethrown, System.CommandLine.DragonFruit will capture handle instead of piping to AppDomain
+                e.Data[Mechanism.HandledKey] = false;
+                e.Data[Mechanism.MechanismKey] = "Main.UnhandledException";
                 SentrySdk.CaptureException(e);
             }
             finally
@@ -53,24 +68,8 @@ namespace SymbolCollector.Console
             }
         }
 
-        private static async Task Run(Args args)
+        private static async Task Run(IHost host, Args args)
         {
-            using var host = Startup.Init(s =>
-            {
-                if (args.ServerEndpoint != null)
-                {
-                    s.AddOptions()
-                        .PostConfigure<SymbolClientOptions>(o =>
-                        {
-                            o.UserAgent = args.UserAgent;
-                            o.BaseAddress = args.ServerEndpoint;
-                        });
-                }
-
-                s.AddSingleton(_metrics);
-                s.AddSingleton<ConsoleUploader>();
-            });
-
             var logger = host.Services.GetRequiredService<ILogger<Program>>();
             var uploader = host.Services.GetRequiredService<ConsoleUploader>();
 
@@ -83,10 +82,7 @@ namespace SymbolCollector.Console
                         return;
                     }
 
-                    SentrySdk.ConfigureScope(s =>
-                    {
-                        s.SetTag("friendly-name", args.BundleId);
-                    });
+                    SentrySdk.ConfigureScope(s => s.SetTag("friendly-name", args.BundleId));
 
                     logger.LogInformation("Uploading images from this device.");
                     await uploader.StartUploadSymbols(
@@ -206,28 +202,30 @@ namespace SymbolCollector.Console
 
         private static void Bootstrap(Args args)
         {
-            using var _ = SentrySdk.Init(o =>
+            SentrySdk.Init(o =>
             {
+                o.Dsn = "https://10ca21ff6838474e9b4ba8c789e79756@o1.ingest.sentry.io/5953213";
                 o.Debug = true;
+                o.IsGlobalModeEnabled = true;
+#if DEBUG
+                o.Environment = "development";
+#else
                 o.DiagnosticLevel = SentryLevel.Warning;
+#endif
                 o.AttachStacktrace = true;
                 o.SendDefaultPii = true;
-                o.AddInAppExclude("Polly");
+                o.TracesSampleRate = 1.0;
+                o.AutoSessionTracking = true;
 
                 o.AddExceptionFilterForType<OperationCanceledException>();
 
-                o.Dsn = Dsn;
-                // TODO: This needs to be built-in
                 o.BeforeSend += @event =>
                 {
+                    // TODO: Can be removed once we batch requests and rely on sentry-trace on all requests:
                     const string traceIdKey = "TraceIdentifier";
-                    switch (@event.Exception)
+                    if (@event.Exception is var e && e?.Data.Contains(traceIdKey) == true)
                     {
-                        case var e when e is OperationCanceledException:
-                            return null!;
-                        case var e when e?.Data.Contains(traceIdKey) == true:
-                            @event.SetTag(traceIdKey, e.Data[traceIdKey]?.ToString() ?? "unknown");
-                            break;
+                        @event.SetTag(traceIdKey, e.Data[traceIdKey]?.ToString() ?? "unknown");
                     }
 
                     return @event;
@@ -236,7 +234,6 @@ namespace SymbolCollector.Console
             {
                 SentrySdk.ConfigureScope(s =>
                 {
-                    s.SetTag("app", typeof(Program).Assembly.GetName().Name ?? "SymbolCollector");
                     s.SetTag("user-agent", args.UserAgent);
                     if (args.ServerEndpoint is {})
                     {
@@ -249,9 +246,12 @@ namespace SymbolCollector.Console
 
             CancelKeyPress += (s, ev) =>
             {
-                _metrics.Write(Out);
+                // TODO: Make it Built-in?
+                SentrySdk.AddBreadcrumb("App received CTLR+C", category: "app.lifecycle", type: "user");
+                Metrics.Write(Out);
                 WriteLine("Shutting down.");
-                ev.Cancel = false;
+                // 'true' so it can terminate gracefully and report session status any errors while doing so.
+                ev.Cancel = true;
                 args.Cancellation.Cancel();
             };
         }

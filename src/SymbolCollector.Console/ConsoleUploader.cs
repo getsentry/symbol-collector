@@ -28,8 +28,11 @@ namespace SymbolCollector.Console
 
         public async Task StartUploadSymbols(IEnumerable<string> paths, string bundleId, BatchType? batchType, CancellationToken token)
         {
+            var transaction = SentrySdk.StartTransaction("StartUploadSymbols", "symbols.upload");
+
             SentrySdk.ConfigureScope(s =>
             {
+                s.Transaction = transaction;
                 s.AddEventProcessor(@event =>
                 {
                     var uploadMetrics = new Dictionary<string, object>();
@@ -38,7 +41,6 @@ namespace SymbolCollector.Console
                     return @event;
                 });
             });
-
 
             _ = Task.Run(() =>
             {
@@ -58,6 +60,12 @@ namespace SymbolCollector.Console
                 _logger.LogInformation("Uploading bundle {bundleId} of type {type} and paths: {paths}",
                     bundleId, type, paths);
                 await _client.UploadAllPathsAsync(bundleId, type, paths, token);
+                transaction.Finish(SpanStatus.Ok);
+            }
+            catch (Exception e)
+            {
+                transaction.Finish(e);
+                throw;
             }
             finally
             {
