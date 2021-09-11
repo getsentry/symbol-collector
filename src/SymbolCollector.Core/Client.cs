@@ -58,7 +58,6 @@ namespace SymbolCollector.Core
             try
             {
                 batchId = await _symbolClient.Start(friendlyName, type, cancellationToken);
-                SentrySdk.ConfigureScope(s => s.SetTag("BatchId", batchId.ToString()));
                 startSpan?.Finish(SpanStatus.Ok);
             }
             catch (Exception e)
