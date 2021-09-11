@@ -13,7 +13,6 @@ using AndroidX.AppCompat.App;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Sentry;
-using Sentry.Protocol;
 using SymbolCollector.Core;
 using SymbolCollector.Android.Library;
 using AlertDialog = Android.App.AlertDialog;
@@ -68,21 +67,40 @@ namespace SymbolCollector.Android
 
                 async void OnUploadButtonOnClick(object sender, EventArgs args)
                 {
-                    SentrySdk.AddBreadcrumb("OnUploadButtonOnClick", category: "ui.event");
-                    var options = _serviceProvider.GetRequiredService<SymbolClientOptions>();
-                    options.BaseAddress = new Uri(url.Text); // TODO validate
+                    var uploadTransaction = SentrySdk.StartTransaction("BatchUpload", "batch.upload");
+                    try
+                    {
+                        SentrySdk.AddBreadcrumb("OnUploadButtonOnClick", category: "ui.event");
+                        var options = _serviceProvider.GetRequiredService<SymbolClientOptions>();
+                        options.BaseAddress = new Uri(url.Text); // TODO validate
 
-                    SentrySdk.ConfigureScope(s => s.SetTag("server-endpoint", options.BaseAddress.AbsoluteUri));
+                        SentrySdk.ConfigureScope(s => s.SetTag("server-endpoint", options.BaseAddress.AbsoluteUri));
 
-                    Unfocus();
+                        Unfocus();
 
-                    uploadButton.Enabled = false;
-                    source = new CancellationTokenSource();
+                        uploadButton.Enabled = false;
+                        source = new CancellationTokenSource();
 
-                    var uploadTask = uploader.StartUpload(_friendlyName, source.Token);
-                    var updateUiTask = StartUiUpdater(source.Token, metrics);
+                        var startSpan = uploadTransaction.StartChild("batch.start");
+                        startSpan.SetTag("friendly_name", _friendlyName);
+                        var uploadTask = uploader.StartUpload(_friendlyName, source.Token);
+                        // ReSharper disable once MethodSupportsCancellation - Let the continuation run
+                        uploadTask = uploadTask.ContinueWith(t => startSpan.Finish(t.IsCompletedSuccessfully
+                            ? SpanStatus.Ok
+                            : t.IsCanceled
+                                ? SpanStatus.Cancelled
+                                : SpanStatus.InternalError));
+                        var updateUiTask = StartUiUpdater(source.Token, metrics);
 
-                    await UploadAsync(uploadTask, updateUiTask, metrics, cancelButton, uploadButton, source);
+                        await UploadAsync(uploadTask, updateUiTask, metrics, cancelButton, uploadButton, source);
+
+                        uploadTransaction.Finish(SpanStatus.Ok);
+                    }
+                    catch (Exception e)
+                    {
+                        uploadTransaction.Finish(e);
+                        throw;
+                    }
                 }
 
                 void OnCancelButtonOnClick(object sender, EventArgs args)
@@ -99,16 +117,6 @@ namespace SymbolCollector.Android
             {
                 span.Finish(e);
                 _startupTransaction.Finish(e);
-
-                e.Data[Mechanism.HandledKey] = false;
-                e.Data[Mechanism.MechanismKey] = "Main.UnhandledException";
-                var evt = new SentryEvent(e) { SentryExceptions = new[]
-                    {
-                        // Work around until this is resolved: https://github.com/getsentry/sentry-dotnet/issues/1190
-                        new SentryException { Mechanism = new Mechanism { Handled = false } }
-                    }
-                };
-                SentrySdk.CaptureEvent(evt);
                 throw;
             }
         }
@@ -221,6 +229,10 @@ namespace SymbolCollector.Android
             if (e is null)
             {
                 SentrySdk.CaptureMessage("ShowError called but no Exception instance provided.", SentryLevel.Error);
+            }
+            else
+            {
+                SentrySdk.CaptureException(e);
             }
 
             if (e is AggregateException ae && ae.InnerExceptions.Count == 1)

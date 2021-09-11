@@ -52,7 +52,6 @@ namespace SymbolCollector.Android.Library
 
             SentrySdk.ConfigureScope(s =>
             {
-                s.Transaction = tran;
                 s.SetTag("friendly-name", friendlyName);
 
                 if (uname is { })

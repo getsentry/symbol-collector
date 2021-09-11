@@ -4,7 +4,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Http;
 using Sentry;
 using SymbolCollector.Core;
-using OperationCanceledException = Android.OS.OperationCanceledException;
+using OperationCanceledException = System.OperationCanceledException;
 
 namespace SymbolCollector.Android.Library
 {
@@ -20,9 +20,6 @@ namespace SymbolCollector.Android.Library
         {
             SentryXamarin.Init(o =>
             {
-                // Reset the Sentry Xamarin SDK detection in favor of keeping it consistent with Console/Server
-                o.Release = null;
-
                 o.TracesSampleRate = 1.0;
                 o.MaxBreadcrumbs = 100;
                 o.Debug = true;
