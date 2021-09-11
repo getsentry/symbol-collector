@@ -83,9 +83,9 @@ namespace SymbolCollector.Android.Library
 
                 // TODO: Remove once device data added to transactions on Sentry.Xamarin:
                 s.User.Id = Build.Id;
-                #pragma warning disable 618
+#pragma warning disable 618
                 s.Contexts.Device.Architecture = Build.CpuAbi;
-                #pragma warning restore 618
+#pragma warning restore 618
                 s.Contexts.Device.Brand = Build.Brand;
                 s.Contexts.Device.Manufacturer = Build.Manufacturer;
                 s.Contexts.Device.Model = Build.Model;

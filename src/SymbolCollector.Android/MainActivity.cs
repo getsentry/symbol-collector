@@ -79,23 +79,13 @@ namespace SymbolCollector.Android
                         Unfocus();
 
                         uploadButton.Enabled = false;
-                        // TODO: finish transaction as cancelled through a callback here
                         source = new CancellationTokenSource();
 
-                        var startSpan = uploadTransaction.StartChild("batch.start");
-                        startSpan.SetTag("friendly_name", _friendlyName);
+                        uploadTransaction.SetTag("friendly_name", _friendlyName);
                         var uploadTask = uploader.StartUpload(_friendlyName, source.Token);
-                        // ReSharper disable once MethodSupportsCancellation - Let the continuation run
-                        uploadTask = uploadTask.ContinueWith(t => startSpan.Finish(t.IsCompletedSuccessfully
-                            ? SpanStatus.Ok
-                            : t.IsCanceled
-                                ? SpanStatus.Cancelled
-                                : SpanStatus.InternalError));
                         var updateUiTask = StartUiUpdater(source.Token, metrics);
 
-                        await UploadAsync(uploadTask, updateUiTask, metrics, cancelButton, uploadButton, source);
-
-                        uploadTransaction.Finish(SpanStatus.Ok);
+                        await UploadAsync(uploadTask, updateUiTask, metrics, cancelButton, uploadButton, uploadTransaction, source);
                     }
                     catch (Exception e)
                     {
@@ -137,6 +127,7 @@ namespace SymbolCollector.Android
             ClientMetrics metrics,
             View cancelButton,
             View uploadButton,
+            ISpan span,
             CancellationTokenSource source)
         {
             var container = base.FindViewById(Resource.Id.metrics_container)!;
@@ -161,20 +152,24 @@ namespace SymbolCollector.Android
                     ranForContainer.Visibility = ViewStates.Visible;
 
                     ranForLabel.Text = metrics.RanFor.ToString();
+                    span.Finish(SpanStatus.Ok);
                 }
                 else if (uploadTask.IsFaulted)
                 {
                     ShowError(uploadTask.Exception);
+                    span.Finish(SpanStatus.InternalError);
                 }
                 else
                 {
                     cancelButton.Enabled = false;
                     uploadButton.Enabled = true;
+                    span.Finish(SpanStatus.Cancelled);
                 }
             }
             catch (Exception e)
             {
                 ShowError(e);
+                span.Finish(e);
             }
             finally
             {

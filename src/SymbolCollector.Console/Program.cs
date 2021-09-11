@@ -219,17 +219,13 @@ namespace SymbolCollector.Console
 
                 o.AddExceptionFilterForType<OperationCanceledException>();
 
-                // TODO: This needs to be built-in
                 o.BeforeSend += @event =>
                 {
+                    // TODO: Can be removed once we batch requests and rely on sentry-trace on all requests:
                     const string traceIdKey = "TraceIdentifier";
-                    switch (@event.Exception)
+                    if (@event.Exception is var e && e?.Data.Contains(traceIdKey) == true)
                     {
-                        case OperationCanceledException _:
-                            return null!;
-                        case var e when e?.Data.Contains(traceIdKey) == true:
-                            @event.SetTag(traceIdKey, e.Data[traceIdKey]?.ToString() ?? "unknown");
-                            break;
+                        @event.SetTag(traceIdKey, e.Data[traceIdKey]?.ToString() ?? "unknown");
                     }
 
                     return @event;
