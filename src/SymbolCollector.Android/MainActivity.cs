@@ -265,7 +265,7 @@ namespace SymbolCollector.Android
 #pragma warning disable 618
             _friendlyName = $"Android:{Build.Manufacturer}-{Build.CpuAbi}-{Build.Model}";
 #pragma warning restore 618
-            _host = Host.Init("https://656e2e78d37d4511a4ea2cb3602e7a65@o1.ingest.sentry.io/5953206");
+            _host = Host.Init("https://656e2e78d37d4511a4ea2cb3602e7a65@sentry.io/5953206");
             _serviceProvider = _host.Services;
 
             var tran = SentrySdk.StartTransaction("AppStart", "activity.load");
