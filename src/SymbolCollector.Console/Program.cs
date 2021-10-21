@@ -204,7 +204,7 @@ namespace SymbolCollector.Console
         {
             SentrySdk.Init(o =>
             {
-                o.Dsn = "https://10ca21ff6838474e9b4ba8c789e79756@o1.ingest.sentry.io/5953213";
+                o.Dsn = "https://10ca21ff6838474e9b4ba8c789e79756@sentry.io/5953213";
                 o.Debug = true;
                 o.IsGlobalModeEnabled = true;
 #if DEBUG
