@@ -126,7 +126,7 @@ namespace SymbolCollector.Android.Library
                     o.IncludeHash = false;
                     o.UseFallbackObjectFileParser = false; // Android only, use only ELF parser.
                 });
-                c.AddTransient<HttpMessageHandlerBuilder, CustomHttpMessageHandlerBuilder>();
+                c.AddSingleton<HttpMessageHandlerBuilder, AndroidClientHandlerBuilder>();
             });
             iocSpan.Finish();
 
@@ -135,16 +135,13 @@ namespace SymbolCollector.Android.Library
         }
     }
 
-    public class CustomHttpMessageHandlerBuilder : HttpMessageHandlerBuilder
+    public class AndroidClientHandlerBuilder : HttpMessageHandlerBuilder
     {
         public override string? Name { get; set; }
         public override HttpMessageHandler? PrimaryHandler { get; set; }
 
         public override IList<DelegatingHandler> AdditionalHandlers => new List<DelegatingHandler>();
 
-        public override HttpMessageHandler Build()
-        {
-            return new Xamarin.Android.Net.AndroidClientHandler();
-        }
+        public override HttpMessageHandler Build() => new Xamarin.Android.Net.AndroidClientHandler();
     }
 }
