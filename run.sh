@@ -8,6 +8,10 @@ export appcenter_batch_count=${appcenter_batch_count:-1}
 export apk_path=src/SymbolCollector.Android/bin/Release/io.sentry.symbol.collector-Signed.apk
 rm $apk_path && echo deleted apk || echo apk not there
 
+# Always a source of issues trying to find the Android SDK:
+# \ Preparing tests... Object reference not set to an instance of an object
+rm ~/.config/xbuild/monodroid-config.xml || echo monodroid config didnt exist
+
 pushd src/SymbolCollector.Android/
 msbuild /restore /p:Configuration=Release \
 	/p:AndroidBuildApplicationPackage=true \
@@ -27,5 +31,5 @@ for barch_number in $(seq 1 1 $appcenter_batch_count); do
         --locale "en_US" \
         --build-dir . \
         --async \
-        --uitest-tools-dir ~/.nuget/packages/xamarin.uitest/3.1.0/tools/
+        --uitest-tools-dir ~/.nuget/packages/xamarin.uitest/3.2.2/tools/
 done

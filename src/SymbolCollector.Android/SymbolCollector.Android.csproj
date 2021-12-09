@@ -14,10 +14,10 @@
 <!--  </PropertyGroup>-->
 
   <!-- https://github.com/dotnet/net6-mobile-samples/blob/ad4980b9f818486106842fd596f6bc59e6963f9f/HelloAndroid/HelloAndroid.csproj -->
-  <ItemGroup>
+  <!-- <ItemGroup>
     <PackageReference Include="Xamarin.AndroidX.AppCompat" Version="1.3.1.1" />
     <PackageReference Include="Xamarin.Google.Android.Material" Version="1.4.0.2" />
-  </ItemGroup>
+  </ItemGroup> -->
 
   <ItemGroup>
     <ProjectReference Include="../SymbolCollector.Android.Library/SymbolCollector.Android.Library.csproj" />

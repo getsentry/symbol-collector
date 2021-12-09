@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Sentry;
 
 namespace SymbolCollector.Core
 {
@@ -40,33 +41,53 @@ namespace SymbolCollector.Core
             IEnumerable<string> topLevelPaths,
             CancellationToken cancellationToken)
         {
+            var groupsSpan = SentrySdk.GetSpan()?.StartChild("group.get", "Get the group of directories to search in parallel");
             var counter = 0;
             var groups =
-                from topPath in topLevelPaths
+                (from topPath in topLevelPaths
                 from lookupDirectory in SafeGetDirectories(topPath)
                 where _blackListedPaths?.Contains(lookupDirectory) != true
                 let c = counter++
                 group lookupDirectory by c / ParallelTasks
                 into grp
-                select grp.ToList();
+                select grp.ToList()).ToList();
+            groupsSpan?.Finish();
 
-            var batchId = await _symbolClient.Start(friendlyName, type, cancellationToken);
-            using var _ = _logger.BeginScope(("BatchId", batchId));
+            var startSpan = SentrySdk.GetSpan()?.StartChild("batch.start");
+            Guid batchId;
+            try
+            {
+                batchId = await _symbolClient.Start(friendlyName, type, cancellationToken);
+                startSpan?.Finish(SpanStatus.Ok);
+            }
+            catch (Exception e)
+            {
+                startSpan?.Finish(e);
+                throw;
+            }
+
+            var uploadSpan = SentrySdk.GetSpan()?.StartChild("batch.upload");
+            uploadSpan?.SetTag("groups", groups.Count.ToString());
+            uploadSpan?.SetTag("total_items", counter.ToString());
             try
             {
                 foreach (var group in groups)
                 {
                     await UploadParallel(batchId, group, cancellationToken);
                 }
+                uploadSpan?.Finish(SpanStatus.Ok);
             }
             catch (Exception e)
             {
+                uploadSpan?.Finish(e);
                 _logger.LogError(e, "Failed processing files for {batchId}. Rethrowing and leaving the batch open.",
                     batchId);
                 throw;
             }
 
+            var stopSpan = SentrySdk.GetSpan()?.StartChild("batch.close");
             await _symbolClient.Close(batchId, Metrics, cancellationToken);
+            stopSpan?.Finish(SpanStatus.Ok);
 
             IEnumerable<string> SafeGetDirectories(string path)
             {
@@ -227,4 +248,5 @@ namespace SymbolCollector.Core
 
         public void Dispose() => _symbolClient.Dispose();
     }
+
 }

@@ -120,8 +120,7 @@ namespace SymbolCollector.Core
             }
             catch (Exception e)
             {
-                using var _ = _logger.BeginScope(("url", url));
-                _logger.LogError(e, "Failed to start batch through {url}", url);
+                e.Data["URL"] = url;
                 throw;
             }
 
