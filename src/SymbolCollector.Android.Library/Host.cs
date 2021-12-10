@@ -139,8 +139,8 @@ namespace SymbolCollector.Android.Library
 
     public class AndroidClientHandlerBuilder : HttpMessageHandlerBuilder
     {
-        public override string? Name { get; set; }
-        public override HttpMessageHandler? PrimaryHandler { get; set; }
+        public override string Name { get; set; } = "AndroidClientHandlerBuilder";
+        public override HttpMessageHandler PrimaryHandler { get; set; } = null!;
 
         public override IList<DelegatingHandler> AdditionalHandlers => new List<DelegatingHandler>();
 

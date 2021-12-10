@@ -194,7 +194,7 @@ namespace SymbolCollector.Server
                 s.SetTag("batchId", batchId.ToString());
             });
 
-            if (!MultipartRequestHelper.IsMultipartContentType(Request.ContentType))
+            if (Request.ContentType is not null && !MultipartRequestHelper.IsMultipartContentType(Request.ContentType))
             {
                 return BadRequest($"ContentType {Request.ContentType} is not supported.");
             }

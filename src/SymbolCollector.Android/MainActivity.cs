@@ -24,7 +24,7 @@ namespace SymbolCollector.Android
 {
     [Activity(
         Name = "io.sentry.symbolcollector.MainActivity",
-        Label = "@string/app_name", Theme = "@style/AppTheme", MainLauncher = true,
+        Label = "@string/app_name", MainLauncher = true,
         ScreenOrientation = ScreenOrientation.Portrait)]
     public class MainActivity : AppCompatActivity
     {
