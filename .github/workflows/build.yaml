@@ -57,6 +57,6 @@ jobs:
           name: ${{ github.sha }}
           if-no-files-found: error
           path: |
-            ${{ github.workspace }}/src/SymbolCollector.Android/bin/release/*Signed.apk
+            ${{ github.workspace }}/src/SymbolCollector.Android/bin/Release/*Signed.apk
             ${{ github.workspace }}/src/SymbolCollector.Console/*.zip
             ${{ github.workspace }}/src/SymbolCollector.Server/publish/*.zip
