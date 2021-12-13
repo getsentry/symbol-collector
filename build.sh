@@ -8,6 +8,7 @@ popd
 pushd src/SymbolCollector.Server/
 # Restore packages, builds it, runs smoke-test.
 dotnet run -c Release -- --smoke-test
+rm -rf publish
 dotnet publish -c Release --no-build -o publish
 pushd publish/
 zip symbolcollector-server.zip ./*
