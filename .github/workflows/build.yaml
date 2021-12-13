@@ -55,6 +55,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: ${{ github.sha }}
+          if-no-files-found: error
           path: |
             ${{ github.workspace }}/src/SymbolCollector.Android/bin/release/*Signed.apk
             ${{ github.workspace }}/src/SymbolCollector.Console/*.zip
