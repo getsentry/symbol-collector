@@ -22,6 +22,8 @@ namespace SymbolCollector.Android.Library
         {
             SentryXamarin.Init(o =>
             {
+                // System.UnauthorizedAccessException: Access to the path '/proc/stat' is denied.
+                o.DetectStartupTime = StartupTimeDetectionMode.Fast;
                 o.TracesSampleRate = 1.0;
                 o.MaxBreadcrumbs = 100;
                 o.Debug = true;
@@ -137,8 +139,8 @@ namespace SymbolCollector.Android.Library
 
     public class AndroidClientHandlerBuilder : HttpMessageHandlerBuilder
     {
-        public override string? Name { get; set; }
-        public override HttpMessageHandler? PrimaryHandler { get; set; }
+        public override string Name { get; set; } = "AndroidClientHandlerBuilder";
+        public override HttpMessageHandler PrimaryHandler { get; set; } = null!;
 
         public override IList<DelegatingHandler> AdditionalHandlers => new List<DelegatingHandler>();
 

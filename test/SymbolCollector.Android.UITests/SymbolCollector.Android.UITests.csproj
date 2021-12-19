@@ -43,19 +43,5 @@
     <PackageReference Include="NUnit" Version="3.13.1" />
     <PackageReference Include="Xamarin.UITest" Version="3.2.2" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\SymbolCollector.Android\SymbolCollector.Android.csproj">
-      <Project>{B66B3A36-CE78-4278-998B-D43F6E0C63E8}</Project>
-      <Name>SymbolCollector.Android</Name>
-      <ReferenceOutputAssembly>False</ReferenceOutputAssembly>
-      <Private>False</Private>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\..\src\SymbolCollector.Android\debug.keystore">
-      <Link>debug.keystore</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

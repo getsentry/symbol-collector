@@ -3,7 +3,7 @@
     <Authors>Sentry Team and Contributors</Authors>
     <Version>1.4.2</Version>
     <Company>Sentry.io</Company>
-    <LangVersion>8.0</LangVersion>
+    <LangVersion>9.0</LangVersion>
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
     <Deterministic>True</Deterministic>
@@ -15,7 +15,6 @@
     <NoWarn Condition="'$(Configuration)' == 'Debug'">$(NoWarn);CS1998;CS8321;CS1591;CS0162</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="3.3.2" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
   </ItemGroup>
 </Project>

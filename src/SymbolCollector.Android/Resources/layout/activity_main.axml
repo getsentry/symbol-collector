@@ -106,7 +106,6 @@
                 </LinearLayout>
 
                 <View android:layout_width="match_parent"
-                      android:background="@color/colorPrimaryDark"
                       android:visibility="gone"
                       tools:visibility="visible"
                       android:id="@+id/ran_for_view"
@@ -136,7 +135,6 @@
                 </LinearLayout>
 
                 <View android:layout_width="match_parent"
-                      android:background="@color/colorPrimaryDark"
                       android:layout_height="1dp"/>
 
                 <!-- Files uploaded -->
@@ -160,7 +158,6 @@
                 </LinearLayout>
 
                 <View android:layout_width="match_parent"
-                      android:background="@color/colorPrimaryDark"
                       android:layout_height="1dp"/>
 
                 <!-- Already existed-->
@@ -187,7 +184,6 @@
                 </LinearLayout>
 
                 <View android:layout_width="match_parent"
-                      android:background="@color/colorPrimaryDark"
                       android:layout_height="1dp"/>
 
                 <!-- Files Processed Count -->
@@ -214,7 +210,6 @@
                 </LinearLayout>
 
                 <View android:layout_width="match_parent"
-                      android:background="@color/colorPrimaryDark"
                       android:layout_height="1dp"/>
 
                 <!-- Successfully Upload Count -->
@@ -241,7 +236,6 @@
                 </LinearLayout>
 
                 <View android:layout_width="match_parent"
-                      android:background="@color/colorPrimaryDark"
                       android:layout_height="1dp"/>
 
                 <!-- Elf File Found Count -->
@@ -268,7 +262,6 @@
                 </LinearLayout>
 
                 <View android:layout_width="match_parent"
-                      android:background="@color/colorPrimaryDark"
                       android:layout_height="1dp"/>
 
                 <!-- Failed To Parse Count -->
@@ -294,7 +287,6 @@
                 </LinearLayout>
 
                 <View android:layout_width="match_parent"
-                      android:background="@color/colorPrimaryDark"
                       android:layout_height="1dp"/>
 
                 <!-- Failed To Upload Count -->
@@ -320,7 +312,6 @@
                 </LinearLayout>
 
                 <View android:layout_width="match_parent"
-                      android:background="@color/colorPrimaryDark"
                       android:layout_height="1dp"/>
 
                 <!-- Jobs In Flight Count -->
@@ -346,7 +337,6 @@
                 </LinearLayout>
 
                 <View android:layout_width="match_parent"
-                      android:background="@color/colorPrimaryDark"
                       android:layout_height="1dp"/>
 
                 <!-- Directory Does Not Exist Count -->
@@ -372,7 +362,6 @@
                 </LinearLayout>
 
                 <View android:layout_width="match_parent"
-                      android:background="@color/colorPrimaryDark"
                       android:layout_height="1dp"/>
 
                 <!-- File Does Not Exist Count -->
@@ -398,7 +387,6 @@
                 </LinearLayout>
 
                 <View android:layout_width="match_parent"
-                      android:background="@color/colorPrimaryDark"
                       android:layout_height="1dp"/>
 
                 <!-- Unauthorized Access -->
@@ -424,7 +412,6 @@
                 </LinearLayout>
 
                 <View android:layout_width="match_parent"
-                      android:background="@color/colorPrimaryDark"
                       android:layout_height="1dp"/>
 
             </LinearLayout>

@@ -22,7 +22,9 @@ using Host = SymbolCollector.Android.Library.Host;
 
 namespace SymbolCollector.Android
 {
-    [Activity(Label = "@string/app_name", Theme = "@style/AppTheme", MainLauncher = true,
+    [Activity(
+        Name = "io.sentry.symbolcollector.MainActivity",
+        Label = "@string/app_name", MainLauncher = true,
         ScreenOrientation = ScreenOrientation.Portrait)]
     public class MainActivity : AppCompatActivity
     {
@@ -65,14 +67,14 @@ namespace SymbolCollector.Android
                 uploadButton.Click += OnUploadButtonOnClick;
                 cancelButton.Click += OnCancelButtonOnClick;
 
-                async void OnUploadButtonOnClick(object sender, EventArgs args)
+                async void OnUploadButtonOnClick(object? sender, EventArgs args)
                 {
                     var uploadTransaction = SentrySdk.StartTransaction("BatchUpload", "batch.upload");
                     try
                     {
                         SentrySdk.AddBreadcrumb("OnUploadButtonOnClick", category: "ui.event");
                         var options = _serviceProvider.GetRequiredService<SymbolClientOptions>();
-                        options.BaseAddress = new Uri(url.Text); // TODO validate
+                        options.BaseAddress = new Uri(url.Text!); // TODO validate
 
                         SentrySdk.ConfigureScope(s => s.SetTag("server-endpoint", options.BaseAddress.AbsoluteUri));
 
@@ -93,7 +95,7 @@ namespace SymbolCollector.Android
                     }
                 }
 
-                void OnCancelButtonOnClick(object sender, EventArgs args)
+                void OnCancelButtonOnClick(object? sender, EventArgs args)
                 {
                     SentrySdk.AddBreadcrumb("OnCancelButtonOnClick", category: "ui.event");
                     Unfocus();
@@ -219,7 +221,7 @@ namespace SymbolCollector.Android
                 }
             }, token);
 
-        private void ShowError(Exception e)
+        private void ShowError(Exception? e)
         {
             if (e is null)
             {

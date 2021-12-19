@@ -1,7 +1,5 @@
 pushd src\SymbolCollector.Android\
-msbuild /restore /p:Configuration=Release ^
-    /p:AndroidBuildApplicationPackage=true ^
-    /t:Clean;Build;SignAndroidPackage
+dotnet publish -c Release
 if "%errorlevel%" NEQ "0" exit /b %errorlevel%
 popd
 
