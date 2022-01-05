@@ -11,3 +11,4 @@ function Replace-TextInFile {
 
 # Version of .NET assemblies:
 Replace-TextInFile "$PSScriptRoot/../Directory.Build.props" '(?<=<Version>)(.*?)(?=</Version>)' $newVersion
+Replace-TextInFile "$PSScriptRoot/../src/SymbolCollector.Android/AndroidManifest.xml" 'versionName=\(.*\)\"/versionName=' $newVersion
