@@ -1,11 +1,4 @@
 minVersion: 0.23.1
 changelogPolicy: auto
-github:
-  owner: getsentry
-  repo: symbol-collector
 targets:
   - name: github
-statusProvider:
-  name: github
-artifactProvider:
-  name: github
