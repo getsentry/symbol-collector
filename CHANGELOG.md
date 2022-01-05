@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.5.1
+
+### Various fixes & improvements
+
+- artifact apk only (0671588e) by @bruno-garcia
+- aar from app (273c6132) by @bruno-garcia
+- fix artifact path (5bc19a1d) by @bruno-garcia
+- debug gh artifact (941ba29f) by @bruno-garcia
+- changelog 1.5.0 (47cd1456) by @bruno-garcia
+- simplify craft yml (0ff5fc3d) by @bruno-garcia
+- craft changelog auto (41593155) by @bruno-garcia
+
 ## 1.5.0
 
 * Target .NET 6 (#111)
