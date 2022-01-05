@@ -3,6 +3,7 @@
     <TargetFramework>net6.0-android</TargetFramework>
 <!--    <ApplicationId>io.sentry.symbolcollector.android</ApplicationId>-->
     <OutputType>Exe</OutputType>
+    <AndroidUseAssemblyStore>False</AndroidUseAssemblyStore>
   </PropertyGroup>
 
 <!--  <PropertyGroup>-->

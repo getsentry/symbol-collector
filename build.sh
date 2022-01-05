@@ -35,7 +35,7 @@ msbuild /restore /p:Configuration=Release /t:Build
 # Don't run emulator tests on CI
 if [ -z ${CI+x} ]; then
     pushd bin/Release
-    export SYMBOL_COLLECTOR_APK=../../../../src/SymbolCollector.Android/bin/Release/io.sentry.symbol.collector.apk
+    export SYMBOL_COLLECTOR_APK=../../../../src/SymbolCollector.Android/bin/Release/net6.0-android/io.sentry.symbolcollector.android-Signed.apk
     mono ../../tools/nunit/net35/nunit3-console.exe SymbolCollector.Android.UITests.dll
     unset SYMBOL_COLLECTOR_APK
     popd
