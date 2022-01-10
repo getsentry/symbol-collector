@@ -26,7 +26,7 @@ namespace SymbolCollector.Android
         Name = "io.sentry.symbolcollector.MainActivity",
         Label = "@string/app_name", MainLauncher = true,
         ScreenOrientation = ScreenOrientation.Portrait)]
-    public class MainActivity : AppCompatActivity
+    public class MainActivity : Activity
     {
         private readonly string _friendlyName;
         private readonly IHost _host;
