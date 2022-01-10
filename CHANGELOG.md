@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.2
+
+### Various fixes & improvements
+
+- fix: Android theme appcompat (#122) by @bruno-garcia
+- disable AndroidUseAssemblyStore to work with appcenter (f300b966) by @bruno-garcia
+
 ## 1.5.1
 
 ### Various fixes & improvements
