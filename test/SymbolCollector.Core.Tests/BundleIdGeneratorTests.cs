@@ -7,7 +7,7 @@ namespace SymbolCollector.Core.Tests
         [Fact]
         public void CreateBundleId_SameFriendlyName_DifferentBundleIdsWithoutSpacesAndSlashes()
         {
-            using var suffixGenerator = new SuffixGenerator();
+            var suffixGenerator = new SuffixGenerator();
             var target = new BundleIdGenerator(suffixGenerator);
 
             var friendlyName = @".this is the : _ // """"

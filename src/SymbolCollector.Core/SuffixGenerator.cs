@@ -4,39 +4,19 @@ using System.Security.Cryptography;
 
 namespace SymbolCollector.Core
 {
-    public class SuffixGenerator : IDisposable
+    public class SuffixGenerator
     {
-        private readonly RandomNumberGenerator _randomNumberGenerator;
         private const string Characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-        public SuffixGenerator(RandomNumberGenerator? randomNumberGenerator = null)
-            => _randomNumberGenerator = randomNumberGenerator ?? new RNGCryptoServiceProvider();
 
         public string Generate()
         {
-            var higherBound = Characters.Length;
-
             const int keyLength = 6;
-            Span<byte> randomBuffer = stackalloc byte[4];
-            var stringBaseBuffer = ArrayPool<char>.Shared.Rent(keyLength);
-            try
-            {
-                for (var i = 0; i < keyLength; i++)
+            return string.Create(keyLength, Characters, (buffer, charSet) => {
+                for (int i = 0; i < buffer.Length; i++)
                 {
-                    _randomNumberGenerator.GetBytes(randomBuffer);
-                    var generatedValue = Math.Abs(BitConverter.ToInt32(randomBuffer));
-                    var index = generatedValue % higherBound;
-                    stringBaseBuffer[i] = Characters[index];
+                    buffer[i] = charSet[RandomNumberGenerator.GetInt32(charSet.Length)];
                 }
-
-                return new string(stringBaseBuffer[..keyLength]);
-            }
-            finally
-            {
-                ArrayPool<char>.Shared.Return(stringBaseBuffer);
-            }
+            });
         }
-
-        public void Dispose() => _randomNumberGenerator.Dispose();
     }
 }
