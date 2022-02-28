@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+
+- NotSupportedException when serializing Args([#125](https://github.com/getsentry/symbol-collector/pull/125))
+
 ## 1.5.2
 
 ### Various fixes & improvements
