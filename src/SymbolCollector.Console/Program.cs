@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
@@ -240,7 +241,7 @@ namespace SymbolCollector.Console
                         s.SetTag("server-endpoint", args.ServerEndpoint.AbsoluteUri);
                     }
 
-                    s.Contexts["parameters"] = args;
+                    s.Contexts["parameters"] = args;                    
                 });
             }
 
@@ -296,6 +297,8 @@ namespace SymbolCollector.Console
         public Uri? ServerEndpoint { get; }
         public string UserAgent { get; }
         public bool DryRun { get; }
+
+        [JsonIgnore]
         public CancellationTokenSource Cancellation { get; }
     }
 }
