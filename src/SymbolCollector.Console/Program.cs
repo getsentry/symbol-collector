@@ -241,7 +241,7 @@ namespace SymbolCollector.Console
                         s.SetTag("server-endpoint", args.ServerEndpoint.AbsoluteUri);
                     }
 
-                    s.Contexts["parameters"] = args;                    
+                    s.Contexts["parameters"] = args;
                 });
             }
 
