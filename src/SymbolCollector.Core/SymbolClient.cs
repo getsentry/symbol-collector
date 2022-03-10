@@ -164,12 +164,20 @@ namespace SymbolCollector.Core
                 throw new ArgumentException("Invalid empty BuildId");
             }
 
-            return await IsSymbolMissing() && await Upload();
+            return await IsSymbolMissing(batchId, unifiedId, hash, token)
+                   && await Upload(batchId, unifiedId, fileName, file, token);
+        }
 
-            async Task<bool> IsSymbolMissing()
+        async Task<bool> IsSymbolMissing(
+                Guid batchId,
+                string unifiedId,
+                string hash,
+                CancellationToken token)
+        {
+            var checkUrl = $"{_options.BaseAddress.AbsoluteUri}symbol/batch/{batchId}/check/v2/{unifiedId}/{hash}";
+            try
             {
-                var checkUrl = $"{_options.BaseAddress.AbsoluteUri}symbol/batch/{batchId}/check/v2/{unifiedId}/{hash}";
-                try
+                return await Retry(async () =>
                 {
                     var checkResponse =
                         await _httpClient.SendAsync(
@@ -184,27 +192,37 @@ namespace SymbolCollector.Core
                     }
 
                     await ThrowForUnsuccessful("Failed checking if file is needed.", checkResponse);
-                }
-                catch (Exception e)
-                {
-                    using var _ = _logger.BeginScope(("url", checkUrl));
-                    _logger.LogError(e, "Failed to check for unifiedId through {url}", checkUrl);
-                    throw;
-                }
-
-                return true;
+                    return true;
+                }, token);
             }
-
-            async Task<bool> Upload()
+            catch (Exception e)
             {
-                var uploadUrl = $"{_options.BaseAddress.AbsoluteUri}symbol/batch/{batchId}/upload";
-                try
+                using var _ = _logger.BeginScope(("url", checkUrl));
+                _logger.LogError(e, "Failed to check for unifiedId through {url}", checkUrl);
+                throw;
+            }
+        }
+
+        private async Task<bool> Upload(
+            Guid batchId,
+            string unifiedId,
+            string fileName,
+            Stream file,
+            CancellationToken token)
+        {
+            var uploadUrl = $"{_options.BaseAddress.AbsoluteUri}symbol/batch/{batchId}/upload";
+            try
+            {
+                var result = await Retry(async () =>
                 {
                     var uploadResponse = await _httpClient.SendAsync(
                         new HttpRequestMessage(HttpMethod.Post, uploadUrl)
                         {
                             Version = _httpVersion,
-                            Content = new MultipartFormDataContent {{new GzipContent(new StreamContent(file)), fileName, fileName}}
+                            Content = new MultipartFormDataContent
+                            {
+                                { new GzipContent(new StreamContent(file)), fileName, fileName }
+                            }
                         }, token);
 
                     if (_logger.IsEnabled(LogLevel.Debug))
@@ -221,21 +239,45 @@ namespace SymbolCollector.Core
                     }
 
                     await ThrowForUnsuccessful("Failed uploading file.", uploadResponse);
-                }
-                catch (Exception e)
-                {
-                    using var _ = _logger.BeginScope(("url", uploadUrl));
-                    _logger.LogError(e, "Failed to upload through {url}", uploadUrl);
-                    throw;
-                }
+                    return true;
+                }, token);
 
-                _logger.LogInformation("File {file} with {bytes} was uploaded successfully.",
-                    fileName, file.Length);
+                _logger.LogInformation("File {file} with {bytes} upload was {result}.",
+                    fileName, file.Length, result ? "successful" : "unsuccessful");
 
-                return true;
+                return result;
+            }
+            catch (Exception e)
+            {
+                using var _ = _logger.BeginScope(("url", uploadUrl));
+                _logger.LogError(e, "Failed to upload through {url}", uploadUrl);
+                throw;
             }
         }
 
+        private static async Task<bool> Retry(Func<Task<bool>> action, CancellationToken token)
+        {
+            for (var i = 0; i < 4; i++)
+            {
+                try
+                {
+                    return await action();
+                }
+                // Single retry as an attempt to reduce Android error:
+                // Read error: ssl=0x7ac5984c08: SSL_ERROR_WANT_READ occurred. You should never see this.
+                catch (WebException e) when (e.Message.Contains("You should never see this."))
+                {
+                    if (i > 2)
+                    {
+                        throw;
+                    }
+
+                    await Task.Delay(100, token);
+                }
+            }
+
+            return false;
+        }
         private static async Task ThrowForUnsuccessful(string message, HttpResponseMessage checkResponse)
         {
             if (!checkResponse.IsSuccessStatusCode)

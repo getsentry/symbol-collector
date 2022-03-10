@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -80,7 +81,7 @@ namespace SymbolCollector.Core
             catch (Exception e)
             {
                 uploadSpan?.Finish(e);
-                _logger.LogError(e, "Failed processing files for {batchId}. Rethrowing and leaving the batch open.",
+                _logger.LogWarning(e, "Failed processing files for {batchId}. Rethrowing and leaving the batch open.",
                     batchId);
                 throw;
             }
@@ -241,12 +242,12 @@ namespace SymbolCollector.Core
             catch (Exception e)
             {
                 Metrics.FailedToUpload();
-                _logger.LogError(e, "Failed to upload.");
+                e.Data["stats"] = Metrics;
+                _logger.LogWarning(e, "Failed to upload.");
                 throw;
             }
         }
 
         public void Dispose() => _symbolClient.Dispose();
     }
-
 }

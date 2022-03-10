@@ -42,6 +42,18 @@ namespace SymbolCollector.Android.UITests
         public void CollectSymbols()
         {
             _app.Tap(q => q.Id("btnUpload"));
+            // This can fail with:
+            // System.err: junit.framework.AssertionFailedError: Click can not be completed!
+            // System.err: 	at junit.framework.Assert.fail(Assert.java:50)
+            // System.err: 	at junit.framework.Assert.assertTrue(Assert.java:20)
+            // System.err: 	at com.jayway.android.robotium.solo.Clicker.clickOnScreen(Clicker.java:99)
+            // System.err: 	at com.jayway.android.robotium.solo.Solo.clickOnScreen(Solo.java:769)
+            // System.err: 	at sh.calaba.instrumentationbackend.actions.gestures.TouchCoordinates.execute(TouchCoordinates.java:17)
+            // System.err: 	at sh.calaba.instrumentationbackend.Command.execute(Command.java:47)
+            // System.err: 	at sh.calaba.instrumentationbackend.actions.HttpServer.runCommand(HttpServer.java:787)
+            // System.err: 	at sh.calaba.instrumentationbackend.actions.HttpServer.serve(HttpServer.java:767)
+            // System.err: 	at sh.calaba.instrumentationbackend.actions.NanoHTTPD$HTTPSession.run(NanoHTTPD.java:487)
+            // TODO: check if the button is not 'disabled' and if not, retry a couple of times.
             var totalWaitTimeSeconds = 40 * 60;
             var retryCounter = 200;
             var iterationTimeout = TimeSpan.FromSeconds(totalWaitTimeSeconds / retryCounter);

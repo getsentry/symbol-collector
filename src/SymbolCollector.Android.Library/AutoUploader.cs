@@ -71,7 +71,7 @@ namespace SymbolCollector.Android.Library
             uploadTask.ContinueWith(t =>
             {
                 tran.Finish(t.IsCompletedSuccessfully ? SpanStatus.Ok : SpanStatus.UnknownError);
-            });
+            }, source.Token);
         }
     }
 }
