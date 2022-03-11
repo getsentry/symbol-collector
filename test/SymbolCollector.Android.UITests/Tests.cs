@@ -1,6 +1,8 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Net;
 using NUnit.Framework;
 using Xamarin.UITest;
 using Xamarin.UITest.Android;
@@ -74,11 +76,32 @@ namespace SymbolCollector.Android.UITests
                     }
 
                     // Check if it failed
-                    var result = _app.Query(p => p.Id("alertTitle"));
-                    if (result?.Any() == true)
+                    for (int i = 0; i < 5; i++)
                     {
-                        _app.Screenshot("Error");
-                        throw new Exception("Error modal found, app errored.");
+                        try
+                        {
+                            // System.Exception : Error while performing Query(Id("alertTitle"))
+                            // ----> System.Net.WebException : POST Failed
+                            // at Xamarin.UITest.Utils.ErrorReporting.With[T] (System.Func`1[TResult] func, System.Object[] args, System.String memberName) [0x0005b] in <ee1ea64696fc4204b13d502130bb6913>:0
+                            // at Xamarin.UITest.Android.AndroidApp.Query (System.Func`2[T,TResult] query) [0x00014] in <ee1ea64696fc4204b13d502130bb6913>:0
+                            // ...
+                            var result = _app.Query(p => p.Id("alertTitle"));
+                            if (result?.Any() == true)
+                            {
+                                _app.Screenshot("Error");
+                                throw new Exception("Error modal found, app errored.");
+                            }
+                            break;
+                        }
+                        catch (WebException)
+                        {
+                            if (i == 4)
+                            {
+                                throw;
+                            }
+                            Thread.Sleep(200);
+                            continue;
+                        }
                     }
                 }
             }
