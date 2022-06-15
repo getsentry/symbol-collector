@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using Android.Content;
 using Android.OS;
 using Android.Runtime;
 using Android.Systems;
@@ -14,14 +15,14 @@ namespace SymbolCollector.Android.Library
     /// Automatically collects symbols with sentry.io's collector server.
     /// </summary>
     [Register("io/sentry/symbolcollector/AutoUploader")]
-    public class AutoUploader : Java.Lang.Object, Java.Lang.IRunnable
+    public class AutoUploader : Java.Lang.Object
     {
         /// <summary>
         /// Run symbol collection.
         /// </summary>
-        public void Run()
+        public void Run(Context context)
         {
-            var host = Host.Init("https://656e2e78d37d4511a4ea2cb3602e7a65@sentry.io/5953206");
+            var host = Host.Init(context, "https://656e2e78d37d4511a4ea2cb3602e7a65@sentry.io/5953206");
             var tran = SentrySdk.StartTransaction("SymbolUpload", "symbol.upload");
             var options = host.Services.GetRequiredService<SymbolClientOptions>();
             options.BaseAddress = new Uri("https://symbol-collector.services.sentry.io");
