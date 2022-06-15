@@ -6,6 +6,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Http;
 using Sentry;
 using SymbolCollector.Core;
+using Xamarin.Android.Net;
 using OperationCanceledException = System.OperationCanceledException;
 
 namespace SymbolCollector.Android.Library
@@ -128,7 +129,7 @@ namespace SymbolCollector.Android.Library
                     o.IncludeHash = false;
                     o.UseFallbackObjectFileParser = false; // Android only, use only ELF parser.
                 });
-                c.AddSingleton<HttpMessageHandlerBuilder, AndroidClientHandlerBuilder>();
+                c.AddSingleton<AndroidMessageHandlerBuilder, AndroidMessageHandlerBuilder>();
             });
             iocSpan.Finish();
 
@@ -137,13 +138,13 @@ namespace SymbolCollector.Android.Library
         }
     }
 
-    public class AndroidClientHandlerBuilder : HttpMessageHandlerBuilder
+    public class AndroidMessageHandlerBuilder : HttpMessageHandlerBuilder
     {
-        public override string Name { get; set; } = "AndroidClientHandlerBuilder";
+        public override string Name { get; set; } = "AndroidMessageHandlerBuilder";
         public override HttpMessageHandler PrimaryHandler { get; set; } = null!;
 
         public override IList<DelegatingHandler> AdditionalHandlers => new List<DelegatingHandler>();
 
-        public override HttpMessageHandler Build() => new Xamarin.Android.Net.AndroidClientHandler();
+        public override HttpMessageHandler Build() => new AndroidMessageHandler();
     }
 }
