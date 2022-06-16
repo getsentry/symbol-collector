@@ -84,11 +84,8 @@ namespace SymbolCollector.Core
                 result = null;
                 Metrics.FailedToParse();
                 // You would expect TryLoad doesn't throw but that's not the case
-                SentrySdk.WithScope(s =>
-                {
-                    s.AddAttachment(file);
-                    _logger.LogError(e, "Failed processing file {file}.", file);
-                });
+                e.Data["filename"] = file;
+                SentrySdk.CaptureException(e, s => s.AddAttachment(file));
             }
 
             Metrics.FileProcessed();

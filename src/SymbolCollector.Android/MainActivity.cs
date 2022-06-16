@@ -9,7 +9,6 @@ using Android.Systems;
 using Android.Views;
 using Android.Views.InputMethods;
 using Android.Widget;
-using AndroidX.AppCompat.App;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Sentry;
@@ -17,7 +16,6 @@ using SymbolCollector.Core;
 using SymbolCollector.Android.Library;
 using AlertDialog = Android.App.AlertDialog;
 using OperationCanceledException = System.OperationCanceledException;
-using Xamarin.Essentials;
 using Host = SymbolCollector.Android.Library.Host;
 
 namespace SymbolCollector.Android
@@ -28,18 +26,27 @@ namespace SymbolCollector.Android
         ScreenOrientation = ScreenOrientation.Portrait)]
     public class MainActivity : Activity
     {
-        private readonly string _friendlyName;
-        private readonly IHost _host;
-        private readonly IServiceProvider _serviceProvider;
-        private readonly ITransaction _startupTransaction;
+        private string _friendlyName = null!; // set on OnCreate
+        private IHost _host = null!; // set on OnCreate
+        private IServiceProvider _serviceProvider = null!; // set on OnCreate
+        private ITransaction _startupTransaction  = null!; // set on OnCreate
 
         protected override void OnCreate(Bundle? savedInstanceState)
         {
+#pragma warning disable 618
+            _friendlyName = $"Android:{Build.Manufacturer}-{Build.CpuAbi}-{Build.Model}";
+#pragma warning restore 618
+            _host = Host.Init(this, "https://656e2e78d37d4511a4ea2cb3602e7a65@sentry.io/5953206");
+            _serviceProvider = _host.Services;
+
+            var tran = SentrySdk.StartTransaction("AppStart", "activity.load");
+            _startupTransaction = tran;
+            AddSentryContext();
+
             var span = _startupTransaction.StartChild("OnCreate");
             try
             {
                 base.OnCreate(savedInstanceState);
-                Platform.Init(this, savedInstanceState);
 
                 SetContentView(Resource.Layout.activity_main);
 
@@ -262,17 +269,8 @@ namespace SymbolCollector.Android
             builder.Show();
         }
 
-        public MainActivity()
+        private void AddSentryContext()
         {
-#pragma warning disable 618
-            _friendlyName = $"Android:{Build.Manufacturer}-{Build.CpuAbi}-{Build.Model}";
-#pragma warning restore 618
-            _host = Host.Init("https://656e2e78d37d4511a4ea2cb3602e7a65@sentry.io/5953206");
-            _serviceProvider = _host.Services;
-
-            var tran = SentrySdk.StartTransaction("AppStart", "activity.load");
-            _startupTransaction = tran;
-
             StructUtsname? uname = null;
             try
             {
@@ -289,7 +287,7 @@ namespace SymbolCollector.Android
 
             SentrySdk.ConfigureScope(s =>
             {
-                s.Transaction = tran;
+                s.Transaction = _startupTransaction;
                 s.SetTag("friendly-name", _friendlyName);
 
                 if (uname is { })

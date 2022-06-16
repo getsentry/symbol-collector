@@ -4,6 +4,9 @@
     <OutputType>Exe</OutputType>
     <!-- Disabled to get this to work with Xamarin.UITest -->
     <AndroidUseAssemblyStore>False</AndroidUseAssemblyStore>
+<!--    Docs say removed on Xam.Android 11.2 https://docs.microsoft.com/en-us/xamarin/android/deploy-test/building-apps/build-properties#androidusesharedruntime-->
+<!--    But without this appcenter fails with  Mono Shared Runtime is not supported. This can be resolved by changing the project configuration or using a Release build.-->
+    <AndroidUseSharedRuntime>False</AndroidUseSharedRuntime>
   </PropertyGroup>
 
   <ItemGroup>

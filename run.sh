@@ -29,5 +29,5 @@ for barch_number in $(seq 1 1 $appcenter_batch_count); do
         --locale "en_US" \
         --build-dir . \
         --async \
-        --uitest-tools-dir ~/.nuget/packages/xamarin.uitest/3.2.2/tools/
+        --uitest-tools-dir ~/.nuget/packages/xamarin.uitest/3.2.8/tools/
 done
