@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.6.0
+
+### Various fixes & improvements
+
+- bump deps (#128) by @bruno-garcia
+- feat/sentry native android (#127) by @bruno-garcia
+
 ## 1.5.3
 
 ### Fixes
