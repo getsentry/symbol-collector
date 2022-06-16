@@ -74,6 +74,7 @@ namespace SymbolCollector.Server
                     services.Configure<KestrelServerOptions>(
                         context.Configuration.GetSection("Kestrel"));
                 })
+                .UseSerilog()
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseSentry(o =>
@@ -98,7 +99,6 @@ namespace SymbolCollector.Server
                             return @event;
                         };
                     });
-                    webBuilder.UseSerilog();
                     webBuilder.UseStartup<Startup>();
                 });
 
