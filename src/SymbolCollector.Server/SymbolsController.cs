@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -318,7 +319,7 @@ namespace SymbolCollector.Server
             MultipartSection section, ContentDispositionHeaderValue contentDisposition,
             ModelStateDictionary modelState, long sizeLimitBytes)
         {
-            Stream outputStream = new MemoryStream();
+            var outputStream = new MemoryStream();
             string? fileName = null;
             HttpStatusCode? code = null;
             try
@@ -361,6 +362,14 @@ namespace SymbolCollector.Server
                 {
                     return (fileName, outputStream, null);
                 }
+            }
+            catch (BadHttpRequestException)
+            {
+                // Client likely terminated request early
+                // https://github.com/dotnet/aspnetcore/issues/6575#issuecomment-453691427
+
+                // - Unexpected end of request content.
+                // - Reading the request body timed out due to data arriving too slowly. See MinRequestBodyDataRate.
             }
             catch (Exception ex)
             {
