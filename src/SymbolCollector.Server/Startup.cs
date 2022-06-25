@@ -133,7 +133,7 @@ namespace SymbolCollector.Server
                 var logger = s.ServiceProvider.GetRequiredService<ILogger<Core.Startup>>();
                 if (options.DeleteBaseWorkingPathOnStartup)
                 {
-                    var paths = new[] { "symsorter_output", "done", "processing", "conflcit" }
+                    var paths = new[] { "symsorter_output", "done", "processing", "conflict" }
                         .Select(p => Path.Combine(options.BaseWorkingPath, p));
                     foreach (var path in paths)
                     {
@@ -141,6 +141,10 @@ namespace SymbolCollector.Server
                         try
                         {
                             Directory.Delete(path, true);
+                        }
+                        catch (DirectoryNotFoundException)
+                        {
+                            logger.LogDebug("Directory didn't exist {path}", path);
                         }
                         catch (Exception e)
                         {
