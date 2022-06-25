@@ -87,8 +87,7 @@ namespace SymbolCollector.Server
         private readonly ILogger<InMemorySymbolService> _logger;
         private readonly Random _random = new Random();
 
-        private readonly ConcurrentDictionary<Guid, SymbolUploadBatch> _batches =
-            new ConcurrentDictionary<Guid, SymbolUploadBatch>();
+        private readonly ConcurrentDictionary<Guid, SymbolUploadBatch> _batches = new();
 
         private readonly string _donePath;
         private readonly string _processingPath;
@@ -155,19 +154,33 @@ namespace SymbolCollector.Server
                 // To avoid files with conflicting name from the same batch
                 _random.Next().ToString(CultureInfo.InvariantCulture),
                 fileName);
+
             var tempDestination = Path.Combine(Path.GetTempPath(), destination);
             var path = Path.GetDirectoryName(tempDestination);
-            if (path is null)
+            if (string.IsNullOrEmpty(path))
             {
                 throw new InvalidOperationException("Couldn't get the path from tempDestination: " + tempDestination);
             }
-            Directory.CreateDirectory(path);
 
+            Directory.CreateDirectory(path);
             await using (var file = File.OpenWrite(tempDestination))
             {
                 await stream.CopyToAsync(file, token);
+                _logger.LogDebug("Temp file {bytes} copied {file}.", file.Length, Path.GetFileName(tempDestination));
             }
 
+            return await StoreIsolated(batchId, batch, fileName, tempDestination, destination, token);
+        }
+
+        private async Task<StoreResult> StoreIsolated(
+            Guid batchId,
+            SymbolUploadBatch batch,
+            string fileName,
+            string tempDestination,
+            string destination,
+            CancellationToken token)
+        {
+            string? path;
             if (!_parser.TryParse(tempDestination, out var fileResult) || fileResult is null)
             {
                 _logger.LogDebug("Failed parsing {file}.", Path.GetFileName(tempDestination));
@@ -177,10 +190,10 @@ namespace SymbolCollector.Server
 
             _logger.LogInformation("Parsed file with {UnifiedId}", fileResult.UnifiedId);
             var symbol = await GetSymbol(fileResult.UnifiedId, token);
-            if (symbol is {})
+            if (symbol is { })
             {
-                if (fileResult.Hash is {}
-                    && symbol.Hash is {}
+                if (fileResult.Hash is { }
+                    && symbol.Hash is { }
                     && string.CompareOrdinal(fileResult.Hash, symbol.Hash) != 0)
                 {
                     _metrics.DebugIdHashConflict();
@@ -204,19 +217,21 @@ namespace SymbolCollector.Server
                         fileName);
 
                     using (_logger.BeginScope(new Dictionary<string, string>()
-                    {
-                        {"existing-file-hash", symbol.Hash},
-                        {"existing-file-name", symbol.Name},
-                        {"staging-location", conflictDestination},
-                        {"new-file-hash", fileResult.Hash},
-                        {"new-file-name", Path.GetFileName(fileResult.Path)}
-                    }))
+                           {
+                               { "existing-file-hash", symbol.Hash },
+                               { "existing-file-name", symbol.Name },
+                               { "staging-location", conflictDestination },
+                               { "new-file-hash", fileResult.Hash },
+                               { "new-file-name", Path.GetFileName(fileResult.Path) }
+                           }))
                     {
                         path = Path.GetDirectoryName(conflictDestination);
                         if (path is null)
                         {
-                            throw new InvalidOperationException("Couldn't get the path from conflictDestination: " + conflictDestination);
+                            throw new InvalidOperationException("Couldn't get the path from conflictDestination: " +
+                                                                conflictDestination);
                         }
+
                         Directory.CreateDirectory(path);
                         _logger.LogInformation(
                             "File with the same debug id and un-matching hashes. File stored at: {path}",
@@ -263,6 +278,7 @@ namespace SymbolCollector.Server
             {
                 throw new InvalidOperationException("Couldn't get the path from destination: " + destination);
             }
+
             Directory.CreateDirectory(path);
             File.Move(tempDestination, destination);
 
