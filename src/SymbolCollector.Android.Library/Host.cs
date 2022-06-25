@@ -114,9 +114,6 @@ namespace SymbolCollector.Android.Library
             var userAgent = Java.Lang.JavaSystem.GetProperty("http.agent") ?? "Android/" + typeof(Host).Assembly.GetName().Version;
             var host = Startup.Init(c =>
             {
-                // Can be removed once addressed: https://github.com/getsentry/sentry-dotnet/issues/824
-                c.AddSingleton<IHttpMessageHandlerBuilderFilter, SentryHttpMessageHandlerBuilderFilter>();
-
                 c.AddSingleton<AndroidUploader>();
                 c.AddOptions().Configure<SymbolClientOptions>(o =>
                 {
