@@ -111,7 +111,7 @@ namespace SymbolCollector.Android.Library
 
             // TODO: Where is this span?
             var iocSpan = tran.StartChild("container.init", "Initializing the IoC container");
-            var userAgent = "Android/" + typeof(Host).Assembly.GetName().Version;
+            var userAgent = Java.Lang.JavaSystem.GetProperty("http.agent") ?? "Android/" + typeof(Host).Assembly.GetName().Version;
             var host = Startup.Init(c =>
             {
                 // Can be removed once addressed: https://github.com/getsentry/sentry-dotnet/issues/824
