@@ -51,23 +51,6 @@ namespace SymbolCollector.Android.Library
                             break;
                     }
 
-//                     try
-//                     {
-//                         // TODO Add to Sentry.Xamarin
-// #pragma warning disable 618
-//                         @event.Contexts.Device.Architecture = Build.CpuAbi;
-// #pragma warning restore 618
-//                         // TODO: Same as Brand though?
-//                         @event.Contexts.Device.Manufacturer = Build.Manufacturer;
-//
-//                         // Auto tag at least on error events:
-//                         // @event.SetTag("device", Build.Device ?? "?");
-//                     }
-//                     catch
-//                     {
-//                         // Capture the event without these values
-//                     }
-
                     return @event;
                 };
                 o.BeforeBreadcrumb = breadcrumb
@@ -81,33 +64,7 @@ namespace SymbolCollector.Android.Library
 
             var tran = SentrySdk.StartTransaction("AppStart", "activity.load");
 
-            // TODO: Lets check what we get OOTB
-//             SentrySdk.ConfigureScope(s =>
-//             {
-//                 s.Transaction = tran;
-//
-//                 // TODO: Remove once device data added to transactions on Sentry.Xamarin:
-//                 s.User.Id = Build.Id;
-// #pragma warning disable 618
-//                 s.Contexts.Device.Architecture = Build.CpuAbi;
-// #pragma warning restore 618
-//                 s.Contexts.Device.Brand = Build.Brand;
-//                 s.Contexts.Device.Manufacturer = Build.Manufacturer;
-//                 s.Contexts.Device.Model = Build.Model;
-//
-//                 s.SetExtra("fingerprint", Build.Fingerprint ?? "?");
-//                 s.SetExtra("host", Build.Host ?? "?");
-//                 s.SetExtra("product", Build.Product ?? "?");
-//
-//                 s.SetTag("API", ((int) Build.VERSION.SdkInt).ToString());
-// #pragma warning disable 618
-//                 s.SetTag("cpu-abi", Build.CpuAbi ?? "?");
-//                 if (!string.IsNullOrEmpty(Build.CpuAbi2))
-//                 {
-//                     s.SetTag("cpu-abi2", Build.CpuAbi2 ?? "?");
-//                 }
-// #pragma warning restore 618
-//             });
+            SentrySdk.ConfigureScope(s => s.Transaction = tran);
 
             // TODO: Where is this span?
             var iocSpan = tran.StartChild("container.init", "Initializing the IoC container");

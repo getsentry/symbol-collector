@@ -23,7 +23,7 @@ namespace SymbolCollector.Core
         public TimeSpan HttpClientTimeout { get; set; } = TimeSpan.FromMinutes(2);
         public string UserAgent { get; set; } = "SymbolCollector/0.0.0";
         public int ParallelTasks { get; set; } = 10;
-        public HashSet<string> BlackListedPaths { get; set; } = new HashSet<string>();
+        public HashSet<string> BlackListedPaths { get; set; } = new();
     }
 
     // prefix to final structure: ios, watchos, macos, android
@@ -72,7 +72,7 @@ namespace SymbolCollector.Core
             string unifiedId,
             string hash,
             string fileName,
-            Stream file,
+            Func<Stream> fileFactory,
             CancellationToken token);
     }
 
@@ -116,7 +116,7 @@ namespace SymbolCollector.Core
             {
                 var request = new HttpRequestMessage(HttpMethod.Post, url) {Version = _httpVersion, Content = content};
                 var response = await _httpClient.SendAsync(request, token);
-                await ThrowForUnsuccessful("Could not start batch.", response);
+                await ThrowOnUnsuccessfulResponse("Could not start batch.", response);
             }
             catch (Exception e)
             {
@@ -139,7 +139,7 @@ namespace SymbolCollector.Core
             {
                 var request = new HttpRequestMessage(HttpMethod.Post, url) {Version = _httpVersion, Content = content};
                 var response = await _httpClient.SendAsync(request, token);
-                await ThrowForUnsuccessful("Could not close batch.", response);
+                await ThrowOnUnsuccessfulResponse("Could not close batch.", response);
             }
             catch (Exception e)
             {
@@ -156,7 +156,7 @@ namespace SymbolCollector.Core
             string unifiedId,
             string hash,
             string fileName,
-            Stream file,
+            Func<Stream> fileFactory,
             CancellationToken token)
         {
             if (string.IsNullOrWhiteSpace(unifiedId))
@@ -183,11 +183,11 @@ namespace SymbolCollector.Core
                         return false;
                     }
 
-                    await ThrowForUnsuccessful("Failed checking if file is needed.", checkResponse);
+                    await ThrowOnUnsuccessfulResponse("Failed checking if file is needed.", checkResponse);
                 }
                 catch (Exception e)
                 {
-                    using var _ = _logger.BeginScope(("url", checkUrl));
+                    e.Data["url"] = checkUrl;
                     _logger.LogError(e, "Failed to check for unifiedId through {url}", checkUrl);
                     throw;
                 }
@@ -198,13 +198,22 @@ namespace SymbolCollector.Core
             async Task<bool> Upload()
             {
                 var uploadUrl = $"{_options.BaseAddress.AbsoluteUri}symbol/batch/{batchId}/upload";
+                HttpResponseMessage? uploadResponse = null;
                 try
                 {
-                    var uploadResponse = await _httpClient.SendAsync(
+                    await using var file = fileFactory();
+                    var fileContentStream = new StreamContent(file);
+                    fileContentStream.Headers.ContentType = new MediaTypeHeaderValue("application/gzip");
+
+                    using var content = new MultipartFormDataContent
+                    {
+                        { new GzipContent(fileContentStream), fileName, fileName }
+                    };
+                    uploadResponse = await _httpClient.SendAsync(
                         new HttpRequestMessage(HttpMethod.Post, uploadUrl)
                         {
                             Version = _httpVersion,
-                            Content = new MultipartFormDataContent {{new GzipContent(new StreamContent(file)), fileName, fileName}}
+                            Content = content
                         }, token);
 
                     if (_logger.IsEnabled(LogLevel.Debug))
@@ -220,23 +229,30 @@ namespace SymbolCollector.Core
                         return false;
                     }
 
-                    await ThrowForUnsuccessful("Failed uploading file.", uploadResponse);
+                    await ThrowOnUnsuccessfulResponse("Failed uploading file.", uploadResponse);
+
+                    _logger.LogInformation("File {file} with {bytes} was uploaded successfully.",
+                        fileName, file.Length);
                 }
                 catch (Exception e)
                 {
-                    using var _ = _logger.BeginScope(("url", uploadUrl));
-                    _logger.LogError(e, "Failed to upload through {url}", uploadUrl);
+                    SentrySdk.CaptureException(e, s =>
+                    {
+                        s.AddAttachment(fileFactory(), fileName);
+                        s.SetExtra("url", uploadUrl);
+                    });
                     throw;
                 }
-
-                _logger.LogInformation("File {file} with {bytes} was uploaded successfully.",
-                    fileName, file.Length);
+                finally
+                {
+                    uploadResponse?.Dispose();
+                }
 
                 return true;
             }
         }
 
-        private static async Task ThrowForUnsuccessful(string message, HttpResponseMessage checkResponse)
+        private static async Task ThrowOnUnsuccessfulResponse(string message, HttpResponseMessage checkResponse)
         {
             if (!checkResponse.IsSuccessStatusCode)
             {
