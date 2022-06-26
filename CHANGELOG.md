@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.6.1
+
+### Various fixes & improvements
+
+- bug fixes (#129) by @bruno-garcia
+
 ## 1.6.0
 
 ### Various fixes & improvements
