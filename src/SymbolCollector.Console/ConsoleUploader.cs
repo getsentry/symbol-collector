@@ -42,17 +42,29 @@ namespace SymbolCollector.Console
                 });
             });
 
-            _ = Task.Run(() =>
+            if (!IsInputRedirected && KeyAvailable)
             {
-                WriteLine("Press Ctrl+C to exit or 'p' to print the status.");
-                while (!token.IsCancellationRequested)
+                _ = Task.Run(() =>
                 {
-                    if (ReadKey(true).Key == ConsoleKey.P)
+                    WriteLine("Press Ctrl+C to exit or 'p' to print the status.");
+                    while (!token.IsCancellationRequested)
                     {
-                        _metrics.Write(Out);
+                        if (ReadKey(true).Key == ConsoleKey.P)
+                        {
+                            _metrics.Write(Out);
+                        }
                     }
-                }
-            }, token);
+                }, token).ContinueWith(t =>
+                {
+                    // Avoid TaskUnobservedException
+                    if (t.IsFaulted && t.Exception is { } e)
+                    {
+                        SentrySdk.AddBreadcrumb("Failed when attempting to listen to the console to print status",
+                            level: BreadcrumbLevel.Warning,
+                            data: new Dictionary<string, string> { { "message", e.ToString() }, { "stacktrace", e.StackTrace ?? "null" } });
+                    }
+                }, token);
+            }
 
             try
             {
