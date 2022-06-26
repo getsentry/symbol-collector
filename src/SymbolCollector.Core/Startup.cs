@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Net;
 using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,8 +13,6 @@ using Microsoft.Extensions.Options;
 using Polly;
 using Polly.Extensions.Http;
 using Sentry;
-using Sentry.Extensions.Logging;
-using Sentry.Extensions.Logging.Extensions.DependencyInjection;
 
 namespace SymbolCollector.Core
 {
@@ -50,14 +50,43 @@ namespace SymbolCollector.Core
 
         private static void ConfigureServices(IServiceCollection services)
         {
+#if ANDROID
+            services.AddSingleton<Xamarin.Android.Net.AndroidMessageHandler>();
+#endif
+            var messages = new []
+            {
+                // Unable to resolve host "symbol-collector.services.sentry.io": No address associated with hostname
+                "No address associated with hostname",
+                // Read error: ssl=0x79ea0d6988: SSL_ERROR_WANT_READ occurred. You should never see this.
+                "You should never see this",
+                // handshake error: ssl=0x78f5b01b48: I/O error during system call, Try again
+                "Try again",
+                // failed to connect to symbol-collector.services.sentry.io/35.188.18.176 (port 443) from /10.22.91.71 (port 43860) after 86400000ms: isConnected failed: ETIMEDOUT (Connection timed out)
+                "Connection timed out",
+                // Read error: ssl=0x77f787e308: Failure in SSL library, usually a protocol error
+                // error:100003fc:SSL routines:OPENSSL_internal:SSLV3_ALERT_BAD_RECORD_MAC (external/boringssl/src/ssl/tls_record.cc:592 0x77f854d8c8:0x00000001)
+                "Failure in SSL library, usually a protocol error",
+            };
             services.AddHttpClient<ISymbolClient, SymbolClient>()
-                .AddPolicyHandler((s, r) => HttpPolicyExtensions.HandleTransientHttpError()
+#if ANDROID
+                .ConfigurePrimaryHttpMessageHandler<Xamarin.Android.Net.AndroidMessageHandler>()
+#endif
+
+                .AddPolicyHandler((s, r) =>
+                    HttpPolicyExtensions.HandleTransientHttpError()
+                        // Could be deleted if merged: https://github.com/App-vNext/Polly.Extensions.Http/pull/33
+                        // On Android web get WebException instead of HttpResponseMessage which HandleTransientHttpError covers
+                        .Or<IOException>(e => messages.Any(m => e.Message.Contains(m)))
+                        .Or<WebException>(e => messages.Any(m => e.Message.Contains(m)))
+#if ANDROID
+                        .Or<Java.Net.SocketTimeoutException>()
+#endif
                     .WaitAndRetryAsync(new[]
                         {
-                            TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(5),
+                            TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(6),
 #if RELEASE
                             // TODO: Until a proper re-entrancy is built in the clients, add a last hope retry
-                            TimeSpan.FromSeconds(15)
+                            TimeSpan.FromSeconds(12)
 #endif
                         },
                         (result, span, retryAttempt, context) =>
@@ -81,16 +110,12 @@ namespace SymbolCollector.Core
             services.AddSingleton<ClientMetrics>();
             services.AddSingleton<FatBinaryReader>();
             services.AddSingleton<ClientMetrics>();
-            services.AddSingleton<Symsorter>();
 
             services.AddOptions<SymbolClientOptions>()
                 .Configure<IConfiguration>((o, f) => f.Bind("SymbolClient", o))
                 .Validate(o => o.BaseAddress is {}, "BaseAddress is required.");
 
             services.AddOptions<ObjectFileParserOptions>();
-
-            services.AddOptions<SymsorterOptions>()
-                .Configure<IConfiguration>((o, f) => f.Bind("Symsorter", o));
 
             services.AddSingleton<SymbolClientOptions>(c =>
                 c.GetRequiredService<IOptions<SymbolClientOptions>>().Value);

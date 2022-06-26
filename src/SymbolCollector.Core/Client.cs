@@ -15,7 +15,7 @@ namespace SymbolCollector.Core
         private readonly ObjectFileParser _objectFileParser;
         internal int ParallelTasks { get; }
         private readonly ILogger<Client> _logger;
-        private readonly HashSet<string>? _blackListedPaths;
+        private readonly HashSet<string>? _blockListedPaths;
 
         public ClientMetrics Metrics { get; }
 
@@ -32,7 +32,7 @@ namespace SymbolCollector.Core
             _logger = logger;
 
             ParallelTasks = options.ParallelTasks;
-            _blackListedPaths = options.BlackListedPaths;
+            _blockListedPaths = options.BlockListedPaths;
         }
 
         public async Task UploadAllPathsAsync(
@@ -46,7 +46,7 @@ namespace SymbolCollector.Core
             var groups =
                 (from topPath in topLevelPaths
                 from lookupDirectory in SafeGetDirectories(topPath)
-                where _blackListedPaths?.Contains(lookupDirectory) != true
+                where _blockListedPaths?.Contains(lookupDirectory) != true
                 let c = counter++
                 group lookupDirectory by c / ParallelTasks
                 into grp
@@ -217,7 +217,7 @@ namespace SymbolCollector.Core
             // Better would be if `ELF` class would expose its buffer so we don't need to read the file twice.
             // Ideally ELF would read headers as a stream which we could reset to 0 after reading heads
             // and ensuring it's what we need.
-            using var fileStream = File.OpenRead(objectFileResult.Path);
+
             try
             {
                 var uploaded = await _symbolClient.Upload(
@@ -225,12 +225,11 @@ namespace SymbolCollector.Core
                     objectFileResult.UnifiedId,
                     objectFileResult.Hash,
                     Path.GetFileName(objectFileResult.Path),
-                    fileStream,
+                    () => File.OpenRead(objectFileResult.Path),
                     cancellationToken);
 
                 if (uploaded)
                 {
-                    Metrics.UploadedBytesAdd(fileStream.Length);
                     Metrics.SuccessfulUpload();
                 }
                 else

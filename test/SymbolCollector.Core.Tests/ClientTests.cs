@@ -110,7 +110,7 @@ namespace SymbolCollector.Core.Tests
                     testFile.UnifiedId,
                     testFile.Hash,
                     Path.GetFileName(testFile.Path),
-                    Arg.Any<Stream>(),
+                    Arg.Any<Func<Stream>>(),
                     Arg.Any<CancellationToken>());
             }
         }

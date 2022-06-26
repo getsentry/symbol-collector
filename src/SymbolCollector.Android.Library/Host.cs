@@ -24,15 +24,16 @@ namespace SymbolCollector.Android.Library
         {
             SentrySdk.Init(context, o =>
             {
-                // TODO: Should this be in the Sentry package for net6-android?
+                // TODO: ShouldCan be deleted once this PR is released: https://github.com/getsentry/sentry-dotnet/pull/1750/files#diff-c55d438dd1d5f3731c0d04d0f1213af4873645b1daa44c4c6e1b24192110d8f8R166-R167
                 // System.UnauthorizedAccessException: Access to the path '/proc/stat' is denied.
                 // o.DetectStartupTime = StartupTimeDetectionMode.Fast;
+
                 o.TracesSampleRate = 1.0;
                 o.Debug = true;
 #if DEBUG
                 o.Environment = "development";
 #else
-                o.DiagnosticLevel = SentryLevel.Warning;
+                o.DiagnosticLevel = SentryLevel.Info;
 #endif
                 o.AttachStacktrace = true;
                 o.Dsn = dsn;
@@ -51,101 +52,56 @@ namespace SymbolCollector.Android.Library
                             break;
                     }
 
-//                     try
-//                     {
-//                         // TODO Add to Sentry.Xamarin
-// #pragma warning disable 618
-//                         @event.Contexts.Device.Architecture = Build.CpuAbi;
-// #pragma warning restore 618
-//                         // TODO: Same as Brand though?
-//                         @event.Contexts.Device.Manufacturer = Build.Manufacturer;
-//
-//                         // Auto tag at least on error events:
-//                         // @event.SetTag("device", Build.Device ?? "?");
-//                     }
-//                     catch
-//                     {
-//                         // Capture the event without these values
-//                     }
-
                     return @event;
                 };
-                o.BeforeBreadcrumb = breadcrumb
-                    // This logger adds 3 crumbs for each HTTP request and we already have a Sentry integration for HTTP
-                    // Which shows the right category, status code and a link
-                    => string.Equals(breadcrumb.Category, "System.Net.Http.HttpClient.ISymbolClient.LogicalHandler")
-                       || string.Equals(breadcrumb.Category, "System.Net.Http.HttpClient.ISymbolClient.ClientHandler")
-                        ? null
-                        : breadcrumb;
+                // TODO: https://github.com/getsentry/sentry-dotnet/issues/1751
+                // o.BeforeBreadcrumb = breadcrumb
+                //     // This logger adds 3 crumbs for each HTTP request and we already have a Sentry integration for HTTP
+                //     // Which shows the right category, status code and a link
+                //     => string.Equals(breadcrumb.Category, "System.Net.Http.HttpClient.ISymbolClient.LogicalHandler")
+                //        || string.Equals(breadcrumb.Category, "System.Net.Http.HttpClient.ISymbolClient.ClientHandler")
+                //         ? null
+                //         : breadcrumb;
+
+#if ANDROID
+                o.Android.AttachScreenshot = true;
+                o.Android.ProfilingEnabled = true;
+                o.Android.EnableAndroidSdkTracing = true; // Will double report transactions but to get profiler data
+#endif
             });
 
             var tran = SentrySdk.StartTransaction("AppStart", "activity.load");
 
-            // TODO: Lets check what we get OOTB
-//             SentrySdk.ConfigureScope(s =>
-//             {
-//                 s.Transaction = tran;
-//
-//                 // TODO: Remove once device data added to transactions on Sentry.Xamarin:
-//                 s.User.Id = Build.Id;
-// #pragma warning disable 618
-//                 s.Contexts.Device.Architecture = Build.CpuAbi;
-// #pragma warning restore 618
-//                 s.Contexts.Device.Brand = Build.Brand;
-//                 s.Contexts.Device.Manufacturer = Build.Manufacturer;
-//                 s.Contexts.Device.Model = Build.Model;
-//
-//                 s.SetExtra("fingerprint", Build.Fingerprint ?? "?");
-//                 s.SetExtra("host", Build.Host ?? "?");
-//                 s.SetExtra("product", Build.Product ?? "?");
-//
-//                 s.SetTag("API", ((int) Build.VERSION.SdkInt).ToString());
-// #pragma warning disable 618
-//                 s.SetTag("cpu-abi", Build.CpuAbi ?? "?");
-//                 if (!string.IsNullOrEmpty(Build.CpuAbi2))
-//                 {
-//                     s.SetTag("cpu-abi2", Build.CpuAbi2 ?? "?");
-//                 }
-// #pragma warning restore 618
-//             });
+            SentrySdk.ConfigureScope(s =>
+            {
+                s.Transaction = tran;
+                s.AddAttachment(new ScreenshotAttachment());
+            });
 
             // TODO: Where is this span?
             var iocSpan = tran.StartChild("container.init", "Initializing the IoC container");
-            var userAgent = "Android/" + typeof(Host).Assembly.GetName().Version;
+            var userAgent = Java.Lang.JavaSystem.GetProperty("http.agent") ?? "Android/" + typeof(Host).Assembly.GetName().Version;
             var host = Startup.Init(c =>
             {
-                // Can be removed once addressed: https://github.com/getsentry/sentry-dotnet/issues/824
-                c.AddSingleton<IHttpMessageHandlerBuilderFilter, SentryHttpMessageHandlerBuilderFilter>();
-
                 c.AddSingleton<AndroidUploader>();
                 c.AddOptions().Configure<SymbolClientOptions>(o =>
                 {
                     o.UserAgent = userAgent;
-                    o.BlackListedPaths.Add("/system/build.prop");
-                    o.BlackListedPaths.Add("/system/vendor/bin/netstat");
-                    o.BlackListedPaths.Add("/system/vendor/bin/swapoff");
+                    o.BlockListedPaths.Add("/system/etc/.booking.data.aid");
+                    o.BlockListedPaths.Add("/system/build.prop");
+                    o.BlockListedPaths.Add("/system/vendor/bin/netstat");
+                    o.BlockListedPaths.Add("/system/vendor/bin/swapoff");
                 });
                 c.AddOptions().Configure<ObjectFileParserOptions>(o =>
                 {
                     o.IncludeHash = false;
                     o.UseFallbackObjectFileParser = false; // Android only, use only ELF parser.
                 });
-                c.AddSingleton<AndroidMessageHandlerBuilder, AndroidMessageHandlerBuilder>();
             });
             iocSpan.Finish();
 
             SentrySdk.ConfigureScope(s => s.SetTag("user-agent", userAgent));
             return host;
         }
-    }
-
-    public class AndroidMessageHandlerBuilder : HttpMessageHandlerBuilder
-    {
-        public override string Name { get; set; } = "AndroidMessageHandlerBuilder";
-        public override HttpMessageHandler PrimaryHandler { get; set; } = null!;
-
-        public override IList<DelegatingHandler> AdditionalHandlers => new List<DelegatingHandler>();
-
-        public override HttpMessageHandler Build() => new AndroidMessageHandler();
     }
 }

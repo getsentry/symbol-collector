@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -132,14 +133,23 @@ namespace SymbolCollector.Server
                 var logger = s.ServiceProvider.GetRequiredService<ILogger<Core.Startup>>();
                 if (options.DeleteBaseWorkingPathOnStartup)
                 {
-                    try
+                    var paths = new[] { "symsorter_output", "done", "processing", "conflict" }
+                        .Select(p => Path.Combine(options.BaseWorkingPath, p));
+                    foreach (var path in paths)
                     {
-                        Directory.Delete(options.BaseWorkingPath, true);
-                        Directory.CreateDirectory(options.BaseWorkingPath);
-                    }
-                    catch (Exception e)
-                    {
-                        logger.LogError(e, "Failed to delete/recreated work path.");
+                        logger.LogDebug("Attempting to clean up {path}", path);
+                        try
+                        {
+                            Directory.Delete(path, true);
+                        }
+                        catch (DirectoryNotFoundException)
+                        {
+                            logger.LogDebug("Directory didn't exist {path}", path);
+                        }
+                        catch (Exception e)
+                        {
+                            logger.LogError(e, "Failed to clean up {path}", path);
+                        }
                     }
                 }
             }

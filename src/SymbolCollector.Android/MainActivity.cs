@@ -33,6 +33,9 @@ namespace SymbolCollector.Android
 
         protected override void OnCreate(Bundle? savedInstanceState)
         {
+            // Can't take a screenshot otherwise: System.NullReferenceException: The current Activity can not be detected. Ensure that you have called Init in your Activity or Application class.
+            Microsoft.Maui.ApplicationModel.ActivityStateManager.Default.Init(this, savedInstanceState);
+
 #pragma warning disable 618
             _friendlyName = $"Android:{Build.Manufacturer}-{Build.CpuAbi}-{Build.Model}";
 #pragma warning restore 618
@@ -288,7 +291,6 @@ namespace SymbolCollector.Android
             SentrySdk.ConfigureScope(s =>
             {
                 s.Transaction = _startupTransaction;
-                s.SetTag("friendly-name", _friendlyName);
 
                 if (uname is { })
                 {

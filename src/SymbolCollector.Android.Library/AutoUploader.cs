@@ -53,8 +53,6 @@ namespace SymbolCollector.Android.Library
 
             SentrySdk.ConfigureScope(s =>
             {
-                s.SetTag("friendly-name", friendlyName);
-
                 if (uname is { })
                 {
                     s.Contexts["uname"] = new

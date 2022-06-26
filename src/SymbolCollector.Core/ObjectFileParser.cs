@@ -60,7 +60,7 @@ namespace SymbolCollector.Core
             }
             catch (UnauthorizedAccessException ua)
             {
-                // Too often to bother. Can't blacklist them all as it differs per device.
+                // Too often to bother. Can't blocklist them all as it differs per device.
                 Metrics.FileOrDirectoryUnauthorizedAccess();
                 _logger.LogDebug(ua, "Unauthorized for {file}.", file);
                 result = null;
@@ -268,7 +268,7 @@ namespace SymbolCollector.Core
                             try
                             {
                                 var fallbackDebugId = GetFallbackDebugId(textSection.GetContents());
-                                if (fallbackDebugId is {})
+                                if (fallbackDebugId is { })
                                 {
                                     result = new ObjectFileResult(
                                         fallbackDebugId,
@@ -304,6 +304,13 @@ namespace SymbolCollector.Core
                 {
                     _logger.LogDebug("Couldn't load': {file} with ELF reader.", file);
                 }
+            }
+            catch (Exception e)
+            {
+                SentrySdk.CaptureException(e, s =>
+                {
+                    s.AddAttachment(file);
+                });
             }
             finally
             {
