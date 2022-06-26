@@ -24,15 +24,12 @@ namespace SymbolCollector.Android.Library
         {
             SentrySdk.Init(context, o =>
             {
-                // TODO: Should this be in the Sentry package for net6-android?
-                // System.UnauthorizedAccessException: Access to the path '/proc/stat' is denied.
-                // o.DetectStartupTime = StartupTimeDetectionMode.Fast;
                 o.TracesSampleRate = 1.0;
                 o.Debug = true;
 #if DEBUG
                 o.Environment = "development";
 #else
-                o.DiagnosticLevel = SentryLevel.Warning;
+                o.DiagnosticLevel = SentryLevel.Info;
 #endif
                 o.AttachStacktrace = true;
                 o.Dsn = dsn;
@@ -53,13 +50,20 @@ namespace SymbolCollector.Android.Library
 
                     return @event;
                 };
-                o.BeforeBreadcrumb = breadcrumb
-                    // This logger adds 3 crumbs for each HTTP request and we already have a Sentry integration for HTTP
-                    // Which shows the right category, status code and a link
-                    => string.Equals(breadcrumb.Category, "System.Net.Http.HttpClient.ISymbolClient.LogicalHandler")
-                       || string.Equals(breadcrumb.Category, "System.Net.Http.HttpClient.ISymbolClient.ClientHandler")
-                        ? null
-                        : breadcrumb;
+                // https://github.com/getsentry/sentry-dotnet/issues/1751
+                // o.BeforeBreadcrumb = breadcrumb
+                //     // This logger adds 3 crumbs for each HTTP request and we already have a Sentry integration for HTTP
+                //     // Which shows the right category, status code and a link
+                //     => string.Equals(breadcrumb.Category, "System.Net.Http.HttpClient.ISymbolClient.LogicalHandler")
+                //        || string.Equals(breadcrumb.Category, "System.Net.Http.HttpClient.ISymbolClient.ClientHandler")
+                //         ? null
+                //         : breadcrumb;
+
+#if ANDROID
+                o.Android.AttachScreenshot = true;
+                o.Android.ProfilingEnabled = true;
+                o.Android.EnableAndroidSdkTracing = true; // Will double report transactions but to get profiler data
+#endif
             });
 
             var tran = SentrySdk.StartTransaction("AppStart", "activity.load");
