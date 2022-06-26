@@ -50,7 +50,7 @@ namespace SymbolCollector.Android.Library
 
                     return @event;
                 };
-                // https://github.com/getsentry/sentry-dotnet/issues/1751
+                // TODO: https://github.com/getsentry/sentry-dotnet/issues/1751
                 // o.BeforeBreadcrumb = breadcrumb
                 //     // This logger adds 3 crumbs for each HTTP request and we already have a Sentry integration for HTTP
                 //     // Which shows the right category, status code and a link
@@ -68,7 +68,11 @@ namespace SymbolCollector.Android.Library
 
             var tran = SentrySdk.StartTransaction("AppStart", "activity.load");
 
-            SentrySdk.ConfigureScope(s => s.Transaction = tran);
+            SentrySdk.ConfigureScope(s =>
+            {
+                s.Transaction = tran;
+                s.AddAttachment(new ScreenshotAttachment());
+            });
 
             // TODO: Where is this span?
             var iocSpan = tran.StartChild("container.init", "Initializing the IoC container");
