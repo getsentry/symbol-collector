@@ -33,11 +33,11 @@ jobs:
 
       - name: Install Android workload (macOS)
         if: matrix.os == 'macos-latest'
-        run: sudo dotnet workload install android
+        run: sudo dotnet workload install maui-android
 
       - name: Install Android workload (Windows)
         if: matrix.os == 'windows-latest'
-        run: dotnet workload install android
+        run: dotnet workload install maui-android
 
       - name: Run batch build script
         if: matrix.os == 'windows-latest'
