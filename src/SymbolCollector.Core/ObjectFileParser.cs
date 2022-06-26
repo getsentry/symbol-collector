@@ -305,13 +305,6 @@ namespace SymbolCollector.Core
                     _logger.LogDebug("Couldn't load': {file} with ELF reader.", file);
                 }
             }
-            catch (Exception e)
-            {
-                SentrySdk.CaptureException(e, s =>
-                {
-                    s.AddAttachment(file);
-                });
-            }
             finally
             {
                 elf?.Dispose();
