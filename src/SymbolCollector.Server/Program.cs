@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Sentry;
 using Serilog;
 using SystemEnvironment = System.Environment;
@@ -81,6 +82,7 @@ namespace SymbolCollector.Server
                     {
                         o.Dsn = "https://2262a4fa0a6d409c848908ec90c3c5b4@sentry.io/1886021";
                         o.AddExceptionFilterForType<OperationCanceledException>();
+                        o.MinimumBreadcrumbLevel = LogLevel.Debug;
                         o.BeforeSend = @event =>
                         {
                             // Stop raising warning that endpoint was overriden
@@ -93,7 +95,7 @@ namespace SymbolCollector.Server
                             // Don't capture Debug events
                             if (@event.Level == SentryLevel.Debug)
                             {
-                                return null!;
+                                return null;
                             }
 
                             return @event;
