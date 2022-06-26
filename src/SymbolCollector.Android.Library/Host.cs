@@ -85,22 +85,11 @@ namespace SymbolCollector.Android.Library
                     o.IncludeHash = false;
                     o.UseFallbackObjectFileParser = false; // Android only, use only ELF parser.
                 });
-                c.AddSingleton<AndroidMessageHandlerBuilder, AndroidMessageHandlerBuilder>();
             });
             iocSpan.Finish();
 
             SentrySdk.ConfigureScope(s => s.SetTag("user-agent", userAgent));
             return host;
         }
-    }
-
-    public class AndroidMessageHandlerBuilder : HttpMessageHandlerBuilder
-    {
-        public override string Name { get; set; } = "AndroidMessageHandlerBuilder";
-        public override HttpMessageHandler PrimaryHandler { get; set; } = null!;
-
-        public override IList<DelegatingHandler> AdditionalHandlers => new List<DelegatingHandler>();
-
-        public override HttpMessageHandler Build() => new AndroidMessageHandler();
     }
 }

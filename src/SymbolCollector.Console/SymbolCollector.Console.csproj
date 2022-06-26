@@ -7,6 +7,7 @@
     <!-- System.CommandLine.DragonFruit it will fail to `dotnet run` without it set here:-->
     <NoWarn Condition="'$(Configuration)' == 'Debug'">$(NoWarn);CS1591</NoWarn>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <NoWarn>1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

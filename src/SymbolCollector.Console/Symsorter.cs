@@ -5,8 +5,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using SymbolCollector.Core;
+using SystemConsole = System.Console;
 
-namespace SymbolCollector.Core
+namespace SymbolCollector.Console
 {
     public class SymsorterOptions
     {
@@ -79,14 +81,14 @@ namespace SymbolCollector.Core
 
             if (_options.PrintToStdOut)
             {
-                var originalColor = Console.ForegroundColor;
-                Console.ForegroundColor = ConsoleColor.White;
-                Console.Write("\nDone: sorted ");
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.Write(sortedFilesCount);
-                Console.ForegroundColor = ConsoleColor.White;
-                Console.WriteLine(" debug files");
-                Console.ForegroundColor = originalColor;
+                var originalColor = SystemConsole.ForegroundColor;
+                SystemConsole.ForegroundColor = ConsoleColor.White;
+                SystemConsole.Write("\nDone: sorted ");
+                SystemConsole.ForegroundColor = ConsoleColor.Yellow;
+                SystemConsole.Write(sortedFilesCount);
+                SystemConsole.ForegroundColor = ConsoleColor.White;
+                SystemConsole.WriteLine(" debug files");
+                SystemConsole.ForegroundColor = originalColor;
             }
         }
         public async Task SortFile(
@@ -96,8 +98,13 @@ namespace SymbolCollector.Core
         {
             Validate(result);
 
+            var symsorterFileName = result.ObjectKind.ToSymsorterFileName();
+            if (symsorterFileName is null)
+            {
+                throw new InvalidOperationException("Symsorter file expected for " + result.ObjectKind);
+            }
             var directoryRoot = Path.Combine(parameters.Output, result.UnifiedId[..2], result.UnifiedId[2..]);
-            var destinationObjectFile = Path.Combine(directoryRoot, result.ObjectKind.ToSymsorterFileName());
+            var destinationObjectFile = Path.Combine(directoryRoot, symsorterFileName);
             var directoryRefs = Path.Combine(directoryRoot, "refs");
             _ = Directory.CreateDirectory(directoryRefs);
 
@@ -133,18 +140,18 @@ namespace SymbolCollector.Core
 
             if (_options.PrintToStdOut)
             {
-                var originalColor = Console.ForegroundColor;
-                Console.ForegroundColor = ConsoleColor.DarkGray;
-                Console.Write($"{metaContent.name} ");
-                Console.ForegroundColor = ConsoleColor.White;
-                Console.Write("(");
-                Console.ForegroundColor = ConsoleColor.DarkYellow;
-                Console.Write(metaContent.arch);
-                Console.ForegroundColor = ConsoleColor.White;
-                Console.Write(") -> ");
-                Console.ForegroundColor = ConsoleColor.DarkCyan;
-                Console.WriteLine(destinationObjectFile);
-                Console.ForegroundColor = originalColor;
+                var originalColor = SystemConsole.ForegroundColor;
+                SystemConsole.ForegroundColor = ConsoleColor.DarkGray;
+                SystemConsole.Write($"{metaContent.name} ");
+                SystemConsole.ForegroundColor = ConsoleColor.White;
+                SystemConsole.Write("(");
+                SystemConsole.ForegroundColor = ConsoleColor.DarkYellow;
+                SystemConsole.Write(metaContent.arch);
+                SystemConsole.ForegroundColor = ConsoleColor.White;
+                SystemConsole.Write(") -> ");
+                SystemConsole.ForegroundColor = ConsoleColor.DarkCyan;
+                SystemConsole.WriteLine(destinationObjectFile);
+                SystemConsole.ForegroundColor = originalColor;
             }
         }
 

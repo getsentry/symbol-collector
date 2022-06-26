@@ -31,7 +31,7 @@ namespace SymbolCollector.Core
             return false;
         }
 
-        protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context)
+        protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context)
         {
             var gzipStream = new GZipStream(stream, CompressionLevel.Optimal, leaveOpen: true);
             try
@@ -40,7 +40,7 @@ namespace SymbolCollector.Core
             }
             finally
             {
-                gzipStream.Dispose();
+                await gzipStream.DisposeAsync();
             }
         }
     }

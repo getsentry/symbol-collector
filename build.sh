@@ -63,5 +63,9 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     cli=./publish-osx-x64/SymbolCollector.Console
     chmod +x $cli
     ./$cli --version -h
+    echo "Run symsorter"
+    ./$cli --symsorter ../../test/TestFiles/ --bundle-id smoke_test --batch-type macos --path obj/
+    echo "Upload some files"
+    ./$cli --upload directory --path ../../test/TestFiles/ --batch-type macos --bundle-id test --server-endpoint https://symbol-collector.services.sentry.io
 fi
 popd

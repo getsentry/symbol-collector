@@ -3,6 +3,7 @@ using System.IO;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -51,6 +52,10 @@ namespace SymbolCollector.Console
 
                     s.AddSingleton(Metrics);
                     s.AddSingleton<ConsoleUploader>();
+
+                    s.AddSingleton<Symsorter>();
+                    s.AddOptions<SymsorterOptions>()
+                        .Configure<IConfiguration>((o, f) => f.Bind("Symsorter", o));
                 });
 
                 await Run(host, args);
@@ -114,7 +119,7 @@ namespace SymbolCollector.Console
                         args.BundleId,
                         args.BatchType,
                         args.Cancellation.Token);
-                    break;
+                    return;
             }
 
             if (args.Check is { } checkLib)
@@ -193,13 +198,16 @@ namespace SymbolCollector.Console
                 return;
             }
 
+            PrintHelp();
+        }
+
+        private static void PrintHelp() =>
             WriteLine(@"Parameters:
             --upload device --bundle-id id
             --upload directory --bundle-id id --batch-type type --path ~/location
                 Valid Batch Types are: android, macos, ios, watchos, android
             --symsorter path/to/symbols --bundle-id macos_10.11 --batch-type macos --path output/path [--dryrun true]
             --check file-to-check");
-        }
 
         private static void Bootstrap(Args args)
         {

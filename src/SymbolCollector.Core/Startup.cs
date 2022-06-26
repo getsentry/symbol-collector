@@ -51,6 +51,9 @@ namespace SymbolCollector.Core
         private static void ConfigureServices(IServiceCollection services)
         {
             services.AddHttpClient<ISymbolClient, SymbolClient>()
+#if ANDROID
+                .ConfigurePrimaryHttpMessageHandler<Xamarin.Android.Net.AndroidMessageHandler>()
+#endif
                 .AddPolicyHandler((s, r) => HttpPolicyExtensions.HandleTransientHttpError()
                     .WaitAndRetryAsync(new[]
                         {
@@ -81,16 +84,12 @@ namespace SymbolCollector.Core
             services.AddSingleton<ClientMetrics>();
             services.AddSingleton<FatBinaryReader>();
             services.AddSingleton<ClientMetrics>();
-            services.AddSingleton<Symsorter>();
 
             services.AddOptions<SymbolClientOptions>()
                 .Configure<IConfiguration>((o, f) => f.Bind("SymbolClient", o))
                 .Validate(o => o.BaseAddress is {}, "BaseAddress is required.");
 
             services.AddOptions<ObjectFileParserOptions>();
-
-            services.AddOptions<SymsorterOptions>()
-                .Configure<IConfiguration>((o, f) => f.Bind("Symsorter", o));
 
             services.AddSingleton<SymbolClientOptions>(c =>
                 c.GetRequiredService<IOptions<SymbolClientOptions>>().Value);

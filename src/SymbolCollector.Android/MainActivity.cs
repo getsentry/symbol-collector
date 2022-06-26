@@ -288,7 +288,6 @@ namespace SymbolCollector.Android
             SentrySdk.ConfigureScope(s =>
             {
                 s.Transaction = _startupTransaction;
-                s.SetTag("friendly-name", _friendlyName);
 
                 if (uname is { })
                 {
