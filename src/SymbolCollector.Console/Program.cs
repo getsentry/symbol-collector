@@ -211,7 +211,7 @@ namespace SymbolCollector.Console
 #if DEBUG
                 o.Environment = "development";
 #else
-                o.DiagnosticLevel = SentryLevel.Warning;
+                o.DiagnosticLevel = SentryLevel.Error;
 #endif
                 o.AttachStacktrace = true;
                 o.SendDefaultPii = true;
