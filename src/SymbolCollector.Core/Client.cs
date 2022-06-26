@@ -15,7 +15,7 @@ namespace SymbolCollector.Core
         private readonly ObjectFileParser _objectFileParser;
         internal int ParallelTasks { get; }
         private readonly ILogger<Client> _logger;
-        private readonly HashSet<string>? _blackListedPaths;
+        private readonly HashSet<string>? _blockListedPaths;
 
         public ClientMetrics Metrics { get; }
 
@@ -32,7 +32,7 @@ namespace SymbolCollector.Core
             _logger = logger;
 
             ParallelTasks = options.ParallelTasks;
-            _blackListedPaths = options.BlackListedPaths;
+            _blockListedPaths = options.BlockListedPaths;
         }
 
         public async Task UploadAllPathsAsync(
@@ -46,7 +46,7 @@ namespace SymbolCollector.Core
             var groups =
                 (from topPath in topLevelPaths
                 from lookupDirectory in SafeGetDirectories(topPath)
-                where _blackListedPaths?.Contains(lookupDirectory) != true
+                where _blockListedPaths?.Contains(lookupDirectory) != true
                 let c = counter++
                 group lookupDirectory by c / ParallelTasks
                 into grp

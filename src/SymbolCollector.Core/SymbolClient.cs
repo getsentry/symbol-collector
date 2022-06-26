@@ -23,7 +23,7 @@ namespace SymbolCollector.Core
         public TimeSpan HttpClientTimeout { get; set; } = TimeSpan.FromMinutes(2);
         public string UserAgent { get; set; } = "SymbolCollector/0.0.0";
         public int ParallelTasks { get; set; } = 10;
-        public HashSet<string> BlackListedPaths { get; set; } = new();
+        public HashSet<string> BlockListedPaths { get; set; } = new();
     }
 
     // prefix to final structure: ios, watchos, macos, android

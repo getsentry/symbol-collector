@@ -75,9 +75,9 @@ namespace SymbolCollector.Android.Library
                 c.AddOptions().Configure<SymbolClientOptions>(o =>
                 {
                     o.UserAgent = userAgent;
-                    o.BlackListedPaths.Add("/system/build.prop");
-                    o.BlackListedPaths.Add("/system/vendor/bin/netstat");
-                    o.BlackListedPaths.Add("/system/vendor/bin/swapoff");
+                    o.BlockListedPaths.Add("/system/build.prop");
+                    o.BlockListedPaths.Add("/system/vendor/bin/netstat");
+                    o.BlockListedPaths.Add("/system/vendor/bin/swapoff");
                 });
                 c.AddOptions().Configure<ObjectFileParserOptions>(o =>
                 {

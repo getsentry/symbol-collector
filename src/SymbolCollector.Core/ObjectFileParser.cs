@@ -60,7 +60,7 @@ namespace SymbolCollector.Core
             }
             catch (UnauthorizedAccessException ua)
             {
-                // Too often to bother. Can't blacklist them all as it differs per device.
+                // Too often to bother. Can't blocklist them all as it differs per device.
                 Metrics.FileOrDirectoryUnauthorizedAccess();
                 _logger.LogDebug(ua, "Unauthorized for {file}.", file);
                 result = null;
