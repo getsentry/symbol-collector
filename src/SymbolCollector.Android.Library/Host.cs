@@ -75,6 +75,7 @@ namespace SymbolCollector.Android.Library
                 c.AddOptions().Configure<SymbolClientOptions>(o =>
                 {
                     o.UserAgent = userAgent;
+                    o.BlockListedPaths.Add("/system/etc/.booking.data.aid");
                     o.BlockListedPaths.Add("/system/build.prop");
                     o.BlockListedPaths.Add("/system/vendor/bin/netstat");
                     o.BlockListedPaths.Add("/system/vendor/bin/swapoff");
