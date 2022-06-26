@@ -1,13 +1,9 @@
-using System.Collections.Generic;
-using System.Net.Http;
 using Android.Content;
-using Android.OS;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Http;
+using Microsoft.Maui.ApplicationModel;
 using Sentry;
 using SymbolCollector.Core;
-using Xamarin.Android.Net;
 using OperationCanceledException = System.OperationCanceledException;
 
 namespace SymbolCollector.Android.Library
@@ -27,7 +23,14 @@ namespace SymbolCollector.Android.Library
                 // TODO: ShouldCan be deleted once this PR is released: https://github.com/getsentry/sentry-dotnet/pull/1750/files#diff-c55d438dd1d5f3731c0d04d0f1213af4873645b1daa44c4c6e1b24192110d8f8R166-R167
                 // System.UnauthorizedAccessException: Access to the path '/proc/stat' is denied.
                 // o.DetectStartupTime = StartupTimeDetectionMode.Fast;
+#if ANDROID
+                // TODO: Should be added OOTB
+                o.Release = $"{AppInfo.PackageName}@{AppInfo.VersionString}+{AppInfo.BuildString}";
 
+                o.Android.AttachScreenshot = true;
+                o.Android.ProfilingEnabled = true;
+                o.Android.EnableAndroidSdkTracing = true; // Will double report transactions but to get profiler data
+#endif
                 o.TracesSampleRate = 1.0;
                 o.Debug = true;
 #if DEBUG
@@ -62,12 +65,6 @@ namespace SymbolCollector.Android.Library
                 //        || string.Equals(breadcrumb.Category, "System.Net.Http.HttpClient.ISymbolClient.ClientHandler")
                 //         ? null
                 //         : breadcrumb;
-
-#if ANDROID
-                o.Android.AttachScreenshot = true;
-                o.Android.ProfilingEnabled = true;
-                o.Android.EnableAndroidSdkTracing = true; // Will double report transactions but to get profiler data
-#endif
             });
 
             var tran = SentrySdk.StartTransaction("AppStart", "activity.load");
