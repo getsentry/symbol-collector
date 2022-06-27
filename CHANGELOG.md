@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.7.0
+
+### Various fixes & improvements
+
+- ignore so on github release (d72f43b6) by @bruno-garcia
+- flush on second test (#134) by @bruno-garcia
+- upload mobile app symbols (#133) by @bruno-garcia
+- dont multi target core lib - android workload wont build on linux (#132) by @bruno-garcia
+- add release back (#130) by @bruno-garcia
+
 ## 1.6.1
 
 ### Various fixes & improvements
