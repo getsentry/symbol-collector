@@ -1,15 +1,12 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using Android.Content;
 using Java.Net;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Maui.ApplicationModel;
 using Polly.Extensions.Http;
-using Polly;
 using Sentry;
 using SymbolCollector.Core;
 using Xamarin.Android.Net;
@@ -32,7 +29,7 @@ namespace SymbolCollector.Android.Library
             {
                 // TODO: ShouldCan be deleted once this PR is released: https://github.com/getsentry/sentry-dotnet/pull/1750/files#diff-c55d438dd1d5f3731c0d04d0f1213af4873645b1daa44c4c6e1b24192110d8f8R166-R167
                 // System.UnauthorizedAccessException: Access to the path '/proc/stat' is denied.
-                // o.DetectStartupTime = StartupTimeDetectionMode.Fast;
+                o.DetectStartupTime = StartupTimeDetectionMode.Fast;
 #if ANDROID
                 // TODO: Should be added OOTB
                 o.Release = $"{AppInfo.PackageName}@{AppInfo.VersionString}+{AppInfo.BuildString}";
@@ -48,6 +45,8 @@ namespace SymbolCollector.Android.Library
 #else
                 o.DiagnosticLevel = SentryLevel.Info;
 #endif
+                o.MaxBreadcrumbs = 250;
+                o.InitCacheFlushTimeout = TimeSpan.FromSeconds(5);
                 o.AttachStacktrace = true;
                 o.Dsn = dsn;
                 o.SendDefaultPii = true;
