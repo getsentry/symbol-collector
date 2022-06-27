@@ -1,9 +1,19 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net;
 using Android.Content;
+using Java.Net;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Maui.ApplicationModel;
+using Polly.Extensions.Http;
+using Polly;
 using Sentry;
 using SymbolCollector.Core;
+using Xamarin.Android.Net;
+using Context = Android.Content.Context;
 using OperationCanceledException = System.OperationCanceledException;
 
 namespace SymbolCollector.Android.Library
@@ -78,10 +88,36 @@ namespace SymbolCollector.Android.Library
             // TODO: Where is this span?
             var iocSpan = tran.StartChild("container.init", "Initializing the IoC container");
             var userAgent = Java.Lang.JavaSystem.GetProperty("http.agent") ?? "Android/" + typeof(Host).Assembly.GetName().Version;
-            var host = Startup.Init(c =>
+            var host = Startup.Init(services =>
             {
-                c.AddSingleton<AndroidUploader>();
-                c.AddOptions().Configure<SymbolClientOptions>(o =>
+                var messages = new []
+                {
+                    // Unable to resolve host "symbol-collector.services.sentry.io": No address associated with hostname
+                    "No address associated with hostname",
+                    // Read error: ssl=0x79ea0d6988: SSL_ERROR_WANT_READ occurred. You should never see this.
+                    "You should never see this",
+                    // handshake error: ssl=0x78f5b01b48: I/O error during system call, Try again
+                    "Try again",
+                    // failed to connect to symbol-collector.services.sentry.io/35.188.18.176 (port 443) from /10.22.91.71 (port 43860) after 86400000ms: isConnected failed: ETIMEDOUT (Connection timed out)
+                    "Connection timed out",
+                    // Read error: ssl=0x77f787e308: Failure in SSL library, usually a protocol error
+                    // error:100003fc:SSL routines:OPENSSL_internal:SSLV3_ALERT_BAD_RECORD_MAC (external/boringssl/src/ssl/tls_record.cc:592 0x77f854d8c8:0x00000001)
+                    "Failure in SSL library, usually a protocol error",
+                };
+                services.AddSingleton<AndroidMessageHandler>();
+                services.AddHttpClient<ISymbolClient, SymbolClient>()
+                    .ConfigurePrimaryHttpMessageHandler<AndroidMessageHandler>()
+                    .AddPolicyHandler((s, r) =>
+                        HttpPolicyExtensions.HandleTransientHttpError()
+                            // Could be deleted if merged: https://github.com/App-vNext/Polly.Extensions.Http/pull/33
+                            // On Android web get WebException instead of HttpResponseMessage which HandleTransientHttpError covers
+                            .Or<IOException>(e => messages.Any(m => e.Message.Contains(m)))
+                            .Or<WebException>(e => messages.Any(m => e.Message.Contains(m)))
+                            .Or<SocketTimeoutException>()
+                            .SentryPolicy(s));
+
+                services.AddSingleton<AndroidUploader>();
+                services.AddOptions().Configure<SymbolClientOptions>(o =>
                 {
                     o.UserAgent = userAgent;
                     o.BlockListedPaths.Add("/system/etc/.booking.data.aid");
@@ -89,7 +125,7 @@ namespace SymbolCollector.Android.Library
                     o.BlockListedPaths.Add("/system/vendor/bin/netstat");
                     o.BlockListedPaths.Add("/system/vendor/bin/swapoff");
                 });
-                c.AddOptions().Configure<ObjectFileParserOptions>(o =>
+                services.AddOptions().Configure<ObjectFileParserOptions>(o =>
                 {
                     o.IncludeHash = false;
                     o.UseFallbackObjectFileParser = false; // Android only, use only ELF parser.
