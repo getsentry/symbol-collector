@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Polly.Extensions.Http;
 using Sentry;
 using Sentry.Protocol;
 using SymbolCollector.Core;
@@ -49,6 +50,11 @@ namespace SymbolCollector.Console
                                 o.BaseAddress = args.ServerEndpoint;
                             });
                     }
+
+                    s.AddHttpClient<ISymbolClient, SymbolClient>()
+                        .AddPolicyHandler((s, r) =>
+                            HttpPolicyExtensions.HandleTransientHttpError()
+                                .SentryPolicy(s));
 
                     s.AddSingleton(Metrics);
                     s.AddSingleton<ConsoleUploader>();
