@@ -60,4 +60,5 @@ jobs:
           path: |
             ${{ github.workspace }}/src/SymbolCollector.Console/*.zip
             ${{ github.workspace }}/src/SymbolCollector.Android/bin/Release/**/publish/*Signed.apk
+            ${{ github.workspace }}/src/SymbolCollector.Android/obj/Release/**/*.so
             ${{ github.workspace }}/src/SymbolCollector.Server/publish/*.zip
