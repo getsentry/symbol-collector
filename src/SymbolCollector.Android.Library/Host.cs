@@ -25,7 +25,7 @@ namespace SymbolCollector.Android.Library
         /// </summary>
         public static IHost Init(Context context, string dsn)
         {
-            SentrySdk.Init(context, o =>
+            SentrySdk.Init(o =>
             {
                 // TODO: ShouldCan be deleted once this PR is released: https://github.com/getsentry/sentry-dotnet/pull/1750/files#diff-c55d438dd1d5f3731c0d04d0f1213af4873645b1daa44c4c6e1b24192110d8f8R166-R167
                 // System.UnauthorizedAccessException: Access to the path '/proc/stat' is denied.
@@ -35,7 +35,7 @@ namespace SymbolCollector.Android.Library
                 o.Release = $"{AppInfo.PackageName}@{AppInfo.VersionString}+{AppInfo.BuildString}";
 
                 o.Android.AttachScreenshot = true;
-                o.Android.ProfilingEnabled = true;
+                o.Android.ProfilesSampleRate = 0.4;
                 o.Android.EnableAndroidSdkTracing = true; // Will double report transactions but to get profiler data
 #endif
                 o.TracesSampleRate = 1.0;
@@ -66,14 +66,13 @@ namespace SymbolCollector.Android.Library
 
                     return @event;
                 };
-                // TODO: https://github.com/getsentry/sentry-dotnet/issues/1751
-                // o.BeforeBreadcrumb = breadcrumb
-                //     // This logger adds 3 crumbs for each HTTP request and we already have a Sentry integration for HTTP
-                //     // Which shows the right category, status code and a link
-                //     => string.Equals(breadcrumb.Category, "System.Net.Http.HttpClient.ISymbolClient.LogicalHandler")
-                //        || string.Equals(breadcrumb.Category, "System.Net.Http.HttpClient.ISymbolClient.ClientHandler")
-                //         ? null
-                //         : breadcrumb;
+                o.BeforeBreadcrumb = breadcrumb
+                    // This logger adds 3 crumbs for each HTTP request and we already have a Sentry integration for HTTP
+                    // Which shows the right category, status code and a link
+                    => string.Equals(breadcrumb.Category, "System.Net.Http.HttpClient.ISymbolClient.LogicalHandler")
+                       || string.Equals(breadcrumb.Category, "System.Net.Http.HttpClient.ISymbolClient.ClientHandler")
+                        ? null
+                        : breadcrumb;
             });
 
             var tran = SentrySdk.StartTransaction("AppStart", "activity.load");
