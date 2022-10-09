@@ -122,6 +122,7 @@ namespace SymbolCollector.Android.Library
                     o.BlockListedPaths.Add("/system/build.prop");
                     o.BlockListedPaths.Add("/system/vendor/bin/netstat");
                     o.BlockListedPaths.Add("/system/vendor/bin/swapoff");
+                    o.BlockListedPaths.Add("/system/etc/.booking.data.aid");
                 });
                 services.AddOptions().Configure<ObjectFileParserOptions>(o =>
                 {
