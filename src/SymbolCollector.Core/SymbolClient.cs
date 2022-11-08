@@ -199,13 +199,14 @@ namespace SymbolCollector.Core
             {
                 var uploadUrl = $"{_options.BaseAddress.AbsoluteUri}symbol/batch/{batchId}/upload";
                 HttpResponseMessage? uploadResponse = null;
+                Stream? fileStream = null;
                 try
                 {
-                    await using var file = fileFactory();
-                    var fileContentStream = new StreamContent(file);
+                    fileStream = fileFactory();
+                    var fileContentStream = new StreamContent(fileStream);
                     fileContentStream.Headers.ContentType = new MediaTypeHeaderValue("application/gzip");
 
-                    using var content = new MultipartFormDataContent
+                    var content = new MultipartFormDataContent
                     {
                         { new GzipContent(fileContentStream), fileName, fileName }
                     };
@@ -232,7 +233,7 @@ namespace SymbolCollector.Core
                     await ThrowOnUnsuccessfulResponse("Failed uploading file.", uploadResponse);
 
                     _logger.LogInformation("File {file} with {bytes} was uploaded successfully.",
-                        fileName, file.Length);
+                        fileName, fileStream.Length);
                 }
                 catch (Exception e)
                 {
@@ -246,6 +247,10 @@ namespace SymbolCollector.Core
                 finally
                 {
                     uploadResponse?.Dispose();
+                    if (fileStream is not null)
+                    {
+                        await fileStream.DisposeAsync();
+                    }
                 }
 
                 return true;
