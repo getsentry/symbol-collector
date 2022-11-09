@@ -3,7 +3,7 @@
     <Authors>Sentry Team and Contributors</Authors>
     <Version>1.7.0</Version>
     <Company>Sentry.io</Company>
-    <LangVersion>9.0</LangVersion>
+    <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
     <Deterministic>True</Deterministic>

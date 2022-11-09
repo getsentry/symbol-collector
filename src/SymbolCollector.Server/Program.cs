@@ -111,6 +111,10 @@ namespace SymbolCollector.Server
 
             var configuration = host.Services.GetRequiredService<IConfiguration>();
             var url = configuration.GetValue<string>("Kestrel:EndPoints:Http:Url");
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                throw new InvalidOperationException("Kestrel url is required");
+            }
 
             // host.StartAsync and client.GetAsync combined will need to take less than:
             cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(3));

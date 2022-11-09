@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net6.0-android</TargetFramework>
+    <TargetFramework>net7.0-android</TargetFramework>
     <OutputType>Exe</OutputType>
     <!-- It needs to be set in the final app or: System.IO.FileNotFoundException: Could not load file or assembly 'Microsoft.Maui.Essentials, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null' or one of its dependencies.-->
     <UseMauiEssentials>true</UseMauiEssentials>
