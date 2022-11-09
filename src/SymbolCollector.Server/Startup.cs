@@ -233,7 +233,7 @@ namespace SymbolCollector.Server
             public SentryEvent? Process(SentryEvent @event)
             {
                 _metrics.SentryEventProcessed();
-                @event.SetTag("server-endpoint", _options.BaseAddress);
+                @event.SetTag("server-endpoint", _options.BaseAddress ?? "?");
                 @event.Contexts["SymbolServiceOptions"] = _options;
 
                 @event.SetTag("cores", _cores);

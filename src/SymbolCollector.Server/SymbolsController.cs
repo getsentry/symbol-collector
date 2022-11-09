@@ -325,6 +325,10 @@ namespace SymbolCollector.Server
             try
             {
                 fileName = contentDisposition.FileName.Value;
+                if (fileName is null)
+                {
+                    throw new InvalidOperationException("fileName is required");
+                }
 
                 if (section.Headers!.TryGetValue("Content-Encoding", out var contentType)
                     && contentType == "gzip")

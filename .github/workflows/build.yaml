@@ -26,10 +26,10 @@ jobs:
         with:
           java-version: 11
 
-      - name: Setup .NET SDK (v6.0)
+      - name: Setup .NET SDK (v7.0)
         uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: '6.0.x'
+          dotnet-version: '7.0.x'
 
       - name: Install Android workload (macOS)
         if: matrix.os == 'macos-latest'
