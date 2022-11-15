@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.8.0
+
+### Various fixes & improvements
+
+- dotnet 7 (#138) by @bruno-garcia
+- dynamic sampling (#137) by @bruno-garcia
+
 ## 1.7.0
 
 ### Various fixes & improvements
