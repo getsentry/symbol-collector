@@ -5,7 +5,7 @@ set -e
 # Builds the app and the UI tests in release mode and schedule it on appcenter
 
 export appcenter_batch_count=${appcenter_batch_count:-1}
-export apk_path=src/SymbolCollector.Android/bin/Release/net6.0-android/publish/io.sentry.symbolcollector.android-Signed.apk
+export apk_path=src/SymbolCollector.Android/bin/Release/net7.0-android/publish/io.sentry.symbolcollector.android-Signed.apk
 rm $apk_path && echo deleted apk || echo apk not there
 
 # Always a source of issues trying to find the Android SDK:
