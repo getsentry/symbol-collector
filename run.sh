@@ -17,14 +17,15 @@ dotnet publish -c Release
 popd
 
 pushd test/SymbolCollector.Android.UITests/
-msbuild /restore /p:Configuration=Release /t:Build
+dotnet build -c Release -o bin/Release
 
 pushd bin/Release/
+cp ../../../../$apk_path .
 for barch_number in $(seq 1 1 $appcenter_batch_count); do
 	echo Running Batch \#$barch_number
     appcenter test run uitest --app $SC_APP \
         --devices $SC_DEVICE_SET \
-        --app-path  ../../../../$apk_path \
+        --app-path  *.apk \
         --test-series "master" \
         --locale "en_US" \
         --build-dir . \
