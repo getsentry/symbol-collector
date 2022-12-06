@@ -11,3 +11,4 @@ TestResult.xml
 **/publish*
 **/*.zip
 packages/
+**/uitest/
