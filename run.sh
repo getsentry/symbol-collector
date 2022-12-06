@@ -20,7 +20,7 @@ pushd test/SymbolCollector.Android.UITests/
 dotnet build -c Release -o uitest
 
 pushd uitest/
-cp ../../../../$apk_path .
+cp ../../../$apk_path .
 for barch_number in $(seq 1 1 $appcenter_batch_count); do
 	echo Running Batch \#$barch_number
     appcenter test run uitest --app $SC_APP \
