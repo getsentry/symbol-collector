@@ -361,7 +361,11 @@ namespace SymbolCollector.Server
             return batch;
         }
 
-        public async Task Delete(Guid batchId, CancellationToken token) => _batches.TryRemove(batchId, out _);
+        public Task Delete(Guid batchId, CancellationToken token)
+        {
+            _batches.TryRemove(batchId, out _);
+            return Task.CompletedTask;
+        }
 
         public void Dispose() => (_batchFinalizer as IDisposable)?.Dispose();
     }
