@@ -177,25 +177,38 @@ namespace SymbolCollector.Core
 
             _logger.LogInformation("Path {path} has {length} files to process", path, files.Count);
 
+            var failures = 0;
             foreach (var file in files)
             {
-                if (_objectFileParser.TryParse(file, out var objectFileResult) && objectFileResult is {})
+                try
                 {
-                    if (objectFileResult is FatMachOFileResult fatMachOFileResult)
+                    if (_objectFileParser.TryParse(file, out var objectFileResult) && objectFileResult is {})
                     {
-                        foreach (var fatMachOInnerFile in fatMachOFileResult.InnerFiles)
+                        if (objectFileResult is FatMachOFileResult fatMachOFileResult)
                         {
-                            await UploadAsync(batchId, fatMachOInnerFile, cancellationToken);
+                            foreach (var fatMachOInnerFile in fatMachOFileResult.InnerFiles)
+                            {
+                                await UploadAsync(batchId, fatMachOInnerFile, cancellationToken);
+                            }
+                        }
+                        else
+                        {
+                            await UploadAsync(batchId, objectFileResult, cancellationToken);
                         }
                     }
                     else
                     {
-                        await UploadAsync(batchId, objectFileResult, cancellationToken);
+                        _logger.LogDebug("File {file} could not be parsed.", file);
                     }
                 }
-                else
+                catch (Exception e)
                 {
-                    _logger.LogDebug("File {file} could not be parsed.", file);
+                    if (++failures > 10)
+                    {
+                        throw;
+                    }
+
+                    _logger.LogError(e, "Failed to upload. Failure count: {count}.", failures);
                 }
             }
         }
@@ -237,10 +250,9 @@ namespace SymbolCollector.Core
                     Metrics.AlreadyExisted();
                 }
             }
-            catch (Exception e)
+            catch
             {
                 Metrics.FailedToUpload();
-                _logger.LogError(e, "Failed to upload.");
                 throw;
             }
         }

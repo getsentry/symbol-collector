@@ -102,7 +102,7 @@ namespace SymbolCollector.Android.Library
                     // error:100003fc:SSL routines:OPENSSL_internal:SSLV3_ALERT_BAD_RECORD_MAC (external/boringssl/src/ssl/tls_record.cc:592 0x77f854d8c8:0x00000001)
                     "Failure in SSL library, usually a protocol error",
                 };
-                services.AddSingleton<AndroidMessageHandler>();
+                services.AddTransient<AndroidMessageHandler>();
                 services.AddHttpClient<ISymbolClient, SymbolClient>()
                     .ConfigurePrimaryHttpMessageHandler<AndroidMessageHandler>()
                     .AddPolicyHandler((s, r) =>
