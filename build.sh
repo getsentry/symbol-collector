@@ -31,11 +31,11 @@ dotnet test -c Release --collect:"XPlat Code Coverage" --settings ../coverletArg
 popd
 
 pushd test/SymbolCollector.Android.UITests/
-msbuild /restore /p:Configuration=Release /t:Build
+dotnet build -c Release
 # Don't run emulator tests on CI
 if [ -z ${CI+x} ]; then
-    pushd bin/Release
-    mono ../../tools/nunit/net35/nunit3-console.exe SymbolCollector.Android.UITests.dll
+    pushd bin/Release/net48
+    mono ../../../tools/nunit/net35/nunit3-console.exe SymbolCollector.Android.UITests.dll
     popd
 fi
 popd

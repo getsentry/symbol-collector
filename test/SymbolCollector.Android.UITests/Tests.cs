@@ -19,7 +19,7 @@ namespace SymbolCollector.Android.UITests
         public void BeforeEachTest()
         {
             var setup = ConfigureApp.Android;
-            const string apkPath = "../../../../src/SymbolCollector.Android/bin/Release/net6.0-android/io.sentry.symbolcollector.android-Signed.apk";
+            const string apkPath = "../../../../../src/SymbolCollector.Android/bin/Release/net7.0-android/io.sentry.symbolcollector.android-Signed.apk";
             if (File.Exists(apkPath))
             {
                 setup = setup.ApkFile(apkPath);
