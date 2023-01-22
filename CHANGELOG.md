@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.9.0
+
+### Various fixes & improvements
+
+- fix: cap retry on error (#142) by @bruno-garcia
+- ui test on cli (#141) by @bruno-garcia
+- ref: remove frakenproj (#140) by @bruno-garcia
+- fix readme note (9caaf8c9) by @bruno-garcia
+- clean up net7 android on run (e07853ab) by @bruno-garcia
+
 ## 1.8.0
 
 ### Various fixes & improvements
