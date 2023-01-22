@@ -19,6 +19,7 @@ namespace SymbolCollector.Server
         public Task CloseBatch(
             string batchLocation,
             SymbolUploadBatch batch,
+            Action doneCallback,
             CancellationToken token);
     }
 
@@ -45,7 +46,6 @@ namespace SymbolCollector.Server
         private readonly ILogger<SymsorterBatchFinalizer> _logger;
         private readonly ISymbolGcsWriter _gcsWriter;
         private readonly BundleIdGenerator _bundleIdGenerator;
-        private readonly ISymbolService _symbolService;
         private readonly IHub _hub;
         private readonly string _symsorterOutputPath;
 
@@ -54,7 +54,6 @@ namespace SymbolCollector.Server
             IOptions<SymbolServiceOptions> options,
             ISymbolGcsWriter gcsWriter,
             BundleIdGenerator bundleIdGenerator,
-            ISymbolService symbolService,
             IHub hub,
             ILogger<SymsorterBatchFinalizer> logger)
         {
@@ -63,7 +62,6 @@ namespace SymbolCollector.Server
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _gcsWriter = gcsWriter ?? throw new ArgumentNullException(nameof(gcsWriter));
             _bundleIdGenerator = bundleIdGenerator;
-            _symbolService = symbolService;
             _hub = hub;
             if (!File.Exists(_options.SymsorterPath))
             {
@@ -77,6 +75,7 @@ namespace SymbolCollector.Server
          public Task CloseBatch(
             string batchLocation,
             SymbolUploadBatch batch,
+            Action doneCallback,
             CancellationToken token)
         {
             // TODO: Turn into a job.
@@ -216,7 +215,7 @@ namespace SymbolCollector.Server
                         closeBatchTransaction.Finish();
                     }
 
-                    _symbolService.Delete(batch.BatchId, CancellationToken.None);
+                    doneCallback();
                 }, gcsUploadCancellation);
 
             return Task.CompletedTask;

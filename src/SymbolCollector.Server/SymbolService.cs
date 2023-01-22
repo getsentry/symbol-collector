@@ -22,7 +22,6 @@ namespace SymbolCollector.Server
         Task Relate(Guid batchId, SymbolMetadata symbolMetadata, CancellationToken token);
         Task Finish(Guid batchId, IClientMetrics? clientMetrics, CancellationToken token);
         Task<StoreResult> Store(Guid batchId, string fileName, Stream stream, CancellationToken token);
-        Task Delete(Guid batchId, CancellationToken token);
     }
 
     public enum StoreResult
@@ -342,7 +341,7 @@ namespace SymbolCollector.Server
             _logger.LogInformation("Batch {batchId} is now closed at {location}.",
                 batchId, destination);
 
-            await _batchFinalizer.CloseBatch(destination, batch, token);
+            await _batchFinalizer.CloseBatch(destination, batch, () => _batches.TryRemove(batchId, out _), token);
         }
 
         private async Task<SymbolUploadBatch> GetOpenBatch(Guid batchId, CancellationToken token)
@@ -359,12 +358,6 @@ namespace SymbolCollector.Server
             }
 
             return batch;
-        }
-
-        public Task Delete(Guid batchId, CancellationToken token)
-        {
-            _batches.TryRemove(batchId, out _);
-            return Task.CompletedTask;
         }
 
         public void Dispose() => (_batchFinalizer as IDisposable)?.Dispose();
