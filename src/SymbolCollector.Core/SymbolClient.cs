@@ -188,7 +188,7 @@ namespace SymbolCollector.Core
                 catch (Exception e)
                 {
                     e.Data["url"] = checkUrl;
-                    _logger.LogError(e, "Failed to check for unifiedId through {url}", checkUrl);
+                    _logger.LogWarning(e, "Failed to check for unifiedId through {url}", checkUrl);
                     throw;
                 }
 
@@ -237,11 +237,13 @@ namespace SymbolCollector.Core
                 }
                 catch (Exception e)
                 {
-                    SentrySdk.CaptureException(e, s =>
-                    {
-                        s.AddAttachment(fileFactory(), fileName);
-                        s.SetExtra("url", uploadUrl);
-                    });
+                    _logger.LogWarning(e, "Failed to upload file");
+                    // We can capture these if we decide to debug each file
+                    // SentrySdk.CaptureException(e, s =>
+                    // {
+                    //     s.AddAttachment(fileFactory(), fileName);
+                    //     s.SetExtra("url", uploadUrl);
+                    // });
                     throw;
                 }
                 finally
@@ -262,13 +264,14 @@ namespace SymbolCollector.Core
             if (!checkResponse.IsSuccessStatusCode)
             {
                 var messageFormat = $"{message} Server response: {checkResponse.StatusCode}";
+                var ex = new InvalidOperationException(messageFormat);
+
                 var responseBody = await checkResponse.Content.ReadAsStringAsync();
                 if (!string.IsNullOrWhiteSpace(responseBody))
                 {
-                    messageFormat = $"{message}\n{responseBody}";
+                    ex.Data[nameof(responseBody)] = responseBody;
                 }
 
-                var ex = new InvalidOperationException(messageFormat);
                 const string traceIdKey = "TraceIdentifier";
                 if (checkResponse.Headers.TryGetValues(traceIdKey, out var traceIds))
                 {

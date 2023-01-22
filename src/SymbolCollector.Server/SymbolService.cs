@@ -341,9 +341,8 @@ namespace SymbolCollector.Server
             _logger.LogInformation("Batch {batchId} is now closed at {location}.",
                 batchId, destination);
 
-            await _batchFinalizer.CloseBatch(destination, batch, token);
+            await _batchFinalizer.CloseBatch(destination, batch, () => _batches.TryRemove(batchId, out _), token);
         }
-
 
         private async Task<SymbolUploadBatch> GetOpenBatch(Guid batchId, CancellationToken token)
         {

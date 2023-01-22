@@ -19,6 +19,7 @@ namespace SymbolCollector.Server
         public Task CloseBatch(
             string batchLocation,
             SymbolUploadBatch batch,
+            Action doneCallback,
             CancellationToken token);
     }
 
@@ -74,6 +75,7 @@ namespace SymbolCollector.Server
          public Task CloseBatch(
             string batchLocation,
             SymbolUploadBatch batch,
+            Action doneCallback,
             CancellationToken token)
         {
             // TODO: Turn into a job.
@@ -86,9 +88,14 @@ namespace SymbolCollector.Server
             // when closing the batch, the request data will already be available to add to outgoing events.
             SentrySdk.CaptureMessage("To read Request data on the request thread", SentryLevel.Debug);
 
-            // TODO: Create it from current open transaction? (trace-parent)
-            // TODO: Why isn't this optional?
-            var closeBatchTransaction = _hub.StartTransaction("CloseBatch", "batch.close");
+            SentryTraceHeader? traceHeader = null;
+            _hub.ConfigureScope(s => traceHeader = s.Transaction?.GetTraceHeader());
+
+            var closeBatchTransaction =
+                traceHeader is not null
+                    ? _hub.StartTransaction("CloseBatch", "batch.close", traceHeader)
+                    : _hub.StartTransaction("CloseBatch", "batch.close");
+
             var handle = _metrics.BeginGcsBatchUpload();
             _ = Task.Run(async () =>
             {
@@ -146,6 +153,7 @@ namespace SymbolCollector.Server
                             try
                             {
                                 await Task.WhenAll(group.Select(g => UploadToGoogle(g)));
+                                gcpUploadSpanGroup.Finish(SpanStatus.Ok);
                             }
                             catch (Exception e)
                             {
@@ -166,8 +174,7 @@ namespace SymbolCollector.Server
                 }
                 catch (Exception e)
                 {
-                    // TODO: Assign ex to Span
-                    closeBatchTransaction.Finish(SpanStatus.InternalError);
+                    closeBatchTransaction.Finish(e);
                     _logger.LogError(e, "Batch {batchId} with name {friendlyName} completed in {stopwatch}.",
                         batch.BatchId, batch.FriendlyName, stopwatch.Elapsed);
                     throw;
@@ -208,6 +215,7 @@ namespace SymbolCollector.Server
                         closeBatchTransaction.Finish();
                     }
 
+                    doneCallback();
                 }, gcsUploadCancellation);
 
             return Task.CompletedTask;
