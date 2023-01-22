@@ -45,6 +45,7 @@ namespace SymbolCollector.Server
         private readonly ILogger<SymsorterBatchFinalizer> _logger;
         private readonly ISymbolGcsWriter _gcsWriter;
         private readonly BundleIdGenerator _bundleIdGenerator;
+        private readonly ISymbolService _symbolService;
         private readonly IHub _hub;
         private readonly string _symsorterOutputPath;
 
@@ -53,6 +54,7 @@ namespace SymbolCollector.Server
             IOptions<SymbolServiceOptions> options,
             ISymbolGcsWriter gcsWriter,
             BundleIdGenerator bundleIdGenerator,
+            ISymbolService symbolService,
             IHub hub,
             ILogger<SymsorterBatchFinalizer> logger)
         {
@@ -61,6 +63,7 @@ namespace SymbolCollector.Server
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _gcsWriter = gcsWriter ?? throw new ArgumentNullException(nameof(gcsWriter));
             _bundleIdGenerator = bundleIdGenerator;
+            _symbolService = symbolService;
             _hub = hub;
             if (!File.Exists(_options.SymsorterPath))
             {
@@ -86,9 +89,14 @@ namespace SymbolCollector.Server
             // when closing the batch, the request data will already be available to add to outgoing events.
             SentrySdk.CaptureMessage("To read Request data on the request thread", SentryLevel.Debug);
 
-            // TODO: Create it from current open transaction? (trace-parent)
-            // TODO: Why isn't this optional?
-            var closeBatchTransaction = _hub.StartTransaction("CloseBatch", "batch.close");
+            SentryTraceHeader? traceHeader = null;
+            _hub.ConfigureScope(s => traceHeader = s.Transaction?.GetTraceHeader());
+
+            var closeBatchTransaction =
+                traceHeader is not null
+                    ? _hub.StartTransaction("CloseBatch", "batch.close", traceHeader)
+                    : _hub.StartTransaction("CloseBatch", "batch.close");
+
             var handle = _metrics.BeginGcsBatchUpload();
             _ = Task.Run(async () =>
             {
@@ -146,6 +154,7 @@ namespace SymbolCollector.Server
                             try
                             {
                                 await Task.WhenAll(group.Select(g => UploadToGoogle(g)));
+                                gcpUploadSpanGroup.Finish(SpanStatus.Ok);
                             }
                             catch (Exception e)
                             {
@@ -166,8 +175,7 @@ namespace SymbolCollector.Server
                 }
                 catch (Exception e)
                 {
-                    // TODO: Assign ex to Span
-                    closeBatchTransaction.Finish(SpanStatus.InternalError);
+                    closeBatchTransaction.Finish(e);
                     _logger.LogError(e, "Batch {batchId} with name {friendlyName} completed in {stopwatch}.",
                         batch.BatchId, batch.FriendlyName, stopwatch.Elapsed);
                     throw;
@@ -208,6 +216,7 @@ namespace SymbolCollector.Server
                         closeBatchTransaction.Finish();
                     }
 
+                    _symbolService.Delete(batch.BatchId, CancellationToken.None);
                 }, gcsUploadCancellation);
 
             return Task.CompletedTask;

@@ -100,7 +100,10 @@ namespace SymbolCollector.Core
                 {
                     var sentry = services.GetRequiredService<IHub>();
 
-                    var data = new Dictionary<string, string> { { "PollyRetryCount", retryAttempt.ToString() } };
+                    var data = new Dictionary<string, string> {
+                        {"PollyRetryCount", retryAttempt.ToString()},
+                        {"ThreadId", System.Threading.Thread.CurrentThread.ManagedThreadId.ToString()}
+                    };
                     if (result.Exception is Exception e)
                     {
                         data.Add("exception", e.ToString());

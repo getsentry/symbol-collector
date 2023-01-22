@@ -45,7 +45,7 @@ namespace SymbolCollector.Android.Library
 #else
                 o.DiagnosticLevel = SentryLevel.Info;
 #endif
-                o.MaxBreadcrumbs = 250;
+                o.MaxBreadcrumbs = 350;
                 o.InitCacheFlushTimeout = TimeSpan.FromSeconds(5);
                 o.AttachStacktrace = true;
                 o.Dsn = dsn;

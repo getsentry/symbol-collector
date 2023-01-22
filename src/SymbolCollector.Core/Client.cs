@@ -33,6 +33,8 @@ namespace SymbolCollector.Core
 
             ParallelTasks = options.ParallelTasks;
             _blockListedPaths = options.BlockListedPaths;
+
+            SentrySdk.ConfigureScope(s => s.SetExtra(nameof(Metrics), Metrics));
         }
 
         public async Task UploadAllPathsAsync(
@@ -127,7 +129,6 @@ namespace SymbolCollector.Core
                 {
                     tasks.Add(UploadFilesAsync(batchId, path, cancellationToken));
                     Metrics.JobsInFlightAdd(1);
-                    _logger.LogInformation("Uploading files from: {path}", path);
                 }
                 else
                 {
@@ -208,7 +209,7 @@ namespace SymbolCollector.Core
                         throw;
                     }
 
-                    _logger.LogError(e, "Failed to upload. Failure count: {count}.", failures);
+                    _logger.LogWarning(e, "Failed to upload. Failure count: {count}.", failures);
                 }
             }
         }

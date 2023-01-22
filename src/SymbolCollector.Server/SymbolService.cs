@@ -22,6 +22,7 @@ namespace SymbolCollector.Server
         Task Relate(Guid batchId, SymbolMetadata symbolMetadata, CancellationToken token);
         Task Finish(Guid batchId, IClientMetrics? clientMetrics, CancellationToken token);
         Task<StoreResult> Store(Guid batchId, string fileName, Stream stream, CancellationToken token);
+        Task Delete(Guid batchId, CancellationToken token);
     }
 
     public enum StoreResult
@@ -344,7 +345,6 @@ namespace SymbolCollector.Server
             await _batchFinalizer.CloseBatch(destination, batch, token);
         }
 
-
         private async Task<SymbolUploadBatch> GetOpenBatch(Guid batchId, CancellationToken token)
         {
             var batch = await GetBatch(batchId, token);
@@ -360,6 +360,8 @@ namespace SymbolCollector.Server
 
             return batch;
         }
+
+        public async Task Delete(Guid batchId, CancellationToken token) => _batches.TryRemove(batchId, out _);
 
         public void Dispose() => (_batchFinalizer as IDisposable)?.Dispose();
     }
