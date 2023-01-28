@@ -9,6 +9,13 @@
     <!-- Docs say removed on Xam.Android 11.2 https://docs.microsoft.com/en-us/xamarin/android/deploy-test/building-apps/build-properties#androidusesharedruntime-->
     <!-- But without this appcenter fails with  Mono Shared Runtime is not supported. This can be resolved by changing the project configuration or using a Release build.-->
     <AndroidUseSharedRuntime>False</AndroidUseSharedRuntime>
+    <!-- Override Directory.Build.props: Smaller apk by not having line numbers and paths  -->
+    <DebugType>portable</DebugType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <AndroidLinkTool Condition=" '$(AndroidLinkTool)' == '' ">r8</AndroidLinkTool>
+    <AndroidDexTool Condition=" '$(AndroidDexTool)' == '' ">d8</AndroidDexTool>
   </PropertyGroup>
 
   <ItemGroup>
