@@ -11,6 +11,8 @@
     <AndroidUseSharedRuntime>False</AndroidUseSharedRuntime>
     <!-- Override Directory.Build.props: Smaller apk by not having line numbers and paths  -->
     <DebugType>portable</DebugType>
+    <!-- For symbol uploading -->
+    <SentryProject>android-symbol-collector-mobile</SentryProject>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">

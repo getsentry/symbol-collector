@@ -2,14 +2,16 @@
 
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
+    <!-- For symbol uploading -->
+    <SentryProject>android-symbol-collector-server</SentryProject>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\SymbolCollector.Core\SymbolCollector.Core.csproj" />
-    <PackageReference Include="Sentry.AspNetCore" Version="3.23.1" />
-    <PackageReference Include="Sentry.Serilog" Version="3.23.1" />
-    <PackageReference Include="Google.Cloud.Storage.V1" Version="4.1.0" />
-    <PackageReference Include="Serilog.AspNetCore" Version="6.0.0" />
+    <PackageReference Include="Sentry.AspNetCore" Version="3.26.2" />
+    <PackageReference Include="Sentry.Serilog" Version="3.26.2" />
+    <PackageReference Include="Google.Cloud.Storage.V1" Version="4.2.0" />
+    <PackageReference Include="Serilog.AspNetCore" Version="6.1.0" />
     <PackageReference Include="Serilog.Settings.Configuration" Version="3.4.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="4.1.0" />
     <PackageReference Include="Serilog.Enrichers.Environment" Version="2.2.0" />

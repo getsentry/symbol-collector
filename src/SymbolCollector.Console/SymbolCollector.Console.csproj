@@ -8,6 +8,8 @@
     <NoWarn Condition="'$(Configuration)' == 'Debug'">$(NoWarn);CS1591</NoWarn>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <NoWarn>1591</NoWarn>
+    <!-- For symbol uploading -->
+    <SentryProject>symbol-collector-console</SentryProject>
   </PropertyGroup>
 
   <ItemGroup>
