@@ -73,6 +73,7 @@ namespace SymbolCollector.Core.Tests
             _fixture.SymbolClient = new SymbolClient(
                 Substitute.For<IHub>(),
                 new SymbolClientOptions {BaseAddress = _fixture.ServiceUri, UserAgent = "UnitTest/0.0.0"},
+                new ClientMetrics(),
                 Substitute.For<ILogger<SymbolClient>>(),
                 new HttpClient(_fixture.HttpMessageHandler));
 

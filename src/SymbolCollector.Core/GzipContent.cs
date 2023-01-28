@@ -11,11 +11,13 @@ namespace SymbolCollector.Core
     {
         private const string Gzip = "gzip";
         private readonly HttpContent _content;
+        private readonly ClientMetrics _metrics;
 
-        public GzipContent(HttpContent content)
+        public GzipContent(HttpContent content, ClientMetrics metrics)
         {
             Debug.Assert(content != null);
             _content = content;
+            _metrics = metrics;
 
             foreach (var header in content.Headers)
             {
@@ -33,14 +35,16 @@ namespace SymbolCollector.Core
 
         protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context)
         {
-            var gzipStream = new GZipStream(stream, CompressionLevel.Optimal, leaveOpen: true);
+            var countingGzipStream = new CounterStream(
+                new GZipStream(stream, CompressionLevel.Optimal, leaveOpen: true),
+                _metrics);
             try
             {
-                await _content.CopyToAsync(gzipStream).ConfigureAwait(false);
+                await _content.CopyToAsync(countingGzipStream).ConfigureAwait(false);
             }
             finally
             {
-                await gzipStream.DisposeAsync();
+                await countingGzipStream.DisposeAsync();
             }
         }
     }

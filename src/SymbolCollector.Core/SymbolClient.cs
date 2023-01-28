@@ -65,7 +65,7 @@ namespace SymbolCollector.Core
     public interface ISymbolClient : IDisposable
     {
         Task<Guid> Start(string friendlyName, BatchType batchType, CancellationToken token);
-        Task<Guid> Close(Guid batchId, IClientMetrics? metrics, CancellationToken token);
+        Task<Guid> Close(Guid batchId, CancellationToken token);
 
         Task<bool> Upload(
             Guid batchId,
@@ -79,6 +79,7 @@ namespace SymbolCollector.Core
     public class SymbolClient : ISymbolClient
     {
         private readonly SymbolClientOptions _options;
+        private readonly ClientMetrics _metrics;
         private readonly ILogger<SymbolClient> _logger;
         private readonly IHub _hub;
         private readonly HttpClient _httpClient;
@@ -87,6 +88,7 @@ namespace SymbolCollector.Core
         public SymbolClient(
             IHub hub,
             SymbolClientOptions options,
+            ClientMetrics metrics,
             ILogger<SymbolClient> logger,
             HttpClient httpClient)
         {
@@ -97,6 +99,7 @@ namespace SymbolCollector.Core
             httpClient.Timeout = options.HttpClientTimeout;
 
             _options = options;
+            _metrics = metrics;
             _logger = logger;
             _httpVersion = Version.Parse(_options.Http2 ? "2.0" : "1.1");
         }
@@ -127,9 +130,9 @@ namespace SymbolCollector.Core
             return batchId;
         }
 
-        public async Task<Guid> Close(Guid batchId, IClientMetrics? metrics, CancellationToken token)
+        public async Task<Guid> Close(Guid batchId, CancellationToken token)
         {
-            var body = new {ClientMetrics = metrics};
+            var body = new {ClientMetrics = _metrics};
 
             var content = new ByteArrayContent(JsonSerializer.SerializeToUtf8Bytes(body));
             content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/json");
@@ -208,7 +211,7 @@ namespace SymbolCollector.Core
 
                     var content = new MultipartFormDataContent
                     {
-                        { new GzipContent(fileContentStream), fileName, fileName }
+                        { new GzipContent(fileContentStream, _metrics), fileName, fileName }
                     };
                     uploadResponse = await _httpClient.SendAsync(
                         new HttpRequestMessage(HttpMethod.Post, uploadUrl)

@@ -23,6 +23,7 @@ namespace SymbolCollector.Android.Library
         public void Run(Context context)
         {
             var host = Host.Init(context, "https://656e2e78d37d4511a4ea2cb3602e7a65@sentry.io/5953206");
+
             var tran = SentrySdk.StartTransaction("SymbolUpload", "symbol.upload");
             var options = host.Services.GetRequiredService<SymbolClientOptions>();
             options.BaseAddress = new Uri("https://symbol-collector.services.sentry.io");
