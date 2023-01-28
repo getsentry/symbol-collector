@@ -88,7 +88,7 @@ namespace SymbolCollector.Core
             }
 
             var stopSpan = SentrySdk.GetSpan()?.StartChild("batch.close");
-            await _symbolClient.Close(batchId, Metrics, cancellationToken);
+            await _symbolClient.Close(batchId, cancellationToken);
             stopSpan?.Finish(SpanStatus.Ok);
 
             IEnumerable<string> SafeGetDirectories(string path)

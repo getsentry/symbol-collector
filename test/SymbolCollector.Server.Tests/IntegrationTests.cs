@@ -367,7 +367,7 @@ namespace SymbolCollector.Server.Tests
                     Content = new MultipartFormDataContent
                     {
                         {
-                            new GzipContent(new ByteArrayContent(fileBytes)), testFile, Path.GetFileName(testFile)
+                            new GzipContent(new ByteArrayContent(fileBytes), new ClientMetrics()), testFile, Path.GetFileName(testFile)
                         }
                     }
                 });
