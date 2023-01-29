@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.10.0
+
+### Various fixes & improvements
+
+- upload symbol on build (#145) by @bruno-garcia
+- fix: count bytes (#144) by @bruno-garcia
+- icon (#139) by @bruno-garcia
+- enable r8 (#143) by @bruno-garcia
+
 ## 1.9.0
 
 ### Various fixes & improvements
