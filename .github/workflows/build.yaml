@@ -46,6 +46,8 @@ jobs:
 
       - name: Run bash build script
         if: matrix.os == 'macos-latest'
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: ./build.sh
 
       - name: Publish coverage report

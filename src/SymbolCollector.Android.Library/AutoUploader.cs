@@ -25,6 +25,10 @@ namespace SymbolCollector.Android.Library
             var host = Host.Init(context, "https://656e2e78d37d4511a4ea2cb3602e7a65@sentry.io/5953206");
 
             var tran = SentrySdk.StartTransaction("SymbolUpload", "symbol.upload");
+
+            SentrySdk.ConfigureScope(s => s.Transaction = tran);
+            // 'BatchUpload' transaction could connect FE+BE on batch start/end HTTP calls
+
             var options = host.Services.GetRequiredService<SymbolClientOptions>();
             options.BaseAddress = new Uri("https://symbol-collector.services.sentry.io");
 
