@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.11.0
+
+### Various fixes & improvements
+
+- bump codecov action (#147) by @bruno-garcia
+- bump dotnet SDK (#146) by @bruno-garcia
+- bundle sources in pdb (9f382c7c) by @bruno-garcia
+
 ## 1.10.0
 
 ### Various fixes & improvements
