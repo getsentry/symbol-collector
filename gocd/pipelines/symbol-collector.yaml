@@ -16,7 +16,7 @@ pipelines:
             symbol-collector_repo:
                 git: git@github.com:getsentry/symbol-collector.git
                 shallow_clone: true
-                branch: master
+                branch: main
                 destination: symbol-collector
         stages:
             - checks:
