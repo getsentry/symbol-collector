@@ -1,0 +1,57 @@
+# More information on gocd-flavor YAML can be found here:
+# - https://github.com/tomzo/gocd-yaml-config-plugin#pipeline
+# - https://www.notion.so/sentry/GoCD-New-Service-Quickstart-6d8db7a6964049b3b0e78b8a4b52e25d
+format_version: 10
+pipelines:
+    deploy-symbol-collector:
+        environment_variables:
+            GCP_PROJECT: internal-sentry
+            GKE_CLUSTER: zdpwkxst
+            GKE_REGION: us-central1
+            GKE_CLUSTER_ZONE: b
+            GKE_BASTION_ZONE: b
+        group: symbol-collector
+        lock_behavior: unlockWhenFinished
+        materials:
+            symbol-collector_repo:
+                git: git@github.com:getsentry/symbol-collector.git
+                shallow_clone: true
+                branch: main
+                destination: symbol-collector
+        stages:
+            - checks:
+                  approval:
+                      type: manual
+                  fetch_materials: true
+                  jobs:
+                      checks:
+                          environment_variables:
+                              # Required for checkruns.
+                              GITHUB_TOKEN: "{{SECRET:[devinfra-github][token]}}"
+                          timeout: 1200
+                          elastic_profile_id: symbol-collector
+                          tasks:
+                              - script: |
+                                    /devinfra/scripts/checks/githubactions/checkruns.py \
+                                    getsentry/symbol-collector \
+                                    ${GO_REVISION_SYMBOL_COLLECTOR_REPO} \
+                                    macos-latest \
+                                    windows-latest
+                              - script: |
+                                    /devinfra/scripts/checks/googlecloud/checkcloudbuild.py \
+                                    ${GO_REVISION_SYMBOL_COLLECTOR_REPO} \
+                                    sentryio \
+                                    "us.gcr.io/sentryio/symbol-collector"
+            - deploy:
+                  fetch_materials: true
+                  jobs:
+                      deploy:
+                          timeout: 1200
+                          elastic_profile_id: symbol-collector
+                          tasks:
+                              - script: |
+                                    /devinfra/scripts/k8s/k8stunnel \
+                                    && /devinfra/scripts/k8s/k8sdeploy.py \
+                                    --label-selector="service=symbol-collector" \
+                                    --image="us.gcr.io/sentryio/symbol-collector:${GO_REVISION_SYMBOL_COLLECTOR_REPO}" \
+                                    --container-name="symbol-collector"
