@@ -3,7 +3,3 @@ changelogPolicy: auto
 targets:
   - name: github
     excludeNames: /.*\.so$/
-  - name: symbol-collector
-    includeNames: /.*\.so/
-    batchType: android
-    bundleIdPrefix: sentry-unity-android-ndk-
