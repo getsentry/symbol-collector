@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.11.1
+
+### Various fixes & improvements
+
+- remove craft symbol collector (c508c778) by @bruno-garcia
+- bump sentry dotnet sdk (#149) by @bruno-garcia
+- cd: add GoCD deployment pipeline (#148) by @joshuarli
+
 ## 1.11.0
 
 ### Various fixes & improvements
