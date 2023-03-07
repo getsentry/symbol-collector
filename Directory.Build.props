@@ -16,6 +16,18 @@
     <!-- For symbol uploading -->
     <SentryOrg>sentry</SentryOrg>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <SentryUploadSymbols>true</SentryUploadSymbols>
+    <!--
+    For source context, not using:
+      <SentryUploadSources>true</SentryUploadSources>
+    Because we're already using above:
+      <EmbedAllSources>true</EmbedAllSources>
+    See: https://docs.sentry.io/platforms/dotnet/configuration/msbuild/#SentryUploadSources
+    -->
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
   </ItemGroup>
