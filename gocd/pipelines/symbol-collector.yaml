@@ -51,7 +51,7 @@ pipelines:
                           tasks:
                               - script: |
                                     /devinfra/scripts/k8s/k8stunnel \
-                                    && /devinfra/scripts/k8s/k8sdeploy.py \
+                                    && /devinfra/scripts/k8s/k8s-deploy.py \
                                     --label-selector="service=symbol-collector" \
                                     --image="us.gcr.io/sentryio/symbol-collector:${GO_REVISION_SYMBOL_COLLECTOR_REPO}" \
                                     --container-name="symbol-collector"
