@@ -16,6 +16,8 @@
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <AndroidLinkTool Condition=" '$(AndroidLinkTool)' == '' ">r8</AndroidLinkTool>
     <AndroidDexTool Condition=" '$(AndroidDexTool)' == '' ">d8</AndroidDexTool>
+    <AndroidCreateProguardMappingFile>True</AndroidCreateProguardMappingFile>
+    <SentryUploadAndroidProguardMapping>true</SentryUploadAndroidProguardMapping>
   </PropertyGroup>
 
   <ItemGroup>
