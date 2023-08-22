@@ -4,6 +4,7 @@
     <TargetFramework>net48</TargetFramework>
     <IsPackable>false</IsPackable>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <UseSentryCLI>false</UseSentryCLI>
   </PropertyGroup>
 
   <ItemGroup>

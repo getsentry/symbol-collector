@@ -3,6 +3,7 @@
     <TargetFramework>net7.0-android</TargetFramework>
     <!-- To get access to Microsoft.Maui.Media (screenshots) isn't available via NuGet-->
     <UseMauiEssentials>true</UseMauiEssentials>
+    <UseSentryCLI>false</UseSentryCLI>
   </PropertyGroup>
 
   <ItemGroup>
