@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Sentry.Extensions.Logging" Version="3.35.1" />
+    <PackageReference Include="Sentry.Extensions.Logging" Version="3.36.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.1" />
     <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="7.0.3" />
     <PackageReference Include="System.Text.Json" Version="7.0.2" />

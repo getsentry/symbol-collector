@@ -8,8 +8,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SymbolCollector.Core\SymbolCollector.Core.csproj" />
-    <PackageReference Include="Sentry.AspNetCore" Version="3.35.1" />
-    <PackageReference Include="Sentry.Serilog" Version="3.35.1" />
+    <PackageReference Include="Sentry.AspNetCore" Version="3.36.0" />
+    <PackageReference Include="Sentry.Serilog" Version="3.36.0" />
     <PackageReference Include="Google.Cloud.Storage.V1" Version="4.2.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="6.1.0" />
     <PackageReference Include="Serilog.Settings.Configuration" Version="3.4.0" />
