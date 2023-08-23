@@ -30,6 +30,7 @@ namespace SymbolCollector.Android.Library
                 // TODO: ShouldCan be deleted once this PR is released: https://github.com/getsentry/sentry-dotnet/pull/1750/files#diff-c55d438dd1d5f3731c0d04d0f1213af4873645b1daa44c4c6e1b24192110d8f8R166-R167
                 // System.UnauthorizedAccessException: Access to the path '/proc/stat' is denied.
                 o.DetectStartupTime = StartupTimeDetectionMode.Fast;
+                o.CaptureFailedRequests = true;
 #if ANDROID
                 // TODO: Should be added OOTB
                 o.Release = $"{AppInfo.PackageName}@{AppInfo.VersionString}+{AppInfo.BuildString}";

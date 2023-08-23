@@ -222,6 +222,7 @@ namespace SymbolCollector.Console
                 o.Dsn = "https://10ca21ff6838474e9b4ba8c789e79756@sentry.io/5953213";
                 o.Debug = true;
                 o.IsGlobalModeEnabled = true;
+                o.CaptureFailedRequests = true;
 #if DEBUG
                 o.Environment = "development";
 #else
