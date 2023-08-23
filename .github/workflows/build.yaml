@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest]
+        os: [windows-latest, macos-latest, ubuntu-latest]
 
     steps:
       - uses: actions/checkout@v2
@@ -35,8 +35,8 @@ jobs:
         if: matrix.os == 'macos-latest'
         run: sudo dotnet workload install maui-android
 
-      - name: Install Android workload (Windows)
-        if: matrix.os == 'windows-latest'
+      - name: Install Android workload (Windows/Linux)
+        if: matrix.os != 'macos-latest'
         run: dotnet workload install maui-android
 
       - name: Run batch build script
@@ -45,7 +45,7 @@ jobs:
         run: build.cmd
 
       - name: Run bash build script
-        if: matrix.os == 'macos-latest'
+        if: matrix.os != 'windows-latest'
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: ./build.sh
