@@ -158,7 +158,7 @@ namespace SymbolCollector.Server
             {
                 context.Response.OnStarting(() =>
                 {
-                    context.Response.Headers.Add("TraceIdentifier", new[] {context.TraceIdentifier});
+                    context.Response.Headers["TraceIdentifier"] = new[] {context.TraceIdentifier};
                     return Task.CompletedTask;
                 });
                 await func();

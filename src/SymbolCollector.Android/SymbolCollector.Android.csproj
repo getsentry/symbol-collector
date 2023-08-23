@@ -1,9 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net7.0-android</TargetFramework>
+    <TargetFramework>net8.0-android</TargetFramework>
     <OutputType>Exe</OutputType>
-    <!-- It needs to be set in the final app or: System.IO.FileNotFoundException: Could not load file or assembly 'Microsoft.Maui.Essentials, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null' or one of its dependencies.-->
-    <UseMauiEssentials>true</UseMauiEssentials>
     <!-- Disabled to get this to work with Xamarin.UITest -->
     <AndroidUseAssemblyStore>False</AndroidUseAssemblyStore>
     <!-- Docs say removed on Xam.Android 11.2 https://docs.microsoft.com/en-us/xamarin/android/deploy-test/building-apps/build-properties#androidusesharedruntime-->
@@ -24,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../SymbolCollector.Android.Library/SymbolCollector.Android.Library.csproj" />
+    <PackageReference Include="Microsoft.Maui.Essentials" Version="8.0.0-preview.7.8842" />
   </ItemGroup>
 
 </Project>
