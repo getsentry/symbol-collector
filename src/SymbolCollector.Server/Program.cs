@@ -83,6 +83,7 @@ namespace SymbolCollector.Server
                         o.Dsn = "https://2262a4fa0a6d409c848908ec90c3c5b4@sentry.io/1886021";
                         o.AddExceptionFilterForType<OperationCanceledException>();
                         o.MinimumBreadcrumbLevel = LogLevel.Debug;
+                        o.CaptureFailedRequests = true;
                         o.SetBeforeSend(@event =>
                         {
                             // Stop raising warning that endpoint was overriden
