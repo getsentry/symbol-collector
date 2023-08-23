@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.12.0
+
+### Various fixes & improvements
+
+- capture failed http requests (#159) by @bruno-garcia
+- build on linux (#158) by @bruno-garcia
+- use apk from github release (#157) by @bruno-garcia
+- readme: fix logo on dark mode (24ef4b91) by @bruno-garcia
+- Enable R8 and upload mappings (#156) by @bruno-garcia
+- Fix validation pipeline (#155) by @mattgauntseo-sentry
+- ci: add GoCD pipeline validation (#153) by @joshuarli
+- Update to new k8s deploy script (#151) by @mattgauntseo-sentry
+
 ## 1.11.1
 
 ### Various fixes & improvements
