@@ -1,9 +1,4 @@
-<p align="center">
-  <a href="https://sentry.io" target="_blank" align="center">
-    <img src="https://sentry-brand.storage.googleapis.com/sentry-logo-black.png" width="280">
-  </a>
-  <br />
-</p>
+[![Sentry](https://raw.githubusercontent.com/getsentry/sentry-dotnet/main/.assets/sentry-wordmark-dark-280x84.png)](https://sentry.io/?utm_source=github&utm_medium=logo)
 
 # Symbol Collector
 [![build](https://github.com/getsentry/symbol-collector/workflows/build/badge.svg?branch=main)](https://github.com/getsentry/symbol-collector/actions?query=branch%3Amain)
