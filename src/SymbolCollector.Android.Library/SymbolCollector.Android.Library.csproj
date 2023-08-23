@@ -3,6 +3,7 @@
     <TargetFramework>net7.0-android</TargetFramework>
     <!-- To get access to Microsoft.Maui.Media (screenshots) isn't available via NuGet-->
     <UseMauiEssentials>true</UseMauiEssentials>
+    <UseSentryCLI>false</UseSentryCLI>
   </PropertyGroup>
 
   <ItemGroup>
@@ -11,8 +12,8 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Logging" Version="7.0.0" />
-    <PackageReference Include="Sentry" Version="3.29.0" />
-    <PackageReference Include="Sentry.Extensions.Logging" Version="3.29.0" />
+    <PackageReference Include="Sentry" Version="3.36.0" />
+    <PackageReference Include="Sentry.Extensions.Logging" Version="3.36.0" />
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
   </ItemGroup>
 

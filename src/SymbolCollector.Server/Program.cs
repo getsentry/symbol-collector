@@ -83,7 +83,7 @@ namespace SymbolCollector.Server
                         o.Dsn = "https://2262a4fa0a6d409c848908ec90c3c5b4@sentry.io/1886021";
                         o.AddExceptionFilterForType<OperationCanceledException>();
                         o.MinimumBreadcrumbLevel = LogLevel.Debug;
-                        o.BeforeSend = @event =>
+                        o.SetBeforeSend(@event =>
                         {
                             // Stop raising warning that endpoint was overriden
                             if (@event.Message?.Formatted?.Contains(@"Binding to endpoints defined in") == true
@@ -99,7 +99,7 @@ namespace SymbolCollector.Server
                             }
 
                             return @event;
-                        };
+                        });
                     });
                     webBuilder.UseStartup<Startup>();
                 });

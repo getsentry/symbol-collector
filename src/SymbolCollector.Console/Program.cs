@@ -234,7 +234,7 @@ namespace SymbolCollector.Console
 
                 o.AddExceptionFilterForType<OperationCanceledException>();
 
-                o.BeforeSend += @event =>
+                o.SetBeforeSend(@event =>
                 {
                     // TODO: Can be removed once we batch requests and rely on sentry-trace on all requests:
                     const string traceIdKey = "TraceIdentifier";
@@ -244,7 +244,7 @@ namespace SymbolCollector.Console
                     }
 
                     return @event;
-                };
+                });
             });
             {
                 SentrySdk.ConfigureScope(s =>

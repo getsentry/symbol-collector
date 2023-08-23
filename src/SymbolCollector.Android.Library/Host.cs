@@ -52,7 +52,7 @@ namespace SymbolCollector.Android.Library
                 o.SendDefaultPii = true;
 
                 // TODO: This needs to be built-in
-                o.BeforeSend += @event =>
+                o.SetBeforeSend(@event =>
                 {
                     const string traceIdKey = "TraceIdentifier";
                     switch (@event.Exception)
@@ -65,16 +65,15 @@ namespace SymbolCollector.Android.Library
                     }
 
                     return @event;
-                };
-                o.BeforeBreadcrumb = breadcrumb
+                });
+                o.SetBeforeBreadcrumb(breadcrumb
                     // This logger adds 3 crumbs for each HTTP request and we already have a Sentry integration for HTTP
                     // Which shows the right category, status code and a link
                     => string.Equals(breadcrumb.Category, "System.Net.Http.HttpClient.ISymbolClient.LogicalHandler")
                        || string.Equals(breadcrumb.Category, "System.Net.Http.HttpClient.ISymbolClient.ClientHandler")
                         ? null
-                        : breadcrumb;
+                        : breadcrumb);
             });
-
             var tran = SentrySdk.StartTransaction("AppStart", "activity.load");
 
             SentrySdk.ConfigureScope(s =>

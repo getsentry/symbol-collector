@@ -54,8 +54,8 @@ namespace SymbolCollector.Android
                 SetContentView(Resource.Layout.activity_main);
 
                 var footerText = (TextView)base.FindViewById(Resource.Id.footer)!;
-                var versionName = Application.Context.ApplicationContext?.PackageManager?
 #pragma warning disable CS0618 // GetPackageInfo is deprecated
+                var versionName = Application.Context.ApplicationContext?.PackageManager?
                     .GetPackageInfo(Application.Context.ApplicationContext?.PackageName ?? "", 0)?.VersionName;
 #pragma warning restore CS0618
                 footerText.Text = $"Version: {versionName}\n" + footerText.Text;
