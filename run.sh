@@ -20,7 +20,7 @@ dotnet build -c Release -o uitest
 pushd uitest/
 
 if [ ! -f "$localApk" ]; then
-  curl https://github.com/getsentry/symbol-collector/releases/download/$version/$apk --create-dirs -o $localApk
+  curl -L0 https://github.com/getsentry/symbol-collector/releases/download/$version/$apk --create-dirs -o $localApk
 fi
 
 for barch_number in $(seq 1 1 $appcenter_batch_count); do
