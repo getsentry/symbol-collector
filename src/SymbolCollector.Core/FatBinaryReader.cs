@@ -67,11 +67,11 @@ namespace SymbolCollector.Core
             }
 
             var filesToDelete = new List<string>();
-            fatMachO = new FatMachO()
+            fatMachO = new FatMachO(true)
             {
                 Header = header.Value,
                 FilesToDelete = filesToDelete,
-                MachOFiles = GetFatArches(bytes, (int) header.Value.FatArchCount)
+                MachOFiles = GetFatArches(bytes, (int)header.Value.FatArchCount)
                     .Select(arch =>
                     {
                         // TODO: This needs to change. Current Mach-O lib only reads from disk
@@ -102,7 +102,7 @@ namespace SymbolCollector.Core
                 var itemOffset = i;
                 yield return new FatArch
                 {
-                    CpuType  = Get(),
+                    CpuType = Get(),
                     CpuSubType = Get(),
                     StartOffset = Get(),
                     Size = Get(),
