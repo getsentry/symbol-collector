@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.12.1
+
+### Various fixes & improvements
+
+- fix: fat binary reader leaking temp files (#165) by @vaind
+- fix: CLI should exit with non-zero exit code on error (#166) by @vaind
+
 ## 1.12.0
 
 ### Various fixes & improvements
