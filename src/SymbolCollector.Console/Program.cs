@@ -19,7 +19,7 @@ namespace SymbolCollector.Console
     {
         private static readonly ClientMetrics Metrics = new ClientMetrics();
 
-        static async Task Main(
+        static async Task<int> Main(
             string? upload = null,
             string? check = null,
             string? path = null,
@@ -65,6 +65,7 @@ namespace SymbolCollector.Console
                 });
 
                 await Run(host, args);
+                return 0;
             }
             catch (Exception e)
             {
@@ -73,6 +74,7 @@ namespace SymbolCollector.Console
                 e.Data[Mechanism.HandledKey] = false;
                 e.Data[Mechanism.MechanismKey] = "Main.UnhandledException";
                 SentrySdk.CaptureException(e);
+                return 1;
             }
             finally
             {
@@ -121,7 +123,7 @@ namespace SymbolCollector.Console
 
                     logger.LogInformation("Uploading stuff from directory: '{path}'.", args.Path);
                     await uploader.StartUploadSymbols(
-                        new[] {args.Path},
+                        new[] { args.Path },
                         args.BundleId,
                         args.BatchType,
                         args.Cancellation.Token);
@@ -138,7 +140,7 @@ namespace SymbolCollector.Console
 
                 logger.LogInformation("Checking '{checkLib}'.", checkLib);
                 var parser = host.Services.GetRequiredService<ObjectFileParser>();
-                if (parser.TryParse(checkLib, out var result) && result is {})
+                if (parser.TryParse(checkLib, out var result) && result is { })
                 {
                     if (result is FatMachOFileResult fatMachOFileResult)
                     {
@@ -176,7 +178,7 @@ namespace SymbolCollector.Console
                 return;
             }
 
-            if (args.Symsorter is {} && args.BatchType is {} && args.BundleId is {} && args.Path is {})
+            if (args.Symsorter is { } && args.BatchType is { } && args.BundleId is { } && args.Path is { })
             {
                 if (string.IsNullOrWhiteSpace(args.BundleId))
                 {
@@ -251,7 +253,7 @@ namespace SymbolCollector.Console
                 SentrySdk.ConfigureScope(s =>
                 {
                     s.SetTag("user-agent", args.UserAgent);
-                    if (args.ServerEndpoint is {})
+                    if (args.ServerEndpoint is { })
                     {
                         s.SetTag("server-endpoint", args.ServerEndpoint.AbsoluteUri);
                     }
