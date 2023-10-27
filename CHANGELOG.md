@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.13.0-alpha.0
+
+### Various fixes & improvements
+
+- net8 rc2 (#161) by @bruno-garcia
+
 ## 1.12.1
 
 ### Various fixes & improvements
