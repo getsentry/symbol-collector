@@ -12,7 +12,6 @@
     <!-- XA4218: Unable to find //manifest/application/uses-library at path: /Library/Android/sdk/platforms/android-33/optional/androidx.window.extensions.jar
       ignore because not required: <uses-library android:name="androidx.window.extensions" android:required="false" /> -->
     <NoWarn>$(NoWarn);XA4218</NoWarn>
-    <AndroidStripILAfterAOT>true</AndroidStripILAfterAOT>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
