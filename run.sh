@@ -1,6 +1,6 @@
 set -e
 
-export version=1.13.0-alpha.0
+export version=1.13.0-alpha.1
 export apk=io.sentry.symbolcollector.android-Signed.apk
 export localApk=apk/$version/$apk
 
