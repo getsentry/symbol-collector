@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.13.0-alpha.1
+
+### Various fixes & improvements
+
+- remove AndroidStripILAfterAOT (0481c002) by @bruno-garcia
+
 ## 1.13.0-alpha.0
 
 ### Various fixes & improvements
