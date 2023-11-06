@@ -44,12 +44,12 @@ public class CounterStream : Stream
         set => _streamImplementation.Position = value;
     }
 
-    public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
+    public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
     {
         return _streamImplementation.BeginRead(buffer, offset, count, callback, state);
     }
 
-    public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
+    public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
     {
         return _streamImplementation.BeginWrite(buffer, offset, count, callback, state);
     }
@@ -135,14 +135,12 @@ public class CounterStream : Stream
     public override bool CanTimeout { get; }
     public override int ReadTimeout { get; set; }
     public override int WriteTimeout { get; set; }
-
-    [Obsolete("This Remoting API is not supported and throws PlatformNotSupportedException.", DiagnosticId = "SYSLIB0010", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public override object InitializeLifetimeService()
     {
         return _streamImplementation.InitializeLifetimeService();
     }
 
-    public override bool Equals(object? obj)
+    public override bool Equals(object obj)
     {
         return _streamImplementation.Equals(obj);
     }
@@ -152,7 +150,7 @@ public class CounterStream : Stream
         return _streamImplementation.GetHashCode();
     }
 
-    public override string? ToString()
+    public override string ToString()
     {
         return _streamImplementation.ToString();
     }
