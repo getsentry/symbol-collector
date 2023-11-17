@@ -52,21 +52,7 @@ namespace SymbolCollector.Android.Library
                 o.Dsn = dsn;
                 o.SendDefaultPii = true;
 
-                // TODO: This needs to be built-in
-                o.SetBeforeSend(@event =>
-                {
-                    const string traceIdKey = "TraceIdentifier";
-                    switch (@event.Exception)
-                    {
-                        case OperationCanceledException _:
-                            return null;
-                        case var e when e?.Data.Contains(traceIdKey) == true:
-                            @event.SetTag(traceIdKey, e.Data[traceIdKey]?.ToString() ?? "unknown");
-                            break;
-                    }
-
-                    return @event;
-                });
+                o.AddExceptionFilterForType<OperationCanceledException>();
                 o.SetBeforeBreadcrumb(breadcrumb
                     // This logger adds 3 crumbs for each HTTP request and we already have a Sentry integration for HTTP
                     // Which shows the right category, status code and a link
