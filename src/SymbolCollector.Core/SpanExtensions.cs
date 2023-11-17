@@ -8,13 +8,13 @@ namespace SymbolCollector.Core
     public static class SpanExtensions
     {
         public static void TrackSpan(
-            this ISpan hub,
+            this ISpanTracer parentSpan,
             Action callback,
             string operation,
             string? description = null)
         {
             // ! can be removed once https://github.com/getsentry/sentry-dotnet/issues/825 is addressed.
-            var span = hub.StartChild(operation, description!);
+            var span = parentSpan.StartChild(operation, description!);
             try
             {
                 callback();
@@ -27,7 +27,7 @@ namespace SymbolCollector.Core
             }
         }
 
-        public static void Finish(this ISpan span, Exception e)
+        public static void Finish(this ISpanTracer span, Exception e)
         {
             var status = e switch
             {

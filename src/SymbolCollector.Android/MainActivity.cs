@@ -29,7 +29,7 @@ namespace SymbolCollector.Android
         private string _friendlyName = null!; // set on OnCreate
         private IHost _host = null!; // set on OnCreate
         private IServiceProvider _serviceProvider = null!; // set on OnCreate
-        private ITransaction _startupTransaction  = null!; // set on OnCreate
+        private ITransactionTracer _startupTransaction  = null!; // set on OnCreate
 
         protected override void OnCreate(Bundle? savedInstanceState)
         {
@@ -140,7 +140,7 @@ namespace SymbolCollector.Android
             ClientMetrics metrics,
             View cancelButton,
             View uploadButton,
-            ISpan span,
+            ISpanTracer span,
             CancellationTokenSource source)
         {
             var container = base.FindViewById(Resource.Id.metrics_container)!;
