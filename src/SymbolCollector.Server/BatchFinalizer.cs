@@ -221,7 +221,7 @@ namespace SymbolCollector.Server
             return Task.CompletedTask;
         }
 
-         private bool SortSymbols(string batchLocation, SymbolUploadBatch batch, string symsorterOutput, ISpan symsorterSpan)
+         private bool SortSymbols(string batchLocation, SymbolUploadBatch batch, string symsorterOutput, ISpanTracer symsorterSpan)
          {
              var bundleId = _bundleIdGenerator.CreateBundleId(batch.FriendlyName);
              var symsorterPrefix = batch.BatchType.ToSymsorterPrefix();
