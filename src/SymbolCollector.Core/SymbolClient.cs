@@ -275,12 +275,6 @@ namespace SymbolCollector.Core
                     ex.Data[nameof(responseBody)] = responseBody;
                 }
 
-                const string traceIdKey = "TraceIdentifier";
-                if (checkResponse.Headers.TryGetValues(traceIdKey, out var traceIds))
-                {
-                    ex.Data[traceIdKey] = traceIds.FirstOrDefault() ?? "unknown";
-                }
-
                 throw ex;
             }
         }
