@@ -236,18 +236,6 @@ namespace SymbolCollector.Console
                 o.AutoSessionTracking = true;
 
                 o.AddExceptionFilterForType<OperationCanceledException>();
-
-                o.SetBeforeSend(@event =>
-                {
-                    // TODO: Can be removed once we batch requests and rely on sentry-trace on all requests:
-                    const string traceIdKey = "TraceIdentifier";
-                    if (@event.Exception is var e && e?.Data.Contains(traceIdKey) == true)
-                    {
-                        @event.SetTag(traceIdKey, e.Data[traceIdKey]?.ToString() ?? "unknown");
-                    }
-
-                    return @event;
-                });
             });
             {
                 SentrySdk.ConfigureScope(s =>
