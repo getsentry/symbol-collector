@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.13.0
+
+### Various fixes & improvements
+
+- remove tags and manual tracing (#170) by @bruno-garcia
+- net 8 GA (#169) by @bruno-garcia
+- delete freight config (0d4460c9) by @bruno-garcia
+
 ## 1.13.0-alpha.1
 
 ### Various fixes & improvements
