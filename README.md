@@ -1,4 +1,10 @@
-[![Sentry](https://raw.githubusercontent.com/getsentry/sentry-dotnet/main/.assets/sentry-wordmark-dark-280x84.png)](https://sentry.io/?utm_source=github&utm_medium=logo)
+<p align="center">
+  <a href="https://sentry.io" target="_blank" align="left">
+    <img src="https://raw.githubusercontent.com/getsentry/sentry-unity/main/.github/sentry-wordmark-dark-400x119.svg?utm_source=github&utm_medium=logo" width="280">
+  </a>
+  <br />
+</p>
+<p align="center">
 
 # Symbol Collector
 [![build](https://github.com/getsentry/symbol-collector/workflows/build/badge.svg?branch=main)](https://github.com/getsentry/symbol-collector/actions?query=branch%3Amain)
