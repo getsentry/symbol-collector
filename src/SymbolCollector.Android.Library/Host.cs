@@ -38,6 +38,9 @@ namespace SymbolCollector.Android.Library
                 o.Android.AttachScreenshot = true;
                 o.Android.ProfilesSampleRate = 0.4;
                 o.Android.EnableAndroidSdkTracing = true; // Will double report transactions but to get profiler data
+                // TODO: Shouldn't need importing Sentry.Android nor be under property Android:
+                // https://github.com/getsentry/sentry-dotnet/issues/2935
+                o.Android.LogCatIntegration = Sentry.Android.LogCatIntegrationType.All;
 #endif
                 o.TracesSampleRate = 1.0;
                 o.Debug = true;
