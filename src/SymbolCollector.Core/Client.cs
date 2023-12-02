@@ -1,258 +1,256 @@
 using Microsoft.Extensions.Logging;
 using Sentry;
 
-namespace SymbolCollector.Core
+namespace SymbolCollector.Core;
+
+public class Client : IDisposable
 {
-    public class Client : IDisposable
+    private readonly ISymbolClient _symbolClient;
+    private readonly ObjectFileParser _objectFileParser;
+    internal int ParallelTasks { get; }
+    private readonly ILogger<Client> _logger;
+    private readonly HashSet<string>? _blockListedPaths;
+
+    public ClientMetrics Metrics { get; }
+
+    public Client(
+        ISymbolClient symbolClient,
+        ObjectFileParser objectFileParser,
+        SymbolClientOptions options,
+        ClientMetrics metrics,
+        ILogger<Client> logger)
     {
-        private readonly ISymbolClient _symbolClient;
-        private readonly ObjectFileParser _objectFileParser;
-        internal int ParallelTasks { get; }
-        private readonly ILogger<Client> _logger;
-        private readonly HashSet<string>? _blockListedPaths;
+        Metrics = metrics;
+        _symbolClient = symbolClient;
+        _objectFileParser = objectFileParser;
+        _logger = logger;
 
-        public ClientMetrics Metrics { get; }
+        ParallelTasks = options.ParallelTasks;
+        _blockListedPaths = options.BlockListedPaths;
 
-        public Client(
-            ISymbolClient symbolClient,
-            ObjectFileParser objectFileParser,
-            SymbolClientOptions options,
-            ClientMetrics metrics,
-            ILogger<Client> logger)
-        {
-            Metrics = metrics;
-            _symbolClient = symbolClient;
-            _objectFileParser = objectFileParser;
-            _logger = logger;
+        SentrySdk.ConfigureScope(s => s.SetExtra(nameof(Metrics), Metrics));
+    }
 
-            ParallelTasks = options.ParallelTasks;
-            _blockListedPaths = options.BlockListedPaths;
-
-            SentrySdk.ConfigureScope(s => s.SetExtra(nameof(Metrics), Metrics));
-        }
-
-        public async Task UploadAllPathsAsync(
-            string friendlyName,
-            BatchType type,
-            IEnumerable<string> topLevelPaths,
-            CancellationToken cancellationToken)
-        {
-            var groupsSpan = SentrySdk.GetSpan()?.StartChild("group.get", "Get the group of directories to search in parallel");
-            var counter = 0;
-            var groups =
-                (from topPath in topLevelPaths
+    public async Task UploadAllPathsAsync(
+        string friendlyName,
+        BatchType type,
+        IEnumerable<string> topLevelPaths,
+        CancellationToken cancellationToken)
+    {
+        var groupsSpan = SentrySdk.GetSpan()?.StartChild("group.get", "Get the group of directories to search in parallel");
+        var counter = 0;
+        var groups =
+            (from topPath in topLevelPaths
                 from lookupDirectory in SafeGetDirectories(topPath)
                 where _blockListedPaths?.Contains(lookupDirectory) != true
                 let c = counter++
                 group lookupDirectory by c / ParallelTasks
                 into grp
                 select grp.ToList()).ToList();
-            groupsSpan?.Finish();
+        groupsSpan?.Finish();
 
-            var startSpan = SentrySdk.GetSpan()?.StartChild("batch.start");
-            Guid batchId;
+        var startSpan = SentrySdk.GetSpan()?.StartChild("batch.start");
+        Guid batchId;
+        try
+        {
+            batchId = await _symbolClient.Start(friendlyName, type, cancellationToken);
+            startSpan?.Finish(SpanStatus.Ok);
+        }
+        catch (Exception e)
+        {
+            startSpan?.Finish(e);
+            throw;
+        }
+
+        var uploadSpan = SentrySdk.GetSpan()?.StartChild("batch.upload");
+        uploadSpan?.SetTag("groups", groups.Count.ToString());
+        uploadSpan?.SetTag("total_items", counter.ToString());
+        try
+        {
+            foreach (var group in groups)
+            {
+                await UploadParallel(batchId, group, cancellationToken);
+            }
+            uploadSpan?.Finish(SpanStatus.Ok);
+        }
+        catch (Exception e)
+        {
+            uploadSpan?.Finish(e);
+            _logger.LogError(e, "Failed processing files for {batchId}. Rethrowing and leaving the batch open.",
+                batchId);
+            throw;
+        }
+
+        var stopSpan = SentrySdk.GetSpan()?.StartChild("batch.close");
+        await _symbolClient.Close(batchId, cancellationToken);
+        stopSpan?.Finish(SpanStatus.Ok);
+
+        IEnumerable<string> SafeGetDirectories(string path)
+        {
+            _logger.LogDebug("Probing {path} for child directories.", path);
+            yield return path;
+            IEnumerable<string> dirs;
             try
             {
-                batchId = await _symbolClient.Start(friendlyName, type, cancellationToken);
-                startSpan?.Finish(SpanStatus.Ok);
+                dirs = Directory.GetDirectories(path, "*");
+                // can't yield return here, didn't blow up so go go
             }
-            catch (Exception e)
+            catch (UnauthorizedAccessException)
             {
-                startSpan?.Finish(e);
-                throw;
+                Metrics.FileOrDirectoryUnauthorizedAccess();
+                yield break;
             }
-
-            var uploadSpan = SentrySdk.GetSpan()?.StartChild("batch.upload");
-            uploadSpan?.SetTag("groups", groups.Count.ToString());
-            uploadSpan?.SetTag("total_items", counter.ToString());
-            try
+            catch (DirectoryNotFoundException)
             {
-                foreach (var group in groups)
-                {
-                    await UploadParallel(batchId, group, cancellationToken);
-                }
-                uploadSpan?.Finish(SpanStatus.Ok);
-            }
-            catch (Exception e)
-            {
-                uploadSpan?.Finish(e);
-                _logger.LogError(e, "Failed processing files for {batchId}. Rethrowing and leaving the batch open.",
-                    batchId);
-                throw;
+                Metrics.DirectoryDoesNotExist();
+                yield break;
             }
 
-            var stopSpan = SentrySdk.GetSpan()?.StartChild("batch.close");
-            await _symbolClient.Close(batchId, cancellationToken);
-            stopSpan?.Finish(SpanStatus.Ok);
-
-            IEnumerable<string> SafeGetDirectories(string path)
+            foreach (var dir in dirs)
+            foreach (var safeDir in SafeGetDirectories(dir))
             {
-                _logger.LogDebug("Probing {path} for child directories.", path);
-                yield return path;
-                IEnumerable<string> dirs;
-                try
-                {
-                    dirs = Directory.GetDirectories(path, "*");
-                    // can't yield return here, didn't blow up so go go
-                }
-                catch (UnauthorizedAccessException)
-                {
-                    Metrics.FileOrDirectoryUnauthorizedAccess();
-                    yield break;
-                }
-                catch (DirectoryNotFoundException)
-                {
-                    Metrics.DirectoryDoesNotExist();
-                    yield break;
-                }
+                yield return safeDir;
+            }
+        }
+    }
 
-                foreach (var dir in dirs)
-                foreach (var safeDir in SafeGetDirectories(dir))
-                {
-                    yield return safeDir;
-                }
+    private async Task UploadParallel(Guid batchId, IEnumerable<string> paths, CancellationToken cancellationToken)
+    {
+        var tasks = new List<Task>();
+        foreach (var path in paths)
+        {
+            if (Directory.Exists(path))
+            {
+                tasks.Add(UploadFilesAsync(batchId, path, cancellationToken));
+                Metrics.JobsInFlightAdd(1);
+            }
+            else
+            {
+                Metrics.DirectoryDoesNotExist();
+                _logger.LogWarning("The path {path} doesn't exist.", path);
             }
         }
 
-        private async Task UploadParallel(Guid batchId, IEnumerable<string> paths, CancellationToken cancellationToken)
+        try
         {
-            var tasks = new List<Task>();
-            foreach (var path in paths)
-            {
-                if (Directory.Exists(path))
-                {
-                    tasks.Add(UploadFilesAsync(batchId, path, cancellationToken));
-                    Metrics.JobsInFlightAdd(1);
-                }
-                else
-                {
-                    Metrics.DirectoryDoesNotExist();
-                    _logger.LogWarning("The path {path} doesn't exist.", path);
-                }
-            }
-
-            try
-            {
-                if (tasks.Any())
-                {
-                    try
-                    {
-                        _logger.LogInformation("Awaiting {count} upload tasks to finish.", tasks.Count);
-                        await Task.WhenAll(tasks);
-                    }
-                    finally
-                    {
-                        Metrics.JobsInFlightRemove(tasks.Count);
-                    }
-                }
-                else
-                {
-                    _logger.LogWarning("No upload process will be performed.");
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                _logger.LogInformation("Operation cancelled successfully.");
-            }
-        }
-
-        private async Task UploadFilesAsync(Guid batchId, string path, CancellationToken cancellationToken)
-        {
-            using var _ = _logger.BeginScope(("path", path));
-            IReadOnlyCollection<string> files;
-            try
-            {
-                files = Directory.GetFiles(path);
-            }
-            catch (Exception e)
-            {
-                _logger.LogWarning(e, "Can't list files in {path}.", path);
-                return;
-            }
-
-            _logger.LogInformation("Path {path} has {length} files to process", path, files.Count);
-
-            var failures = 0;
-            foreach (var file in files)
+            if (tasks.Any())
             {
                 try
                 {
-                    if (_objectFileParser.TryParse(file, out var objectFileResult) && objectFileResult is {})
+                    _logger.LogInformation("Awaiting {count} upload tasks to finish.", tasks.Count);
+                    await Task.WhenAll(tasks);
+                }
+                finally
+                {
+                    Metrics.JobsInFlightRemove(tasks.Count);
+                }
+            }
+            else
+            {
+                _logger.LogWarning("No upload process will be performed.");
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Operation cancelled successfully.");
+        }
+    }
+
+    private async Task UploadFilesAsync(Guid batchId, string path, CancellationToken cancellationToken)
+    {
+        using var _ = _logger.BeginScope(("path", path));
+        IReadOnlyCollection<string> files;
+        try
+        {
+            files = Directory.GetFiles(path);
+        }
+        catch (Exception e)
+        {
+            _logger.LogWarning(e, "Can't list files in {path}.", path);
+            return;
+        }
+
+        _logger.LogInformation("Path {path} has {length} files to process", path, files.Count);
+
+        var failures = 0;
+        foreach (var file in files)
+        {
+            try
+            {
+                if (_objectFileParser.TryParse(file, out var objectFileResult) && objectFileResult is {})
+                {
+                    if (objectFileResult is FatMachOFileResult fatMachOFileResult)
                     {
-                        if (objectFileResult is FatMachOFileResult fatMachOFileResult)
+                        foreach (var fatMachOInnerFile in fatMachOFileResult.InnerFiles)
                         {
-                            foreach (var fatMachOInnerFile in fatMachOFileResult.InnerFiles)
-                            {
-                                await UploadAsync(batchId, fatMachOInnerFile, cancellationToken);
-                            }
-                        }
-                        else
-                        {
-                            await UploadAsync(batchId, objectFileResult, cancellationToken);
+                            await UploadAsync(batchId, fatMachOInnerFile, cancellationToken);
                         }
                     }
                     else
                     {
-                        _logger.LogDebug("File {file} could not be parsed.", file);
+                        await UploadAsync(batchId, objectFileResult, cancellationToken);
                     }
-                }
-                catch (Exception e)
-                {
-                    if (++failures > 10)
-                    {
-                        throw;
-                    }
-
-                    _logger.LogWarning(e, "Failed to upload. Failure count: {count}.", failures);
-                }
-            }
-        }
-
-        private async Task UploadAsync(Guid batchId, ObjectFileResult objectFileResult,
-            CancellationToken cancellationToken)
-        {
-            if (string.IsNullOrWhiteSpace(objectFileResult.UnifiedId))
-            {
-                _logger.LogError("Cannot upload file without debug id: {file}", objectFileResult.Path);
-                return;
-            }
-
-            using var _ = _logger.BeginScope(new Dictionary<string, string>
-            {
-                {"unified-id", objectFileResult.UnifiedId}, {"file", objectFileResult.Path},
-            });
-
-            // Better would be if `ELF` class would expose its buffer so we don't need to read the file twice.
-            // Ideally ELF would read headers as a stream which we could reset to 0 after reading heads
-            // and ensuring it's what we need.
-
-            try
-            {
-                var uploaded = await _symbolClient.Upload(
-                    batchId,
-                    objectFileResult.UnifiedId,
-                    objectFileResult.Hash,
-                    Path.GetFileName(objectFileResult.Path),
-                    () => File.OpenRead(objectFileResult.Path),
-                    cancellationToken);
-
-                if (uploaded)
-                {
-                    Metrics.SuccessfulUpload();
                 }
                 else
                 {
-                    Metrics.AlreadyExisted();
+                    _logger.LogDebug("File {file} could not be parsed.", file);
                 }
             }
-            catch
+            catch (Exception e)
             {
-                Metrics.FailedToUpload();
-                throw;
+                if (++failures > 10)
+                {
+                    throw;
+                }
+
+                _logger.LogWarning(e, "Failed to upload. Failure count: {count}.", failures);
             }
         }
-
-        public void Dispose() => _symbolClient.Dispose();
     }
 
+    private async Task UploadAsync(Guid batchId, ObjectFileResult objectFileResult,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(objectFileResult.UnifiedId))
+        {
+            _logger.LogError("Cannot upload file without debug id: {file}", objectFileResult.Path);
+            return;
+        }
+
+        using var _ = _logger.BeginScope(new Dictionary<string, string>
+        {
+            {"unified-id", objectFileResult.UnifiedId}, {"file", objectFileResult.Path},
+        });
+
+        // Better would be if `ELF` class would expose its buffer so we don't need to read the file twice.
+        // Ideally ELF would read headers as a stream which we could reset to 0 after reading heads
+        // and ensuring it's what we need.
+
+        try
+        {
+            var uploaded = await _symbolClient.Upload(
+                batchId,
+                objectFileResult.UnifiedId,
+                objectFileResult.Hash,
+                Path.GetFileName(objectFileResult.Path),
+                () => File.OpenRead(objectFileResult.Path),
+                cancellationToken);
+
+            if (uploaded)
+            {
+                Metrics.SuccessfulUpload();
+            }
+            else
+            {
+                Metrics.AlreadyExisted();
+            }
+        }
+        catch
+        {
+            Metrics.FailedToUpload();
+            throw;
+        }
+    }
+
+    public void Dispose() => _symbolClient.Dispose();
 }

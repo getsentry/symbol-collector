@@ -2,47 +2,46 @@ using System.Diagnostics;
 using System.IO.Compression;
 using System.Net;
 
-namespace SymbolCollector.Core
+namespace SymbolCollector.Core;
+
+internal class GzipContent : HttpContent
 {
-    internal class GzipContent : HttpContent
+    private const string Gzip = "gzip";
+    private readonly HttpContent _content;
+    private readonly ClientMetrics _metrics;
+
+    public GzipContent(HttpContent content, ClientMetrics metrics)
     {
-        private const string Gzip = "gzip";
-        private readonly HttpContent _content;
-        private readonly ClientMetrics _metrics;
+        Debug.Assert(content != null);
+        _content = content;
+        _metrics = metrics;
 
-        public GzipContent(HttpContent content, ClientMetrics metrics)
+        foreach (var header in content.Headers)
         {
-            Debug.Assert(content != null);
-            _content = content;
-            _metrics = metrics;
-
-            foreach (var header in content.Headers)
-            {
-                Headers.TryAddWithoutValidation(header.Key, header.Value);
-            }
-
-            Headers.ContentEncoding.Add(Gzip);
+            Headers.TryAddWithoutValidation(header.Key, header.Value);
         }
 
-        protected override bool TryComputeLength(out long length)
-        {
-            length = -1;
-            return false;
-        }
+        Headers.ContentEncoding.Add(Gzip);
+    }
 
-        protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context)
+    protected override bool TryComputeLength(out long length)
+    {
+        length = -1;
+        return false;
+    }
+
+    protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context)
+    {
+        var countingGzipStream = new CounterStream(
+            new GZipStream(stream, CompressionLevel.Optimal, leaveOpen: true),
+            _metrics);
+        try
         {
-            var countingGzipStream = new CounterStream(
-                new GZipStream(stream, CompressionLevel.Optimal, leaveOpen: true),
-                _metrics);
-            try
-            {
-                await _content.CopyToAsync(countingGzipStream).ConfigureAwait(false);
-            }
-            finally
-            {
-                await countingGzipStream.DisposeAsync();
-            }
+            await _content.CopyToAsync(countingGzipStream).ConfigureAwait(false);
+        }
+        finally
+        {
+            await countingGzipStream.DisposeAsync();
         }
     }
 }

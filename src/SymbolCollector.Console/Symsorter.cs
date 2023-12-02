@@ -4,183 +4,182 @@ using Microsoft.Extensions.Options;
 using SymbolCollector.Core;
 using SystemConsole = System.Console;
 
-namespace SymbolCollector.Console
+namespace SymbolCollector.Console;
+
+public class SymsorterOptions
 {
-    public class SymsorterOptions
+    public bool WriteIndented { get; set; }
+    public bool PrintToStdOut { get; set; } = true;
+}
+
+public struct SymsorterParameters
+{
+    public string Output { get; }
+    public string Prefix { get; }
+    public string BundleId { get; }
+
+    public bool DryRun { get; }
+
+    public SymsorterParameters(
+        string output,
+        string prefix,
+        string bundleId,
+        bool dryRun)
     {
-        public bool WriteIndented { get; set; }
-        public bool PrintToStdOut { get; set; } = true;
+        Output = output;
+        Prefix = prefix;
+        BundleId = bundleId;
+        DryRun = dryRun;
+    }
+}
+
+public class Symsorter
+{
+    private readonly SymsorterOptions _options;
+    private readonly ObjectFileParser _objectFileParser;
+    private readonly ILogger<Symsorter> _logger;
+    private readonly JsonSerializerOptions _jsonOptions;
+    private static readonly byte[] _refsFileContent = new byte[0];
+
+    public Symsorter(
+        IOptions<SymsorterOptions> options,
+        ObjectFileParser objectFileParser,
+        ILogger<Symsorter> logger)
+    {
+        _options = options.Value;
+        _objectFileParser = objectFileParser;
+        _logger = logger;
+        _jsonOptions = new JsonSerializerOptions { WriteIndented = _options.WriteIndented };
     }
 
-    public struct SymsorterParameters
+    public async Task ProcessBundle(SymsorterParameters parameters, string target, CancellationToken token)
     {
-        public string Output { get; }
-        public string Prefix { get; }
-        public string BundleId { get; }
-
-        public bool DryRun { get; }
-
-        public SymsorterParameters(
-            string output,
-            string prefix,
-            string bundleId,
-            bool dryRun)
+        var sortedFilesCount = 0;
+        foreach (var file in Directory.EnumerateFiles(target, "*", SearchOption.AllDirectories))
         {
-            Output = output;
-            Prefix = prefix;
-            BundleId = bundleId;
-            DryRun = dryRun;
-        }
-    }
-
-    public class Symsorter
-    {
-        private readonly SymsorterOptions _options;
-        private readonly ObjectFileParser _objectFileParser;
-        private readonly ILogger<Symsorter> _logger;
-        private readonly JsonSerializerOptions _jsonOptions;
-        private static readonly byte[] _refsFileContent = new byte[0];
-
-        public Symsorter(
-            IOptions<SymsorterOptions> options,
-            ObjectFileParser objectFileParser,
-            ILogger<Symsorter> logger)
-        {
-            _options = options.Value;
-            _objectFileParser = objectFileParser;
-            _logger = logger;
-            _jsonOptions = new JsonSerializerOptions { WriteIndented = _options.WriteIndented };
-        }
-
-        public async Task ProcessBundle(SymsorterParameters parameters, string target, CancellationToken token)
-        {
-            var sortedFilesCount = 0;
-            foreach (var file in Directory.EnumerateFiles(target, "*", SearchOption.AllDirectories))
+            if (_objectFileParser.TryParse(file, out var result) && result is {})
             {
-                if (_objectFileParser.TryParse(file, out var result) && result is {})
+                if (result is FatMachOFileResult fatMachOFileResult)
                 {
-                    if (result is FatMachOFileResult fatMachOFileResult)
+                    foreach (var innerFile in fatMachOFileResult.InnerFiles)
                     {
-                        foreach (var innerFile in fatMachOFileResult.InnerFiles)
-                        {
-                            await SortFile(parameters, innerFile, token);
-                            sortedFilesCount++;
-                        }
-                    }
-                    else
-                    {
-                        await SortFile(parameters, result, token);
+                        await SortFile(parameters, innerFile, token);
                         sortedFilesCount++;
                     }
                 }
-            }
-
-            if (_options.PrintToStdOut)
-            {
-                var originalColor = SystemConsole.ForegroundColor;
-                SystemConsole.ForegroundColor = ConsoleColor.White;
-                SystemConsole.Write("\nDone: sorted ");
-                SystemConsole.ForegroundColor = ConsoleColor.Yellow;
-                SystemConsole.Write(sortedFilesCount);
-                SystemConsole.ForegroundColor = ConsoleColor.White;
-                SystemConsole.WriteLine(" debug files");
-                SystemConsole.ForegroundColor = originalColor;
-            }
-        }
-        public async Task SortFile(
-            SymsorterParameters parameters,
-            ObjectFileResult result,
-            CancellationToken token)
-        {
-            Validate(result);
-
-            var symsorterFileName = result.ObjectKind.ToSymsorterFileName();
-            if (symsorterFileName is null)
-            {
-                throw new InvalidOperationException("Symsorter file expected for " + result.ObjectKind);
-            }
-            var directoryRoot = Path.Combine(parameters.Output, result.UnifiedId[..2], result.UnifiedId[2..]);
-            var destinationObjectFile = Path.Combine(directoryRoot, symsorterFileName);
-            var directoryRefs = Path.Combine(directoryRoot, "refs");
-            _ = Directory.CreateDirectory(directoryRefs);
-
-            _logger.LogDebug("Sorting {file} to {destinationFilePath}",
-                result, destinationObjectFile);
-
-            var metaFile = Path.Combine(directoryRoot, "meta");
-            await using var meta = File.OpenWrite(metaFile);
-            var metaContent = new
-            {
-                name = Path.GetFileName(result.Path),
-                arch = result.Architecture.ToSymsorterArchitecture(),
-                file_format = result.FileFormat.ToSymsorterFileFormat()
-            };
-
-            var metaFileJsonTask = JsonSerializer.SerializeAsync(
-                meta,
-                metaContent, _jsonOptions, token);
-
-            var refsFile = Path.Combine(directoryRefs, parameters.BundleId);
-            var refsFileTask = File.WriteAllBytesAsync(refsFile, _refsFileContent, token);
-
-            if (!parameters.DryRun)
-            {
-                await using var objectFileOutput = File.OpenWrite(destinationObjectFile);
-                await using var objectFileInput = File.OpenRead(result.Path!);
-
-                // TODO: zlib content
-                var objectFileTask = objectFileInput.CopyToAsync(objectFileOutput, token);
-
-                await Task.WhenAll(objectFileTask, metaFileJsonTask, refsFileTask);
-            }
-
-            if (_options.PrintToStdOut)
-            {
-                var originalColor = SystemConsole.ForegroundColor;
-                SystemConsole.ForegroundColor = ConsoleColor.DarkGray;
-                SystemConsole.Write($"{metaContent.name} ");
-                SystemConsole.ForegroundColor = ConsoleColor.White;
-                SystemConsole.Write("(");
-                SystemConsole.ForegroundColor = ConsoleColor.DarkYellow;
-                SystemConsole.Write(metaContent.arch);
-                SystemConsole.ForegroundColor = ConsoleColor.White;
-                SystemConsole.Write(") -> ");
-                SystemConsole.ForegroundColor = ConsoleColor.DarkCyan;
-                SystemConsole.WriteLine(destinationObjectFile);
-                SystemConsole.ForegroundColor = originalColor;
+                else
+                {
+                    await SortFile(parameters, result, token);
+                    sortedFilesCount++;
+                }
             }
         }
 
-        private static void Validate(ObjectFileResult objectFileResult)
+        if (_options.PrintToStdOut)
         {
-            if (string.IsNullOrWhiteSpace(objectFileResult.UnifiedId))
-            {
-                throw new ArgumentException("A unified id is required for symbol sorting.", nameof(objectFileResult));
-            }
+            var originalColor = SystemConsole.ForegroundColor;
+            SystemConsole.ForegroundColor = ConsoleColor.White;
+            SystemConsole.Write("\nDone: sorted ");
+            SystemConsole.ForegroundColor = ConsoleColor.Yellow;
+            SystemConsole.Write(sortedFilesCount);
+            SystemConsole.ForegroundColor = ConsoleColor.White;
+            SystemConsole.WriteLine(" debug files");
+            SystemConsole.ForegroundColor = originalColor;
+        }
+    }
+    public async Task SortFile(
+        SymsorterParameters parameters,
+        ObjectFileResult result,
+        CancellationToken token)
+    {
+        Validate(result);
 
-            if (objectFileResult.UnifiedId.Contains("-"))
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(objectFileResult),
-                    objectFileResult.UnifiedId,
-                    "A unified id can't contain dashes required for symbol sorting.");
-            }
+        var symsorterFileName = result.ObjectKind.ToSymsorterFileName();
+        if (symsorterFileName is null)
+        {
+            throw new InvalidOperationException("Symsorter file expected for " + result.ObjectKind);
+        }
+        var directoryRoot = Path.Combine(parameters.Output, result.UnifiedId[..2], result.UnifiedId[2..]);
+        var destinationObjectFile = Path.Combine(directoryRoot, symsorterFileName);
+        var directoryRefs = Path.Combine(directoryRoot, "refs");
+        _ = Directory.CreateDirectory(directoryRefs);
 
-            if (objectFileResult.UnifiedId.Length < 16) // TODO is 16 the absolute min?
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(objectFileResult),
-                    objectFileResult.UnifiedId.Length,
-                    "A valid unified id is require to be at least 16 characters long.");
-            }
+        _logger.LogDebug("Sorting {file} to {destinationFilePath}",
+            result, destinationObjectFile);
 
-            if (string.IsNullOrWhiteSpace(objectFileResult.Path))
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(objectFileResult),
-                    objectFileResult.Path,
-                    "No file path for the object file was provided.");
-            }
+        var metaFile = Path.Combine(directoryRoot, "meta");
+        await using var meta = File.OpenWrite(metaFile);
+        var metaContent = new
+        {
+            name = Path.GetFileName(result.Path),
+            arch = result.Architecture.ToSymsorterArchitecture(),
+            file_format = result.FileFormat.ToSymsorterFileFormat()
+        };
+
+        var metaFileJsonTask = JsonSerializer.SerializeAsync(
+            meta,
+            metaContent, _jsonOptions, token);
+
+        var refsFile = Path.Combine(directoryRefs, parameters.BundleId);
+        var refsFileTask = File.WriteAllBytesAsync(refsFile, _refsFileContent, token);
+
+        if (!parameters.DryRun)
+        {
+            await using var objectFileOutput = File.OpenWrite(destinationObjectFile);
+            await using var objectFileInput = File.OpenRead(result.Path!);
+
+            // TODO: zlib content
+            var objectFileTask = objectFileInput.CopyToAsync(objectFileOutput, token);
+
+            await Task.WhenAll(objectFileTask, metaFileJsonTask, refsFileTask);
+        }
+
+        if (_options.PrintToStdOut)
+        {
+            var originalColor = SystemConsole.ForegroundColor;
+            SystemConsole.ForegroundColor = ConsoleColor.DarkGray;
+            SystemConsole.Write($"{metaContent.name} ");
+            SystemConsole.ForegroundColor = ConsoleColor.White;
+            SystemConsole.Write("(");
+            SystemConsole.ForegroundColor = ConsoleColor.DarkYellow;
+            SystemConsole.Write(metaContent.arch);
+            SystemConsole.ForegroundColor = ConsoleColor.White;
+            SystemConsole.Write(") -> ");
+            SystemConsole.ForegroundColor = ConsoleColor.DarkCyan;
+            SystemConsole.WriteLine(destinationObjectFile);
+            SystemConsole.ForegroundColor = originalColor;
+        }
+    }
+
+    private static void Validate(ObjectFileResult objectFileResult)
+    {
+        if (string.IsNullOrWhiteSpace(objectFileResult.UnifiedId))
+        {
+            throw new ArgumentException("A unified id is required for symbol sorting.", nameof(objectFileResult));
+        }
+
+        if (objectFileResult.UnifiedId.Contains("-"))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(objectFileResult),
+                objectFileResult.UnifiedId,
+                "A unified id can't contain dashes required for symbol sorting.");
+        }
+
+        if (objectFileResult.UnifiedId.Length < 16) // TODO is 16 the absolute min?
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(objectFileResult),
+                objectFileResult.UnifiedId.Length,
+                "A valid unified id is require to be at least 16 characters long.");
+        }
+
+        if (string.IsNullOrWhiteSpace(objectFileResult.Path))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(objectFileResult),
+                objectFileResult.Path,
+                "No file path for the object file was provided.");
         }
     }
 }

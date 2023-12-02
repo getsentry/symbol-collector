@@ -1,10 +1,10 @@
-namespace SymbolCollector.Server.Properties
+namespace SymbolCollector.Server.Properties;
+
+internal class SmokeTest
 {
-    internal class SmokeTest
-    {
-        // To allow starting the app in a smoke- test
-        public const string SamplePrivateKey =
-            @"-----BEGIN PRIVATE KEY-----
+    // To allow starting the app in a smoke- test
+    public const string SamplePrivateKey =
+        @"-----BEGIN PRIVATE KEY-----
 MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCaQP6TCVuya/JR
 g4G5WTJYPIE3EZA0mspRm73tn6EEbc4Dzl9jqhUJ3KhP4oOa0AWBOBjvopGQdVhA
 fcdgWl5zm82m0sk13o5UkJdHo0VRHZvtocuSt6yrI8ysAc1TXrCnzmp0cAs13vYS
@@ -32,5 +32,4 @@ n8oGo7Cc/idSQD8XbUVpPbLmychOs2no3Y0XT+xRTAuXjm0GYdmY3Sk3/polGMu5
 NHmi5293eAxJ+9ikSD+bYCaLCXFI2PmgJkm+uS1WucqQOSAKOXS6mfsv2pn9YXKw
 QCMIqX4p7BmO7OD1CFEu6ho=
 -----END PRIVATE KEY-----";
-    }
 }

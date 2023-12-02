@@ -1,13 +1,12 @@
 using System.Text.Json;
 
-namespace SymbolCollector.Server.Tests
+namespace SymbolCollector.Server.Tests;
+
+internal static class ContentExtensions
 {
-    internal static class ContentExtensions
+    public static async ValueTask<JsonElement> ToJsonElement(this HttpContent content)
     {
-        public static async ValueTask<JsonElement> ToJsonElement(this HttpContent content)
-        {
-            var responseStream = await content.ReadAsStreamAsync();
-            return await JsonSerializer.DeserializeAsync<JsonElement>(responseStream);
-        }
+        var responseStream = await content.ReadAsStreamAsync();
+        return await JsonSerializer.DeserializeAsync<JsonElement>(responseStream);
     }
 }
