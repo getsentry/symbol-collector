@@ -1,11 +1,6 @@
-using System;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using Google;
 using Google.Apis.Auth.OAuth2;
 using Google.Cloud.Storage.V1;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Sentry;
 

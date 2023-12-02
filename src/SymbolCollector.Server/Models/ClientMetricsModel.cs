@@ -1,4 +1,3 @@
-using System;
 using SymbolCollector.Core;
 
 namespace SymbolCollector.Server.Models

@@ -1,14 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-using Android.App;
 using Android.Content.PM;
 using Android.OS;
 using Android.Systems;
 using Android.Views;
 using Android.Views.InputMethods;
-using Android.Widget;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Sentry;

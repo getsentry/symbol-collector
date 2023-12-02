@@ -1,8 +1,3 @@
-using System;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace SymbolCollector.Core;
 
 public class CounterStream : Stream

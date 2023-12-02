@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace SymbolCollector.Core
 {
     public class ObjectFileResult

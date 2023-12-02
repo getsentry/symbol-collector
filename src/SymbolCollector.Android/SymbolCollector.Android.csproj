@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFramework>net8.0-android</TargetFramework>
     <OutputType>Exe</OutputType>
+    <ImplicitUsings>enable</ImplicitUsings>
     <!-- Disabled to get this to work with Xamarin.UITest -->
     <AndroidUseAssemblyStore>False</AndroidUseAssemblyStore>
     <!-- Docs say removed on Xam.Android 11.2 https://docs.microsoft.com/en-us/xamarin/android/deploy-test/building-apps/build-properties#androidusesharedruntime-->

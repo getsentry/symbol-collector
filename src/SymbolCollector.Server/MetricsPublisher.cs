@@ -1,4 +1,3 @@
-using System;
 using JustEat.StatsD;
 
 namespace SymbolCollector.Server

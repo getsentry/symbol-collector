@@ -1,10 +1,6 @@
 using Microsoft.Extensions.Logging;
 using SymbolCollector.Core;
-using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Threading;
-using System.Threading.Tasks;
 using Sentry;
 using static System.Console;
 

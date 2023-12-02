@@ -1,4 +1,3 @@
-using System.Threading;
 using SymbolCollector.Core;
 using Xunit;
 

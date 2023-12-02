@@ -1,5 +1,3 @@
-using System;
-
 namespace SymbolCollector.Core
 {
     public interface IClientMetrics

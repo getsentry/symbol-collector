@@ -1,4 +1,3 @@
-using System.IO;
 using Microsoft.Maui.Media;
 using Sentry;
 
