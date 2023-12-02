@@ -20,7 +20,6 @@ using Sentry;
 using Sentry.Extensibility;
 using SymbolCollector.Core;
 using SymbolCollector.Server.Properties;
-using Sentry.AspNetCore;
 
 namespace SymbolCollector.Server
 {

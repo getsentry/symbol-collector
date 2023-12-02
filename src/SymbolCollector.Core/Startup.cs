@@ -9,7 +9,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Options;
 using Polly;
-using Polly.Extensions.Http;
 using Polly.Retry;
 using Sentry;
 

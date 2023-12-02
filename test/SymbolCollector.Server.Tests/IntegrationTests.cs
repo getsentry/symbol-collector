@@ -5,7 +5,6 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Google.Apis.Upload;
 using Google.Cloud.Storage.V1;
 using Xunit;
 using Microsoft.AspNetCore.Mvc.Testing;
