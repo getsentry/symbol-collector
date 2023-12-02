@@ -6,7 +6,7 @@ using Sentry;
 
 namespace SymbolCollector.Core;
 
-public class SymbolClientOptions
+public partial class SymbolClientOptions
 {
     public Uri BaseAddress { get; set; } = null!;
 
@@ -102,9 +102,14 @@ public class SymbolClient : ISymbolClient
         var batchId = Guid.NewGuid();
         _hub.ConfigureScope(s => s.SetTag("batchId", batchId.ToString()));
 
-        var body = new {BatchFriendlyName = friendlyName, BatchType = batchType};
+        var body = new BodyStart
+        {
+            BatchFriendlyName = friendlyName,
+            BatchType = batchType
+        };
 
-        var content = new ByteArrayContent(JsonSerializer.SerializeToUtf8Bytes(body));
+        var bodyBytes = JsonSerializer.SerializeToUtf8Bytes(body, SourceGenerationContext.Default.BodyStart);
+        var content = new ByteArrayContent(bodyBytes);
         content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/json");
 
         var url = $"{_options.BaseAddress.AbsoluteUri}symbol/batch/{batchId}/start";
@@ -125,9 +130,9 @@ public class SymbolClient : ISymbolClient
 
     public async Task<Guid> Close(Guid batchId, CancellationToken token)
     {
-        var body = new {ClientMetrics = _metrics};
+        var body = new BodyStop {ClientMetrics = _metrics};
 
-        var content = new ByteArrayContent(JsonSerializer.SerializeToUtf8Bytes(body));
+        var content = new ByteArrayContent(JsonSerializer.SerializeToUtf8Bytes(body, SourceGenerationContext.Default.BodyStop));
         content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/json");
 
         var url = $"{_options.BaseAddress.AbsoluteUri}symbol/batch/{batchId}/close";

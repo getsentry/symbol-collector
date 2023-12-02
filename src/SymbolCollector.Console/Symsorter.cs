@@ -49,7 +49,10 @@ public class Symsorter
         _options = options.Value;
         _objectFileParser = objectFileParser;
         _logger = logger;
-        _jsonOptions = new JsonSerializerOptions { WriteIndented = _options.WriteIndented };
+        _jsonOptions = new JsonSerializerOptions
+        {
+            WriteIndented = _options.WriteIndented,
+        };
     }
 
     public async Task ProcessBundle(SymsorterParameters parameters, string target, CancellationToken token)
@@ -109,7 +112,7 @@ public class Symsorter
 
         var metaFile = Path.Combine(directoryRoot, "meta");
         await using var meta = File.OpenWrite(metaFile);
-        var metaContent = new
+        var metaContent = new MetaContent
         {
             name = Path.GetFileName(result.Path),
             arch = result.Architecture.ToSymsorterArchitecture(),
@@ -118,7 +121,9 @@ public class Symsorter
 
         var metaFileJsonTask = JsonSerializer.SerializeAsync(
             meta,
-            metaContent, _jsonOptions, token);
+            metaContent,
+            ConsoleSourceGenerationContext.Default.MetaContent,
+            token);
 
         var refsFile = Path.Combine(directoryRefs, parameters.BundleId);
         var refsFileTask = File.WriteAllBytesAsync(refsFile, _refsFileContent, token);
