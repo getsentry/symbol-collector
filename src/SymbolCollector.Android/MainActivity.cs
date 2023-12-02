@@ -140,7 +140,7 @@ namespace SymbolCollector.Android
             ClientMetrics metrics,
             View cancelButton,
             View uploadButton,
-            ISpanTracer span,
+            ISpan span,
             CancellationTokenSource source)
         {
             var container = base.FindViewById(Resource.Id.metrics_container)!;

@@ -8,7 +8,7 @@ namespace SymbolCollector.Core
     public static class SpanExtensions
     {
         public static void TrackSpan(
-            this ISpanTracer parentSpan,
+            this ISpan parentSpan,
             Action callback,
             string operation,
             string? description = null)
@@ -27,7 +27,7 @@ namespace SymbolCollector.Core
             }
         }
 
-        public static void Finish(this ISpanTracer span, Exception e)
+        public static void Finish(this ISpan span, Exception e)
         {
             var status = e switch
             {
