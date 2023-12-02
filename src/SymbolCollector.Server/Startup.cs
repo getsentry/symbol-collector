@@ -143,16 +143,6 @@ public class Startup
             }
         }
 
-        app.Use(async (context, func) =>
-        {
-            context.Response.OnStarting(() =>
-            {
-                context.Response.Headers["TraceIdentifier"] = new[] {context.TraceIdentifier};
-                return Task.CompletedTask;
-            });
-            await func();
-        });
-
         app.UseRouting();
         app.UseWhen(
             c => !c.Request.Path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase),
