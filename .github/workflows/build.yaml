@@ -21,10 +21,14 @@ jobs:
       - uses: microsoft/setup-msbuild@v1.3.1
         if: matrix.os == 'windows-latest'
 
-      - name: "Set up Java: 11"
-        uses: actions/setup-java@v1
+      # Needed for Android SDK setup step
+      - uses: actions/setup-java@v3
         with:
-          java-version: 11
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@07976c6290703d34c16d382cb36445f98bb43b1f # v3.2.0
 
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v3
