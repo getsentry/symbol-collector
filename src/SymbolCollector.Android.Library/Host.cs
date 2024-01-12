@@ -28,19 +28,20 @@ public class Host
             // System.UnauthorizedAccessException: Access to the path '/proc/stat' is denied.
             o.DetectStartupTime = StartupTimeDetectionMode.Fast;
             o.CaptureFailedRequests = true;
-#if ANDROID
+
             // TODO: Should be added OOTB
             o.Release = $"{AppInfo.PackageName}@{AppInfo.VersionString}+{AppInfo.BuildString}";
 
-            o.Android.AttachScreenshot = true;
-            o.Android.ProfilesSampleRate = 0.4;
-            o.Android.EnableAndroidSdkTracing = true; // Will double report transactions but to get profiler data
-            // TODO: Shouldn't need importing Sentry.Android nor be under property Android:
-            // https://github.com/getsentry/sentry-dotnet/issues/2935
-            o.Android.LogCatIntegration = Sentry.Android.LogCatIntegrationType.All;
-#endif
             o.TracesSampleRate = 1.0;
             o.Debug = true;
+#if ANDROID
+            o.Android.LogCatIntegration = Sentry.Android.LogCatIntegrationType.All;
+            // Bindings to the native SDK
+            o.Native.AttachScreenshot = true;
+            o.Native.ProfilesSampleRate = 0.4;
+            o.Native.EnableTracing = true; // Will double report transactions but to get profiler data
+#endif
+
 #if DEBUG
             o.Environment = "development";
 #else
