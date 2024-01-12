@@ -45,7 +45,7 @@ public class Host
 #if DEBUG
             o.Environment = "development";
 #else
-                o.DiagnosticLevel = SentryLevel.Info;
+            o.DiagnosticLevel = SentryLevel.Info;
 #endif
             o.MaxBreadcrumbs = 350;
             o.InitCacheFlushTimeout = TimeSpan.FromSeconds(5);
