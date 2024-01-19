@@ -2,12 +2,12 @@ using JustEat.StatsD;
 
 namespace SymbolCollector.Server;
 
-public class MetricsPublisher : IMetricsPublisher
+public class StatsDMetricsPublisher : IMetricsPublisher
 {
     private readonly IStatsDPublisher _publisher;
     private const string BatchOpenCurrentCount = "batch-current";
 
-    public MetricsPublisher(IStatsDPublisher publisher) => _publisher = publisher;
+    public StatsDMetricsPublisher(IStatsDPublisher publisher) => _publisher = publisher;
 
     public void DebugIdHashConflict() => _publisher.Increment("debug-id-hash-conflict");
 
