@@ -75,9 +75,16 @@ public class Startup
             .AddJsonOptions(options =>
                 options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
 
-        services.AddSingleton<ISymbolServiceMetrics, MetricsPublisher>();
-        services.AddSingleton<ISymbolControllerMetrics, MetricsPublisher>();
-        services.AddSingleton<IMetricsPublisher, MetricsPublisher>();
+        services.AddSingleton<ISymbolServiceMetrics, ProxyMetricsPublisher>();
+        services.AddSingleton<ISymbolControllerMetrics, ProxyMetricsPublisher>();
+        services.AddSingleton<IMetricsPublisher, ProxyMetricsPublisher>();
+
+        services.AddSingleton<StatsDMetricsPublisher>();
+        services.AddSingleton<SentryMetricsPublisher>();
+
+        services.AddSingleton<ProxyMetricsPublisher>(c => new ProxyMetricsPublisher(
+            c.GetRequiredService<StatsDMetricsPublisher>(),
+            c.GetRequiredService<SentryMetricsPublisher>()));
 
         services.AddOptions<StatsDOptions>()
             .Configure<IConfiguration>((o, c) => c.Bind("StatsD", o))
