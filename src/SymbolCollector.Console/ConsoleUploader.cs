@@ -70,7 +70,7 @@ internal class ConsoleUploader
         }
         finally
         {
-            // _metrics.Write(Out);
+            _metrics.Write(Out);
         }
     }
 
