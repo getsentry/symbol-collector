@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.14.0
+
+### Various fixes & improvements
+
+- sentry metrics on server (#177) by @bruno-garcia
+- bump sentry sdk 4.0.0-beta.8 (#176) by @bruno-garcia
+- remove TraceIdentifier (16facc91) by @bruno-garcia
+- file scoped namespace (d98c1fd4) by @bruno-garcia
+- implicit using (2071243d) by @bruno-garcia
+- remove unused using (64018853) by @bruno-garcia
+- bump sentry beta with logcat (#172) by @bruno-garcia
+- fix sentry logo dark mode (eda1ca19) by @bruno-garcia
+
 ## 1.13.0
 
 ### Various fixes & improvements
