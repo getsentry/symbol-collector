@@ -224,7 +224,7 @@ internal class Program
 #if DEBUG
             o.Environment = "development";
 #else
-                o.DiagnosticLevel = SentryLevel.Error;
+            o.DiagnosticLevel = SentryLevel.Error;
 #endif
             o.AttachStacktrace = true;
             o.SendDefaultPii = true;

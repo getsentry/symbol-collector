@@ -92,7 +92,10 @@ public class MainActivity : Activity
                     var uploadTask = uploader.StartUpload(_friendlyName, source.Token);
                     var updateUiTask = StartUiUpdater(source.Token, metrics);
 
-                    await UploadAsync(uploadTask, updateUiTask, metrics, cancelButton, uploadButton, uploadTransaction, source);
+                    using (new Timing("upload-duration"))
+                    {
+                        await UploadAsync(uploadTask, updateUiTask, metrics, cancelButton, uploadButton, uploadTransaction, source);
+                    }
                 }
                 catch (Exception e)
                 {
