@@ -37,7 +37,8 @@ public class Host
 
             o.ExperimentalMetrics = new ExperimentalMetricsOptions
             {
-                EnableCodeLocations = true
+                EnableCodeLocations = true,
+                CaptureSystemDiagnosticsMeters = BuiltInSystemDiagnosticsMeters.All
             };
 
 #if ANDROID
