@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.15.0
+
+### Various fixes & improvements
+
+- sentry 4 beta.9 cli profiling and metrics (#180) by @bruno-garcia
+- enable metrics on server (#179) by @bruno-garcia
+- feat: Client Metrics (#178) by @bitsandfoxes
+
 ## 1.14.0
 
 ### Various fixes & improvements
