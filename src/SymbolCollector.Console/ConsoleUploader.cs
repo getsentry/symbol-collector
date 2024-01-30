@@ -29,13 +29,6 @@ internal class ConsoleUploader
         SentrySdk.ConfigureScope(s =>
         {
             s.Transaction = transaction;
-            s.AddEventProcessor(@event =>
-            {
-                var uploadMetrics = new Dictionary<string, object>();
-                @event.Contexts["metrics"] = uploadMetrics;
-                _metrics.Write(uploadMetrics);
-                return @event;
-            });
         });
 
         if (!IsInputRedirected && KeyAvailable)
