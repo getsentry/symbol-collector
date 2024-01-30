@@ -89,11 +89,11 @@ public class MainActivity : Activity
                     uploadButton.Enabled = false;
                     source = new CancellationTokenSource();
 
-                    using (new Timing("upload-duration"))
+                    using (SentrySdk.Metrics.StartTimer("upload-duration"))
                     {
                         var uploadTask = uploader.StartUpload(_friendlyName, source.Token);
                         var updateUiTask = StartUiUpdater(source.Token, metrics);
-                        
+
                         await UploadAsync(uploadTask, updateUiTask, metrics, cancelButton, uploadButton, uploadTransaction, source);
                     }
                 }
