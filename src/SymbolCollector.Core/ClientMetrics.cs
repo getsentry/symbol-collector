@@ -106,7 +106,7 @@ public class ClientMetrics : IClientMetrics
     public void UploadedBytesAdd(long bytes)
     {
         Interlocked.Add(ref _uploadedBytesCount, bytes);
-        SentrySdk.Metrics.Increment("uploaded_bytes", bytes, MeasurementUnit.Custom("bytes"));
+        SentrySdk.Metrics.Increment("uploaded_bytes", bytes, MeasurementUnit.Information.Byte);
     }
 
     public void FileOrDirectoryUnauthorizedAccess()
