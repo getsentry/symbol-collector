@@ -4,7 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Polly.Extensions.Http;
-using Sentry;
 using Sentry.Profiling;
 using Sentry.Protocol;
 using SymbolCollector.Core;
