@@ -8,7 +8,6 @@ using Microsoft.Extensions.Options;
 using Polly;
 using Polly.Retry;
 
-
 namespace SymbolCollector.Core;
 
 public class Startup
