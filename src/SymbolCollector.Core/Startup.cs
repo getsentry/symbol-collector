@@ -7,7 +7,6 @@ using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Options;
 using Polly;
 using Polly.Retry;
-using Sentry;
 
 namespace SymbolCollector.Core;
 

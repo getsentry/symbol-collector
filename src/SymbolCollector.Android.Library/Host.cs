@@ -4,7 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Maui.ApplicationModel;
 using Polly.Extensions.Http;
-using Sentry;
 using SymbolCollector.Core;
 using Xamarin.Android.Net;
 using Context = Android.Content.Context;
@@ -61,6 +60,7 @@ public class Host
             o.SendDefaultPii = true;
 
             o.AddExceptionFilterForType<OperationCanceledException>();
+            o.AddInAppExclude("Interop.");
             o.SetBeforeBreadcrumb(breadcrumb
                 // This logger adds 3 crumbs for each HTTP request and we already have a Sentry integration for HTTP
                 // Which shows the right category, status code and a link
