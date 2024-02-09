@@ -244,7 +244,6 @@ internal class Program
             };
 
             o.AddExceptionFilterForType<OperationCanceledException>();
-            o.AddInAppExclude("Interop.");
         });
         {
             SentrySdk.ConfigureScope(s =>
