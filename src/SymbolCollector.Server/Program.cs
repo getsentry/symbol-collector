@@ -77,7 +77,6 @@ public class Program
                         CaptureSystemDiagnosticsMeters = BuiltInSystemDiagnosticsMeters.All
                     };
                     o.AddExceptionFilterForType<OperationCanceledException>();
-                    o.AddInAppExclude("Interop.");
                     o.MinimumBreadcrumbLevel = LogLevel.Debug;
                     o.CaptureFailedRequests = true;
                     o.SetBeforeSend(@event =>
