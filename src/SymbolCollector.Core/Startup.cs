@@ -51,8 +51,8 @@ public class Startup
         services.AddSingleton<ClientMetrics>();
 
         services.AddOptions<SymbolClientOptions>()
-            .Configure<IConfiguration>((o, f) => f.Bind("SymbolClient", o))
-            .Validate(o => o.BaseAddress is {}, "BaseAddress is required.");
+            .Configure<IConfiguration>((o, c) =>
+                c.Bind(o));
 
         services.AddOptions<ObjectFileParserOptions>();
 

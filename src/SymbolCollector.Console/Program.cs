@@ -58,6 +58,7 @@ internal class Program
                 s.AddSingleton<Symsorter>();
                 s.AddOptions<SymsorterOptions>()
                     .Configure<IConfiguration>((o, f) => f.Bind("Symsorter", o));
+                // s.AddSingleton<IConfigureOptions<SymsorterOptions>>(c => );
             });
 
             await Run(host, args);

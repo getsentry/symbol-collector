@@ -4,6 +4,8 @@
     <TargetFrameworks>net8.0</TargetFrameworks>
     <UseSentryCLI>false</UseSentryCLI>
     <ImplicitUsings>enable</ImplicitUsings>
+    <IsAotCompatible>true</IsAotCompatible>
+    <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
   </PropertyGroup>
 
   <ItemGroup>
