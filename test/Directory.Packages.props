@@ -1,0 +1,19 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.4.1" />
+    <PackageVersion Include="NSubstitute" Version="4.4.0" />
+    <PackageVersion Include="xunit" Version="2.4.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="2.4.5" />
+    <PackageVersion Include="coverlet.collector" Version="3.2.0" />
+    <!-- UITest is based on NUnit -->
+    <PackageVersion Include="NUnit" Version="3.13.3" />
+    <PackageVersion Include="Xamarin.UITest" Version="3.2.9" />
+<!--    appcenter CLI test command hangs on 4.1.0-->
+<!--    <PackageVersion Include="Xamarin.UITest" Version="4.1.0" />-->
+  </ItemGroup>
+</Project>
