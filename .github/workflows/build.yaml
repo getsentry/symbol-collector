@@ -49,8 +49,15 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: ./build.sh
 
+      # beta test result upload: https://docs.codecov.com/docs/test-result-ingestion-beta
+      - run: pip install codecov-cli
+      - run: codecovcli do-upload --report-type test_results --file test/**/junit-results.xml
+      - run: for f in test/**/TestResults.xml; do codecovcli do-upload --report-type test_results --file ${f}; done;
+
       - name: Publish coverage report
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Archive Artifacts
         uses: actions/upload-artifact@v3

@@ -19,15 +19,15 @@ popd
 find test -name "TestResults" -type d -prune -exec rm -rf '{}' +
 
 pushd test/SymbolCollector.Server.Tests/
-dotnet test -c Release --collect:"XPlat Code Coverage" --settings ../coverletArgs.runsettings
+dotnet test -c Release --logger:junit --collect:"XPlat Code Coverage" --settings ../coverletArgs.runsettings
 popd
 
 pushd test/SymbolCollector.Core.Tests/
-dotnet test -c Release --collect:"XPlat Code Coverage" --settings ../coverletArgs.runsettings
+dotnet test -c Release --logger:junit --collect:"XPlat Code Coverage" --settings ../coverletArgs.runsettings
 popd
 
 pushd test/SymbolCollector.Console.Tests/
-dotnet test -c Release --collect:"XPlat Code Coverage" --settings ../coverletArgs.runsettings
+dotnet test -c Release --logger:junit --collect:"XPlat Code Coverage" --settings ../coverletArgs.runsettings
 popd
 
 pushd test/SymbolCollector.Android.UITests/
@@ -35,7 +35,7 @@ dotnet build -c Release
 # Don't run emulator tests on CI
 if [ -z ${CI+x} ]; then
     pushd bin/Release/net48
-    mono ../../../tools/nunit/net35/nunit3-console.exe SymbolCollector.Android.UITests.dll
+    mono ../../../tools/nunit/net35/nunit3-console.exe SymbolCollector.Android.UITests.dll --result=junit-results.xml;transform=nunit3-junit.xslt
     popd
 fi
 popd

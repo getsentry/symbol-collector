@@ -2,7 +2,6 @@ using System.Net;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NSubstitute;
-using Sentry;
 using Xunit;
 
 namespace SymbolCollector.Core.Tests;
