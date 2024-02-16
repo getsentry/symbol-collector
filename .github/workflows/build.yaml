@@ -53,7 +53,10 @@ jobs:
         run: ./build.sh
 
       # - run: codecovcli do-upload --report-type test_results --file test/**/junit-results.xml
-      - run: for f in test/**/TestResults.xml; do codecovcli do-upload --report-type test_results --file ${f}; done;
+      - run: |
+          codecovcli do-upload --report-type test_results --file test/SymbolCollector.Console.Tests/TestResults/TestResults.xml
+          codecovcli do-upload --report-type test_results --file test/SymbolCollector.Core.Tests/TestResults/TestResults.xml
+          codecovcli do-upload --report-type test_results --file test/SymbolCollector.Server.Tests/TestResults/TestResults.xml
         if: always()
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
