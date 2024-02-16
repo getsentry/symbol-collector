@@ -3,7 +3,6 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
     <!-- This should be picked up from Directory.Build.props but after adding a dependency to-->
     <!-- System.CommandLine.DragonFruit it will fail to `dotnet run` without it set here:-->
     <NoWarn Condition="'$(Configuration)' == 'Debug'">$(NoWarn);CS1591</NoWarn>
@@ -14,9 +13,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Sentry.Profiling" Version="$(SentryVersion)" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
-    <PackageReference Include="System.CommandLine.DragonFruit" Version="0.3.0-alpha.21216.1" />
+    <PackageReference Include="Sentry.Profiling" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="System.CommandLine.DragonFruit" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\SymbolCollector.Core\SymbolCollector.Core.csproj" />
   </ItemGroup>
 

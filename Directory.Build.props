@@ -5,8 +5,8 @@
     <Company>Sentry.io</Company>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
-    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
-    <Deterministic>True</Deterministic>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Deterministic>true</Deterministic>
     <EmbedAllSources>true</EmbedAllSources>
     <!-- CS1998: When developing, let me comment out an `await Something()` and add some synchronous code please -->
     <!-- CS8321: Unused local function -->
@@ -15,7 +15,6 @@
     <NoWarn Condition="'$(Configuration)' == 'Debug'">$(NoWarn);CS1998;CS8321;CS1591;CS0162</NoWarn>
     <!-- For symbol uploading -->
     <SentryOrg>sentry</SentryOrg>
-    <SentryVersion>4.0.0-beta.9</SentryVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
@@ -28,8 +27,4 @@
     See: https://docs.sentry.io/platforms/dotnet/configuration/msbuild/#SentryUploadSources
     -->
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
-  </ItemGroup>
 </Project>
