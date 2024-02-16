@@ -51,7 +51,7 @@ jobs:
 
       # beta test result upload: https://docs.codecov.com/docs/test-result-ingestion-beta
       - run: pip install codecov-cli
-      - run: codecovcli do-upload --report-type test_results --file test/**/junit-results.xml
+      # - run: codecovcli do-upload --report-type test_results --file test/**/junit-results.xml
       - run: for f in test/**/TestResults.xml; do codecovcli do-upload --report-type test_results --file ${f}; done;
 
       - name: Publish coverage report
