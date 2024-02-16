@@ -53,12 +53,15 @@ jobs:
         run: ./build.sh
 
       - name: Test Core
+        if: always()
         run: dotnet test test/SymbolCollector.Core.Tests/ -c Release --no-build --logger:junit --collect:"XPlat Code Coverage" --settings test/coverletArgs.runsettings
 
       - name: Test Server
+        if: always()
         run: dotnet test test/SymbolCollector.Server.Tests/ -c Release --no-build --logger:junit --collect:"XPlat Code Coverage" --settings test/coverletArgs.runsettings
 
       - name: Test Console
+        if: always()
         run: dotnet test test/SymbolCollector.Console.Tests/ -c Release --no-build --logger:junit --collect:"XPlat Code Coverage" --settings test/coverletArgs.runsettings
 
       - name: upload test results
