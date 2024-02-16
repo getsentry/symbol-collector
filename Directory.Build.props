@@ -15,8 +15,6 @@
     <NoWarn Condition="'$(Configuration)' == 'Debug'">$(NoWarn);CS1998;CS8321;CS1591;CS0162</NoWarn>
     <!-- For symbol uploading -->
     <SentryOrg>sentry</SentryOrg>
-    <SentryVersion>4.1.1</SentryVersion>
-    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">

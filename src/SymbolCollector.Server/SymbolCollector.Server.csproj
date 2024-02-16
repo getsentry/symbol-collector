@@ -7,7 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SymbolCollector.Core\SymbolCollector.Core.csproj" />
     <PackageReference Include="Sentry.AspNetCore" />
     <PackageReference Include="Sentry.Serilog" />
     <PackageReference Include="Google.Cloud.Storage.V1" />
@@ -17,6 +16,10 @@
     <PackageReference Include="Serilog.Enrichers.Environment" />
     <PackageReference Include="Serilog.Formatting.Compact" />
     <PackageReference Include="JustEat.StatsD" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SymbolCollector.Core\SymbolCollector.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>
