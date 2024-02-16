@@ -52,14 +52,14 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: ./build.sh
 
-      # - run: codecovcli do-upload --report-type test_results --file test/**/junit-results.xml
-      - run: |
-          codecovcli do-upload --report-type test_results --file test/SymbolCollector.Console.Tests/TestResults/TestResults.xml
-          codecovcli do-upload --report-type test_results --file test/SymbolCollector.Core.Tests/TestResults/TestResults.xml
-          codecovcli do-upload --report-type test_results --file test/SymbolCollector.Server.Tests/TestResults/TestResults.xml
+      - name: upload test results
         if: always()
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+        run: |
+          codecovcli do-upload --report-type test_results --file test/SymbolCollector.Console.Tests/TestResults/TestResults.xml
+          codecovcli do-upload --report-type test_results --file test/SymbolCollector.Core.Tests/TestResults/TestResults.xml
+          codecovcli do-upload --report-type test_results --file test/SymbolCollector.Server.Tests/TestResults/TestResults.xml
 
       - name: Publish coverage report
         uses: codecov/codecov-action@v4
