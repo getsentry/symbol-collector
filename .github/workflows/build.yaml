@@ -18,7 +18,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - uses: microsoft/setup-msbuild@v1.3.1
+      - uses: microsoft/setup-msbuild@v2
         if: matrix.os == 'windows-latest'
 
       # Needed for Android SDK setup step
@@ -30,10 +30,10 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@07976c6290703d34c16d382cb36445f98bb43b1f # v3.2.0
 
-      - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: '8.0.x'
+      # - name: Setup .NET SDK
+      #   uses: actions/setup-dotnet@v3
+      #   with:
+      #     dotnet-version: '8.0.x'
 
       - name: Install Android workload (macOS)
         if: matrix.os == 'macos-latest'

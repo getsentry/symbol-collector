@@ -2,22 +2,21 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
     <!-- For symbol uploading -->
     <SentryProject>android-symbol-collector-server</SentryProject>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\SymbolCollector.Core\SymbolCollector.Core.csproj" />
-    <PackageReference Include="Sentry.AspNetCore" Version="$(SentryVersion)" />
-    <PackageReference Include="Sentry.Serilog" Version="$(SentryVersion)" />
-    <PackageReference Include="Google.Cloud.Storage.V1" Version="4.2.0" />
-    <PackageReference Include="Serilog.AspNetCore" Version="6.1.0" />
-    <PackageReference Include="Serilog.Settings.Configuration" Version="3.4.0" />
-    <PackageReference Include="Serilog.Sinks.Console" Version="4.1.0" />
-    <PackageReference Include="Serilog.Enrichers.Environment" Version="2.2.0" />
-    <PackageReference Include="Serilog.Formatting.Compact" Version="1.1.0" />
-    <PackageReference Include="JustEat.StatsD" Version="4.2.0" />
+    <PackageReference Include="Sentry.AspNetCore" />
+    <PackageReference Include="Sentry.Serilog" />
+    <PackageReference Include="Google.Cloud.Storage.V1" />
+    <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="Serilog.Settings.Configuration" />
+    <PackageReference Include="Serilog.Sinks.Console" />
+    <PackageReference Include="Serilog.Enrichers.Environment" />
+    <PackageReference Include="Serilog.Formatting.Compact" />
+    <PackageReference Include="JustEat.StatsD" />
   </ItemGroup>
 
   <ItemGroup>

@@ -4,6 +4,7 @@
     <TargetFrameworks>net45;netstandard2.0</TargetFrameworks>
     <UseSentryCLI>false</UseSentryCLI>
     <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>sgKey.snk</AssemblyOriginatorKeyFile>
     <InformationalVersion>2.2.1</InformationalVersion>
