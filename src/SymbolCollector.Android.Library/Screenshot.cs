@@ -3,7 +3,7 @@ using Sentry;
 
 namespace SymbolCollector.Android.Library;
 
-internal class ScreenshotAttachment : Attachment
+internal class ScreenshotAttachment : SentryAttachment
 {
     public ScreenshotAttachment()
         : this(
