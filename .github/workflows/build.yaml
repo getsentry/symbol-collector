@@ -6,6 +6,10 @@ on:
       - release/*
 
   pull_request:
+
+env:
+  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+
 jobs:
   build:
     name: ${{ matrix.os }}
@@ -40,15 +44,11 @@ jobs:
 
       - name: Run batch build script
         if: matrix.os == 'windows-latest'
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         shell: cmd
         run: build.cmd
 
       - name: Run bash build script
         if: matrix.os != 'windows-latest'
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: ./build.sh
 
       - name: Publish coverage report
