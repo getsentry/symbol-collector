@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <SentryVersion>4.1.1</SentryVersion>
+    <SentryVersion>4.2.1</SentryVersion>
   </PropertyGroup>
 
   <ItemGroup>
