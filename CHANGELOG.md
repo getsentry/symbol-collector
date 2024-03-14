@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.16.0
+
+### Various fixes & improvements
+
+- bump dotnet 4.2.1 (#186) by @bruno-garcia
+- version packages centrally (#184) by @bruno-garcia
+- InAppExclude `Interop` (#183) by @bitsandfoxes
+- use built-in unit (#181) by @bitsandfoxes
+
 ## 1.15.0
 
 ### Various fixes & improvements
