@@ -6,6 +6,10 @@ on:
       - release/*
 
   pull_request:
+
+env:
+  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+
 jobs:
   build:
     name: ${{ matrix.os }}
@@ -14,9 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, ubuntu-latest]
-        # https://github.com/getsentry/symbol-collector/pull/186#issuecomment-1997414311
-        # os: [windows-latest, macos-latest, ubuntu-latest]
+        os: [windows-latest, macos-latest, ubuntu-latest]
 
     steps:
       - uses: actions/checkout@v2
@@ -47,8 +49,6 @@ jobs:
 
       - name: Run bash build script
         if: matrix.os != 'windows-latest'
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: ./build.sh
 
       - name: Publish coverage report
