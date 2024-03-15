@@ -6,6 +6,9 @@ WORKDIR /app
 # Copy the whole solution into the first stage
 COPY ./ ./server/
 
+ARG SENTRY_AUTH_TOKEN
+ENV SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN
+
 RUN ls -lah
 RUN ls -lah ./server/
 
