@@ -12,7 +12,7 @@ steps:
     '-t', 'us.gcr.io/$PROJECT_ID/symbol-collector:latest',
     '-t', 'us.gcr.io/$PROJECT_ID/symbol-collector:$COMMIT_SHA',
     '--cache-from', 'us.gcr.io/$PROJECT_ID/symbol-collector:latest',
-    '--build-arg', '$_SYMBOL_COLLECTOR_SENTRY_AUTH_TOKEN',
+    '--build-arg', 'SENTRY_AUTH_TOKEN=$_SYMBOL_COLLECTOR_SENTRY_AUTH_TOKEN',
     '--target', 'runtime',
     '.'
   ]
