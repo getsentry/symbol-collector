@@ -14,6 +14,9 @@ steps:
     '--cache-from', 'us.gcr.io/$PROJECT_ID/symbol-collector:latest',
     '--target', 'runtime',
     '.'
+  ],
+  env: [
+    'SENTRY_AUTH_TOKEN=${SYMBOL_COLLECTOR_SENTRY_AUTH_TOKEN}',
   ]
 
 # Only tag "latest" when on main
