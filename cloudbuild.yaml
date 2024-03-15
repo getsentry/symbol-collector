@@ -7,6 +7,8 @@ steps:
   ]
 
 - name: 'gcr.io/cloud-builders/docker'
+  env:
+    - 'SENTRY_AUTH_TOKEN=${_SYMBOL_COLLECTOR_SENTRY_AUTH_TOKEN}'
   args: [
     'build',
     '-t', 'us.gcr.io/$PROJECT_ID/symbol-collector:latest',
@@ -14,9 +16,6 @@ steps:
     '--cache-from', 'us.gcr.io/$PROJECT_ID/symbol-collector:latest',
     '--target', 'runtime',
     '.'
-  ],
-  env: [
-    'SENTRY_AUTH_TOKEN=${_SYMBOL_COLLECTOR_SENTRY_AUTH_TOKEN}',
   ]
 
 # Only tag "latest" when on main
