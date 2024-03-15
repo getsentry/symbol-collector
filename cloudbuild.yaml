@@ -16,7 +16,7 @@ steps:
     '.'
   ],
   env: [
-    'SENTRY_AUTH_TOKEN=${SYMBOL_COLLECTOR_SENTRY_AUTH_TOKEN}',
+    '_SENTRY_AUTH_TOKEN=${SYMBOL_COLLECTOR_SENTRY_AUTH_TOKEN}',
   ]
 
 # Only tag "latest" when on main
