@@ -7,14 +7,12 @@ steps:
   ]
 
 - name: 'gcr.io/cloud-builders/docker'
-  env:
-    - 'SENTRY_AUTH_TOKEN=${_SYMBOL_COLLECTOR_SENTRY_AUTH_TOKEN}'
   args: [
     'build',
     '-t', 'us.gcr.io/$PROJECT_ID/symbol-collector:latest',
     '-t', 'us.gcr.io/$PROJECT_ID/symbol-collector:$COMMIT_SHA',
     '--cache-from', 'us.gcr.io/$PROJECT_ID/symbol-collector:latest',
-    '--build-arg', '$SENTRY_AUTH_TOKEN',
+    '--build-arg', '$_SYMBOL_COLLECTOR_SENTRY_AUTH_TOKEN',
     '--target', 'runtime',
     '.'
   ]
