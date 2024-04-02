@@ -125,7 +125,7 @@ public class Symsorter
 
         if (!parameters.DryRun)
         {
-            await using var objectFileOutput = File.OpenWrite(destinationObjectFile);
+            await using var objectFileOutput = new FileStream(destinationObjectFile, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
             await using var objectFileInput = File.OpenRead(result.Path!);
 
             // TODO: zlib content
