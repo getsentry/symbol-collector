@@ -108,7 +108,7 @@ public class Symsorter
             result, destinationObjectFile);
 
         var metaFile = Path.Combine(directoryRoot, "meta");
-        await using var meta = File.OpenWrite(metaFile);
+        await using var meta = new FileStream(metaFile, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
         var metaContent = new
         {
             name = Path.GetFileName(result.Path),
