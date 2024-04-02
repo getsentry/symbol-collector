@@ -140,39 +140,57 @@ internal class InMemorySymbolService : ISymbolService, IDisposable
         var batch = await GetOpenBatch(batchId, token);
 
         // TODO: Until parser supports Stream instead of file path, we write the file to TMP before we can validate it.
-        var destination = Path.Combine(
-            _processingPath,
-            batch.BatchType.ToSymsorterPrefix(),
-            batchId.ToString(),
-            // To avoid files with conflicting name from the same batch
-            _random.Next().ToString(CultureInfo.InvariantCulture),
-            fileName);
+var destination = Path.Combine(
+    _processingPath,
+    batch.BatchType.ToSymsorterPrefix(),
+    batchId.ToString(),
+    // To avoid files with conflicting name from the same batch
+    _random.Next().ToString(CultureInfo.InvariantCulture),
+    fileName);
 
-        var tempDestination = Path.Combine(Path.GetTempPath(), destination);
-        var path = Path.GetDirectoryName(tempDestination);
-        if (string.IsNullOrEmpty(path))
-        {
-            throw new InvalidOperationException("Couldn't get the path from tempDestination: " + tempDestination);
-        }
+var tempDestination = Path.Combine(Path.GetTempPath(), destination);
+var path = Path.GetDirectoryName(tempDestination);
+if (string.IsNullOrEmpty(path))
+{
+    throw new InvalidOperationException("Couldn't get the path from tempDestination: " + tempDestination);
+}
 
-        Directory.CreateDirectory(path);
-        await using (var file = File.OpenWrite(tempDestination))
+Directory.CreateDirectory(path);
+await using (var file = new FileStream(tempDestination, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read))
+{
+    var retryCount = 0;
+    var maxRetries = 3;
+    var delay = TimeSpan.FromSeconds(1);
+
+    while (true)
+    {
+        try
         {
             await stream.CopyToAsync(file, token);
             _logger.LogDebug("Temp file {bytes} copied {file}.", file.Length, Path.GetFileName(tempDestination));
+            break;
         }
-
-        return await StoreIsolated(batchId, batch, fileName, tempDestination, destination, token);
+        catch (IOException ex) when (retryCount < maxRetries)
+        {
+            _logger.LogWarning(ex, "IOException encountered. Retrying in {delay} seconds.", delay.TotalSeconds);
+            await Task.Delay(delay, token);
+            delay *= 2; // Exponential backoff
+            retryCount++;
+        }
     }
+}
 
-    private async Task<StoreResult> StoreIsolated(
-        Guid batchId,
-        SymbolUploadBatch batch,
-        string fileName,
-        string tempDestination,
-        string destination,
-        CancellationToken token)
-    {
+return await StoreIsolated(batchId, batch, fileName, tempDestination, destination, token);
+}
+
+private async Task<StoreResult> StoreIsolated(
+    Guid batchId,
+    SymbolUploadBatch batch,
+    string fileName,
+    string tempDestination,
+    string destination,
+    CancellationToken token)
+{
         string? path;
         if (!_parser.TryParse(tempDestination, out var fileResult) || fileResult is null)
         {
