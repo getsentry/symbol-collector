@@ -325,7 +325,17 @@ public class SymbolsController : Controller
                 && contentType == "gzip")
             {
                 await using var gzipStream = new GZipStream(section.Body, CompressionMode.Decompress);
-                await gzipStream.CopyToAsync(outputStream);
+                try
+                {
+                    await gzipStream.CopyToAsync(outputStream);
+                }
+                catch (InvalidDataException ex)
+                {
+                    _logger.LogError(ex, "Unsupported compression method encountered.");
+                    modelState.AddModelError("File", "Unsupported compression method.");
+                    code = HttpStatusCode.UnsupportedMediaType;
+                    return (null, null, code);
+                }
             }
             else
             {
