@@ -43,9 +43,10 @@ public class Host
 #if ANDROID
             o.Android.LogCatIntegration = Sentry.Android.LogCatIntegrationType.All;
             // Bindings to the native SDK
+            o.Native.EnableNetworkEventBreadcrumbs = true;
             o.Native.AttachScreenshot = true;
-            o.Native.ProfilesSampleRate = 0.4;
             o.Native.EnableTracing = true; // Will double report transactions but to get profiler data
+            o.Native.ProfilesSampleRate = 0.4;
 #endif
 
 #if DEBUG
