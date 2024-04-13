@@ -151,9 +151,6 @@ public class Startup
         }
 
         app.UseRouting();
-        app.UseWhen(
-            c => !c.Request.Path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase),
-            c => c.UseSentryTracing());
 
         app.UseEndpoints(endpoints =>
         {
