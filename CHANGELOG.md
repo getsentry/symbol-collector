@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.17.0
+
+### Various fixes & improvements
+
+- use tracing isn't needed (104b7860) by @bruno-garcia
+- bump sentry sdk (23b7b202) by @bruno-garcia
+- profiling aspnetcore (#193) by @bruno-garcia
+- key to env var (3b7de15a) by @bruno-garcia
+- substitution to arg (1c061272) by @bruno-garcia
+- pass build arg (b30b0bbb) by @bruno-garcia
+- pass arg to env (ba43e892) by @bruno-garcia
+- yaml sucks (f5bb8aad) by @bruno-garcia
+- fix prefix of env var (410eb400) by @bruno-garcia
+- add SENTRY_AUTH_TOKEN to cloudbuild (#189) by @bruno-garcia
+- Added Sentry auth token on CI Windows (#188) by @bitsandfoxes
+
 ## 1.16.0
 
 ### Various fixes & improvements
