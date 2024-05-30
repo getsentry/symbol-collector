@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.18.0
+
+### Various fixes & improvements
+
+- bump (#196) by @bitsandfoxes
+
 ## 1.17.0
 
 ### Various fixes & improvements
