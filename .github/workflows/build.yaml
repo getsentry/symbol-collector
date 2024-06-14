@@ -42,6 +42,9 @@ jobs:
         if: matrix.os != 'macos-latest'
         run: dotnet workload install maui-android
 
+      # beta test result upload: https://docs.codecov.com/docs/test-result-ingestion-beta
+      - run: pip install codecov-cli
+
       - name: Run batch build script
         if: matrix.os == 'windows-latest'
         shell: cmd
@@ -51,8 +54,32 @@ jobs:
         if: matrix.os != 'windows-latest'
         run: ./build.sh
 
+      - name: Test Core
+        if: always()
+        run: dotnet test test/SymbolCollector.Core.Tests/ -c Release --logger:junit --collect:"XPlat Code Coverage" --settings test/coverletArgs.runsettings
+
+      - name: Test Server
+        if: always()
+        run: dotnet test test/SymbolCollector.Server.Tests/ -c Release --logger:junit --collect:"XPlat Code Coverage" --settings test/coverletArgs.runsettings
+
+      - name: Test Console
+        if: always()
+        run: dotnet test test/SymbolCollector.Console.Tests/ -c Release --logger:junit --collect:"XPlat Code Coverage" --settings test/coverletArgs.runsettings
+
+      - name: upload test results
+        if: always()
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+          # TODO: UI Tests in CI: codecovcli do-upload --report-type test_results --file test/**/junit-results.xml
+        run: |
+          codecovcli do-upload --report-type test_results --file test/SymbolCollector.Core.Tests/TestResults/TestResults.xml
+          codecovcli do-upload --report-type test_results --file test/SymbolCollector.Server.Tests/TestResults/TestResults.xml
+          codecovcli do-upload --report-type test_results --file test/SymbolCollector.Console.Tests/TestResults/TestResults.xml
+
       - name: Publish coverage report
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Archive Artifacts
         uses: actions/upload-artifact@v3
