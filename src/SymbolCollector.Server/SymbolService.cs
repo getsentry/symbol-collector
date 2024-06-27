@@ -155,11 +155,18 @@ internal class InMemorySymbolService : ISymbolService, IDisposable
             throw new InvalidOperationException("Couldn't get the path from tempDestination: " + tempDestination);
         }
 
-        Directory.CreateDirectory(path);
-        await using (var file = File.OpenWrite(tempDestination))
+        try
         {
-            await stream.CopyToAsync(file, token);
-            _logger.LogDebug("Temp file {bytes} copied {file}.", file.Length, Path.GetFileName(tempDestination));
+            Directory.CreateDirectory(path);
+            await using (var file = File.OpenWrite(tempDestination))
+            {
+                await stream.CopyToAsync(file, token);
+                _logger.LogDebug("Temp file {bytes} copied {file}.", file.Length, Path.GetFileName(tempDestination));
+            }
+        }
+        catch (System.IO.IOException ioEx)
+        {
+            _logger.LogInformation(ioEx, "Caught IOException during file write operation, likely due to concurrent access. Continuing normally.");
         }
 
         return await StoreIsolated(batchId, batch, fileName, tempDestination, destination, token);
