@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.19.0
+
+### Various fixes & improvements
+
+- disable metrics on server (#197) by @bruno-garcia
+
 ## 1.18.0
 
 ### Various fixes & improvements
