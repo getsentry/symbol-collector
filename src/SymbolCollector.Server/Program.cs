@@ -77,11 +77,11 @@ public class Program
                         // Block up to 2 seconds to get profiling started before running the app
                         TimeSpan.FromSeconds(2)));
 
-                    o.ExperimentalMetrics = new ExperimentalMetricsOptions
-                    {
-                        EnableCodeLocations = true,
-                        CaptureSystemDiagnosticsMeters = BuiltInSystemDiagnosticsMeters.All
-                    };
+                    // o.ExperimentalMetrics = new ExperimentalMetricsOptions
+                    // {
+                    //     EnableCodeLocations = true,
+                    //     CaptureSystemDiagnosticsMeters = BuiltInSystemDiagnosticsMeters.All
+                    // };
                     o.AddExceptionFilterForType<OperationCanceledException>();
                     o.MinimumBreadcrumbLevel = LogLevel.Debug;
                     o.CaptureFailedRequests = true;
