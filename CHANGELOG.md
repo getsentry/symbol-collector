@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Various fixes & improvements
+
+- disable profiling (#198) by @bitsandfoxes
+
 ## 1.19.0
 
 ### Various fixes & improvements
