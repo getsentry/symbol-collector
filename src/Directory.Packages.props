@@ -6,7 +6,6 @@
 
   <ItemGroup>
     <PackageVersion Include="Sentry.Extensions.Logging" Version="$(SentryVersion)" />
-    <PackageVersion Include="Sentry.Profiling" Version="$(SentryVersion)" />
     <PackageVersion Include="Sentry.AspNetCore" Version="$(SentryVersion)" />
     <PackageVersion Include="Sentry.Serilog" Version="$(SentryVersion)" />
     <PackageVersion Include="Google.Cloud.Storage.V1" Version="4.2.0" />
