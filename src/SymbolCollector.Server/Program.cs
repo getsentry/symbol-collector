@@ -71,11 +71,11 @@ public class Program
                 {
                     o.Dsn = "https://2262a4fa0a6d409c848908ec90c3c5b4@sentry.io/1886021";
 
-                    // o.ExperimentalMetrics = new ExperimentalMetricsOptions
-                    // {
-                    //     EnableCodeLocations = true,
-                    //     CaptureSystemDiagnosticsMeters = BuiltInSystemDiagnosticsMeters.All
-                    // };
+                    o.ExperimentalMetrics = new ExperimentalMetricsOptions
+                    {
+                        EnableCodeLocations = true,
+                        CaptureSystemDiagnosticsMeters = BuiltInSystemDiagnosticsMeters.All
+                    };
                     o.AddExceptionFilterForType<OperationCanceledException>();
                     o.MinimumBreadcrumbLevel = LogLevel.Debug;
                     o.CaptureFailedRequests = true;
