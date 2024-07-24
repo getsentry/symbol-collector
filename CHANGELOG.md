@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.21.0
+
+### Various fixes & improvements
+
+- feat: Enable Metrics on server (#199) by @bitsandfoxes
+
 ## 1.20.0
 
 ### Various fixes & improvements
