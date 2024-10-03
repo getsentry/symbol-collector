@@ -34,12 +34,6 @@ public class Host
             o.TracesSampleRate = 1.0;
             o.Debug = true;
 
-            o.ExperimentalMetrics = new ExperimentalMetricsOptions
-            {
-                EnableCodeLocations = true,
-                CaptureSystemDiagnosticsMeters = BuiltInSystemDiagnosticsMeters.All
-            };
-
 #if ANDROID
             o.Android.LogCatIntegration = Sentry.Android.LogCatIntegrationType.All;
             // Bindings to the native SDK
