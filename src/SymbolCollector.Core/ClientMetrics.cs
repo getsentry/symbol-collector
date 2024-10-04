@@ -46,85 +46,71 @@ public class ClientMetrics : IClientMetrics
     public void FileProcessed()
     {
         Interlocked.Increment(ref _filesProcessedCount);
-        SentrySdk.Metrics.Increment("files_processed");
     }
 
     public void MachOFileFound()
     {
         Interlocked.Increment(ref _machOFileFoundCount);
-        SentrySdk.Metrics.Increment("debug_image_found", tags: new Dictionary<string, string> { {"type", "mach-o"} } );
     }
 
     public void ElfFileFound()
     {
         Interlocked.Increment(ref _elfFileFoundCount);
-        SentrySdk.Metrics.Increment("debug_image_found", tags: new Dictionary<string, string> { {"type", "elf" } } );
     }
 
     public void FatMachOFileFound()
     {
         Interlocked.Increment(ref _fatMachOFileFoundCount);
-        SentrySdk.Metrics.Increment("debug_image_found", tags: new Dictionary<string, string> { {"type", "fat-mach-o" } } );
     }
 
     public void FailedToUpload()
     {
         Interlocked.Increment(ref _failedToUploadCount);
-        SentrySdk.Metrics.Increment("upload", tags: new Dictionary<string, string> { {"type", "failed" } } );
     }
 
     public void FailedToParse()
     {
         Interlocked.Increment(ref _failedToParse);
-        SentrySdk.Metrics.Increment("parse_failed");
     }
 
     public void SuccessfulUpload()
     {
         Interlocked.Increment(ref _successfullyUploadCount);
-        SentrySdk.Metrics.Increment("upload", tags: new Dictionary<string, string> { {"type", "successful" } } );
     }
 
     public void AlreadyExisted()
     {
         Interlocked.Increment(ref _alreadyExistedCount);
-        SentrySdk.Metrics.Increment("already_existed");
     }
 
     public void JobsInFlightRemove(int tasksCount)
     {
         Interlocked.Add(ref _jobsInFlightCount, -tasksCount);
-        SentrySdk.Metrics.Increment("jobs_in_flight", -tasksCount);
     }
 
     public void JobsInFlightAdd(int tasksCount)
     {
         Interlocked.Add(ref _jobsInFlightCount, tasksCount);
-        SentrySdk.Metrics.Increment("jobs_in_flight", tasksCount);
     }
 
     public void UploadedBytesAdd(long bytes)
     {
         Interlocked.Add(ref _uploadedBytesCount, bytes);
-        SentrySdk.Metrics.Increment("uploaded_bytes", bytes, MeasurementUnit.Information.Byte);
     }
 
     public void FileOrDirectoryUnauthorizedAccess()
     {
         Interlocked.Increment(ref _fileOrDirectoryUnauthorizedAccessCount);
-        SentrySdk.Metrics.Increment("file_or_directory_unauthorized");
     }
 
     public void DirectoryDoesNotExist()
     {
         Interlocked.Increment(ref _directoryDoesNotExistCount);
-        SentrySdk.Metrics.Increment("directory_does_not_exist");
     }
 
     public void FileDoesNotExist()
     {
         Interlocked.Increment(ref _fileDoesNotExistCount);
-        SentrySdk.Metrics.Increment("file_does_not_exist");
     }
 
     public TimeSpan RanFor => DateTimeOffset.Now - StartedTime;

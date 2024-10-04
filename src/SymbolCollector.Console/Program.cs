@@ -232,12 +232,6 @@ internal class Program
             o.TracesSampleRate = 1.0;
             o.ProfilesSampleRate = 0.0;
 
-            o.ExperimentalMetrics = new ExperimentalMetricsOptions
-            {
-                EnableCodeLocations = true,
-                CaptureSystemDiagnosticsMeters = BuiltInSystemDiagnosticsMeters.All
-            };
-
             o.AddExceptionFilterForType<OperationCanceledException>();
         });
         {
