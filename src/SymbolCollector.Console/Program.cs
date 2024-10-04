@@ -5,6 +5,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Polly.Extensions.Http;
 using Sentry.Protocol;
+using Sentry.Profiling;
 using SymbolCollector.Core;
 using static System.Console;
 
