@@ -230,7 +230,11 @@ internal class Program
             o.AutoSessionTracking = true;
 
             o.TracesSampleRate = 1.0;
-            o.ProfilesSampleRate = 0.0;
+            o.ProfilesSampleRate = 1.0;
+
+            o.AddIntegration(new ProfilingIntegration(
+                // Block up to 2 seconds to get profiling started before running the app
+                TimeSpan.FromSeconds(2)));
 
             o.AddExceptionFilterForType<OperationCanceledException>();
         });
