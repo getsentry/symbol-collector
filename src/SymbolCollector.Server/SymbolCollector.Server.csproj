@@ -9,6 +9,7 @@
   <ItemGroup>
     <PackageReference Include="Sentry.AspNetCore" />
     <PackageReference Include="Sentry.Serilog" />
+    <PackageReference Include="Sentry.Profiling" />
     <PackageReference Include="Google.Cloud.Storage.V1" />
     <PackageReference Include="Serilog.AspNetCore" />
     <PackageReference Include="Serilog.Settings.Configuration" />

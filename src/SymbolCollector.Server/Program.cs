@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Serilog;
+using Sentry;
+using Sentry.Profiling;
 using SystemEnvironment = System.Environment;
 
 namespace SymbolCollector.Server;
@@ -70,6 +72,10 @@ public class Program
                 webBuilder.UseSentry(o =>
                 {
                     o.Dsn = "https://2262a4fa0a6d409c848908ec90c3c5b4@sentry.io/1886021";
+
+                    o.AddIntegration(new ProfilingIntegration(
+                        // Block up to 2 seconds to get profiling started before running the app
+                        TimeSpan.FromSeconds(2)));
 
                     o.AddExceptionFilterForType<OperationCanceledException>();
                     o.MinimumBreadcrumbLevel = LogLevel.Debug;
