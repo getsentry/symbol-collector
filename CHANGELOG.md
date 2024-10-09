@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.22.0
+
+### Various fixes & improvements
+
+- enable sentry profiling (#202) by @bruno-garcia
+- remove metrics (#201) by @bruno-garcia
+- all-repos: update actions/upload-artifact to v4 (#200) by @joshuarli
+
 ## 1.21.0
 
 ### Various fixes & improvements
