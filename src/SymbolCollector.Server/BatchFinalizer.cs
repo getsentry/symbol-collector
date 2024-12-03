@@ -35,7 +35,6 @@ public interface IBatchFinalizer
 public class SymsorterBatchFinalizer : IBatchFinalizer
 {
     private readonly SymbolServiceOptions _options;
-    private readonly IMetricsPublisher _metrics;
     private readonly ILogger<SymsorterBatchFinalizer> _logger;
     private readonly ISymbolGcsWriter _gcsWriter;
     private readonly BundleIdGenerator _bundleIdGenerator;
@@ -43,7 +42,6 @@ public class SymsorterBatchFinalizer : IBatchFinalizer
     private readonly string _symsorterOutputPath;
 
     public SymsorterBatchFinalizer(
-        IMetricsPublisher metrics,
         IOptions<SymbolServiceOptions> options,
         ISymbolGcsWriter gcsWriter,
         BundleIdGenerator bundleIdGenerator,
@@ -51,7 +49,6 @@ public class SymsorterBatchFinalizer : IBatchFinalizer
         ILogger<SymsorterBatchFinalizer> logger)
     {
         _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
-        _metrics = metrics;
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _gcsWriter = gcsWriter ?? throw new ArgumentNullException(nameof(gcsWriter));
         _bundleIdGenerator = bundleIdGenerator;
@@ -89,7 +86,6 @@ public class SymsorterBatchFinalizer : IBatchFinalizer
                 ? _hub.StartTransaction("CloseBatch", "batch.close", traceHeader)
                 : _hub.StartTransaction("CloseBatch", "batch.close");
 
-        var handle = _metrics.BeginGcsBatchUpload();
         _ = Task.Run(async () =>
             {
                 // get logger factory and create a logger for symsorter
@@ -189,7 +185,6 @@ public class SymsorterBatchFinalizer : IBatchFinalizer
                     {
                         _logger.LogError(e, "Failed attempting to delete symsorter directory.");
                     }
-                    handle.Dispose();
                 }
 
             }, gcsUploadCancellation)
