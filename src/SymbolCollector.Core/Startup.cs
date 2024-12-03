@@ -77,35 +77,3 @@ public class Startup
         throw new InvalidOperationException($"Configuration file 'appsettings.json' was not found at {fileName}.");
     }
 }
-
-public static class PollyExtensions
-{
-    public static AsyncRetryPolicy<TResult> SentryPolicy<TResult>(this PolicyBuilder<TResult> policyBuilder, IServiceProvider services) =>
-        policyBuilder.WaitAndRetryAsync(new[]
-            {
-                TimeSpan.FromSeconds(1),
-                TimeSpan.FromSeconds(3),
-                TimeSpan.FromSeconds(6),
-#if RELEASE
-                    // TODO: Until a proper re-entrancy is built in the clients, add a last hope retry
-                    TimeSpan.FromSeconds(12)
-#endif
-            },
-            (result, span, retryAttempt, context) =>
-            {
-                var sentry = services.GetRequiredService<IHub>();
-
-                var data = new Dictionary<string, string> {
-                    {"PollyRetryCount", retryAttempt.ToString()},
-                    {"ThreadId", System.Threading.Thread.CurrentThread.ManagedThreadId.ToString()}
-                };
-                if (result.Exception is Exception e)
-                {
-                    data.Add("exception", e.ToString());
-                }
-
-                sentry.AddBreadcrumb(
-                    $"Waiting {span} following attempt {retryAttempt} failed HTTP request.",
-                    data: data);
-            });
-}

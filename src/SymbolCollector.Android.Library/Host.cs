@@ -3,7 +3,6 @@ using Java.Net;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Maui.ApplicationModel;
-using Polly.Extensions.Http;
 using SymbolCollector.Core;
 using Xamarin.Android.Net;
 using Context = Android.Content.Context;
@@ -92,16 +91,16 @@ public class Host
                 "Failure in SSL library, usually a protocol error",
             };
             services.AddTransient<AndroidMessageHandler>();
-            services.AddHttpClient<ISymbolClient, SymbolClient>()
-                .ConfigurePrimaryHttpMessageHandler<AndroidMessageHandler>()
-                .AddPolicyHandler((s, r) =>
-                    HttpPolicyExtensions.HandleTransientHttpError()
-                        // Could be deleted if merged: https://github.com/App-vNext/Polly.Extensions.Http/pull/33
-                        // On Android web get WebException instead of HttpResponseMessage which HandleTransientHttpError covers
-                        .Or<IOException>(e => messages.Any(m => e.Message.Contains(m)))
-                        .Or<WebException>(e => messages.Any(m => e.Message.Contains(m)))
-                        .Or<SocketTimeoutException>()
-                        .SentryPolicy(s));
+            services.AddHttpClient<ISymbolClient, SymbolClient>();
+                // .ConfigurePrimaryHttpMessageHandler<AndroidMessageHandler>()
+                // .AddPolicyHandler((s, r) =>
+                //     HttpPolicyExtensions.HandleTransientHttpError()
+                //         // Could be deleted if merged: https://github.com/App-vNext/Polly.Extensions.Http/pull/33
+                //         // On Android web get WebException instead of HttpResponseMessage which HandleTransientHttpError covers
+                //         .Or<IOException>(e => messages.Any(m => e.Message.Contains(m)))
+                //         .Or<WebException>(e => messages.Any(m => e.Message.Contains(m)))
+                //         .Or<SocketTimeoutException>()
+                //         .SentryPolicy(s));
 
             services.AddSingleton<AndroidUploader>();
             services.AddOptions().Configure<SymbolClientOptions>(o =>

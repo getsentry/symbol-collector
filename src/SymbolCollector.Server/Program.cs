@@ -80,6 +80,10 @@ public class Program
                     o.AddExceptionFilterForType<OperationCanceledException>();
                     o.MinimumBreadcrumbLevel = LogLevel.Debug;
                     o.CaptureFailedRequests = true;
+
+                    // https://github.com/getsentry/symbol-collector/issues/205
+                    // o.CaptureBlockingCalls = true;
+
                     o.SetBeforeSend(@event =>
                     {
                         // Stop raising warning that endpoint was overriden

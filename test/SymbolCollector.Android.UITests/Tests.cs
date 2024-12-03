@@ -16,7 +16,7 @@ public class Tests
     {
         var setup = ConfigureApp.Android;
         // local testing
-        const string apkPath = "../../../../../src/SymbolCollector.Android/bin/Release/net8.0-android/io.sentry.symbolcollector.android-Signed.apk";
+        const string apkPath = "../../../../../src/SymbolCollector.Android/bin/Release/net9.0-android/io.sentry.symbolcollector.android-Signed.apk";
         if (File.Exists(apkPath))
         {
             setup = setup.ApkFile(apkPath);
