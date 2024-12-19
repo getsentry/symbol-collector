@@ -18,7 +18,6 @@ public class SymbolsController : Controller
     private readonly long _fileSizeLimit;
     private readonly IHub _hub;
     private readonly ISymbolService _symbolService;
-    private readonly ISymbolControllerMetrics _metrics;
     private readonly ILogger<SymbolsController> _logger;
     private readonly char[] _invalidChars;
 
@@ -28,12 +27,10 @@ public class SymbolsController : Controller
         IHub hub,
         IConfiguration config,
         ISymbolService symbolService,
-        ISymbolControllerMetrics metrics,
         ILogger<SymbolsController> logger)
     {
         _hub = hub;
         _symbolService = symbolService;
-        _metrics = metrics;
         _logger = logger;
         _fileSizeLimit = config.GetValue<long>("FileSizeLimitBytes");
         // Don't allow file names with paths encoded.
@@ -53,7 +50,6 @@ public class SymbolsController : Controller
         [FromBody] BatchStartRequestModel model,
         CancellationToken token)
     {
-        using var _ = _metrics.BeginOpenBatch();
         if (!ModelState.IsValid)
         {
             return BadRequest(ModelState);
@@ -79,7 +75,6 @@ public class SymbolsController : Controller
     public async Task<IActionResult> CloseBatch([FromRoute] Guid batchId, [FromBody] BatchEndRequestModel model,
         CancellationToken token)
     {
-        using var _ = _metrics.BeginCloseBatch();
         await ValidateBatch(batchId, ModelState, token);
 
         if (!ModelState.IsValid)
@@ -103,7 +98,6 @@ public class SymbolsController : Controller
         [FromRoute] string? hash,
         CancellationToken token)
     {
-        using var _ = _metrics.BeginSymbolMissingCheck();
         await ValidateBatch(batchId, ModelState, token);
 
         if (!ModelState.IsValid)
@@ -121,7 +115,6 @@ public class SymbolsController : Controller
         {
             _logger.LogDebug("{batchId} looked for {unifiedId} and {hash} which is a missing symbol.",
                 batchId, unifiedId, hash);
-            _metrics.SymbolCheckMissing();
             return Ok();
         }
 
@@ -149,7 +142,6 @@ public class SymbolsController : Controller
             await _symbolService.Relate(batchId, symbol, token);
         }
 
-        _metrics.SymbolCheckExists();
         return Conflict();
     }
 
@@ -173,7 +165,6 @@ public class SymbolsController : Controller
         [FromRoute] Guid batchId,
         CancellationToken token)
     {
-        using var _ = _metrics.BeginUploadSymbol();
         await ValidateBatch(batchId, ModelState, token);
 
         if (!ModelState.IsValid)
@@ -231,21 +222,7 @@ public class SymbolsController : Controller
                     data,
                     token);
 
-                switch (fileStoreResult)
-                {
-                    case StoreResult.Invalid:
-                        _metrics.FileInvalid();
-                        break;
-                    case StoreResult.Created:
-                        _metrics.FileStored(data.Length);
-                        break;
-                    case StoreResult.AlreadyExisted:
-                        _metrics.FileKnown();
-                        break;
-                }
-
                 results.Add((fileName, fileStoreResult));
-
 
                 await data.DisposeAsync();
             }

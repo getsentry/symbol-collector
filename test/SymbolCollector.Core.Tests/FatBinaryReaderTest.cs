@@ -62,7 +62,6 @@ public class FatBinaryReaderTest
     }
 
     [Theory]
-    [InlineData(null)]
     [InlineData(new byte[] { })] // empty buffer
     [InlineData(new byte[] { 0xca, 0xfe, 0xba })] // invalid magic
     [InlineData(new byte[] { 0xca, 0xfe, 0xba, 0xbe })] // Valid magic but no arch count

@@ -73,7 +73,6 @@ public class SymbolServiceOptions
 
 internal class InMemorySymbolService : ISymbolService, IDisposable
 {
-    private readonly ISymbolServiceMetrics _metrics;
     private readonly ObjectFileParser _parser;
     private readonly IBatchFinalizer _batchFinalizer;
     private readonly SymbolServiceOptions _options;
@@ -87,13 +86,11 @@ internal class InMemorySymbolService : ISymbolService, IDisposable
     private readonly string _conflictPath;
 
     public InMemorySymbolService(
-        ISymbolServiceMetrics metrics,
         ObjectFileParser parser,
         IBatchFinalizer batchFinalizer,
         IOptions<SymbolServiceOptions> options,
         ILogger<InMemorySymbolService> logger)
     {
-        _metrics = metrics;
         _parser = parser;
         _batchFinalizer = batchFinalizer;
         _options = options.Value;
@@ -189,8 +186,6 @@ internal class InMemorySymbolService : ISymbolService, IDisposable
                 && symbol.Hash is { }
                 && string.CompareOrdinal(fileResult.Hash, symbol.Hash) != 0)
             {
-                _metrics.DebugIdHashConflict();
-
                 var conflictDestination = Path.Combine(
                     _conflictPath,
                     fileResult.UnifiedId);
