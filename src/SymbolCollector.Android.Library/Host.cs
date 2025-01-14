@@ -2,7 +2,10 @@ using System.Net;
 using Java.Net;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Maui.ApplicationModel;
+using Polly;
+using Sentry;
 using SymbolCollector.Core;
 using Xamarin.Android.Net;
 using Context = Android.Content.Context;
@@ -76,31 +79,41 @@ public class Host
         var userAgent = Java.Lang.JavaSystem.GetProperty("http.agent") ?? "Android/" + typeof(Host).Assembly.GetName().Version;
         var host = Startup.Init(services =>
         {
-            var messages = new []
-            {
-                // Unable to resolve host "symbol-collector.services.sentry.io": No address associated with hostname
-                "No address associated with hostname",
-                // Read error: ssl=0x79ea0d6988: SSL_ERROR_WANT_READ occurred. You should never see this.
-                "You should never see this",
-                // handshake error: ssl=0x78f5b01b48: I/O error during system call, Try again
-                "Try again",
-                // failed to connect to symbol-collector.services.sentry.io/35.188.18.176 (port 443) from /10.22.91.71 (port 43860) after 86400000ms: isConnected failed: ETIMEDOUT (Connection timed out)
-                "Connection timed out",
-                // Read error: ssl=0x77f787e308: Failure in SSL library, usually a protocol error
-                // error:100003fc:SSL routines:OPENSSL_internal:SSLV3_ALERT_BAD_RECORD_MAC (external/boringssl/src/ssl/tls_record.cc:592 0x77f854d8c8:0x00000001)
-                "Failure in SSL library, usually a protocol error",
-            };
             services.AddTransient<AndroidMessageHandler>();
-            services.AddHttpClient<ISymbolClient, SymbolClient>();
-                // .ConfigurePrimaryHttpMessageHandler<AndroidMessageHandler>()
-                // .AddPolicyHandler((s, r) =>
-                //     HttpPolicyExtensions.HandleTransientHttpError()
-                //         // Could be deleted if merged: https://github.com/App-vNext/Polly.Extensions.Http/pull/33
-                //         // On Android web get WebException instead of HttpResponseMessage which HandleTransientHttpError covers
-                //         .Or<IOException>(e => messages.Any(m => e.Message.Contains(m)))
-                //         .Or<WebException>(e => messages.Any(m => e.Message.Contains(m)))
-                //         .Or<SocketTimeoutException>()
-                //         .SentryPolicy(s));
+            services.AddHttpClient<ISymbolClient, SymbolClient>()
+                .ConfigurePrimaryHttpMessageHandler<AndroidMessageHandler>()
+                .AddStandardResilienceHandler(configure =>
+                {
+                    var messages = new[]
+                    {
+                        // Unable to resolve host "symbol-collector.services.sentry.io": No address associated with hostname
+                        "No address associated with hostname",
+                        // Read error: ssl=0x79ea0d6988: SSL_ERROR_WANT_READ occurred. You should never see this.
+                        "You should never see this",
+                        // handshake error: ssl=0x78f5b01b48: I/O error during system call, Try again
+                        "Try again",
+                        // failed to connect to symbol-collector.services.sentry.io/35.188.18.176 (port 443) from /10.22.91.71 (port 43860) after 86400000ms: isConnected failed: ETIMEDOUT (Connection timed out)
+                        "Connection timed out",
+                        // Read error: ssl=0x77f787e308: Failure in SSL library, usually a protocol error
+                        // error:100003fc:SSL routines:OPENSSL_internal:SSLV3_ALERT_BAD_RECORD_MAC (external/boringssl/src/ssl/tls_record.cc:592 0x77f854d8c8:0x00000001)
+                        "Failure in SSL library, usually a protocol error",
+                    };
+
+                    configure.Retry = new HttpRetryStrategyOptions()
+                    {
+                        MaxRetryAttempts = 3,
+                        ShouldHandle = arg => arg.Outcome.Exception switch
+                        {
+                            IOException ioException when messages.Any(m => ioException.Message.Contains(m)) =>
+                                PredicateResult.True(),
+                            // On Android web get WebException instead of HttpResponseMessage
+                            WebException webException when (messages.Any(m => webException.Message.Contains(m))) =>
+                                PredicateResult.True(),
+                            SocketTimeoutException => PredicateResult.True(),
+                            _ => PredicateResult.False()
+                        }
+                    };
+                });
 
             services.AddSingleton<AndroidUploader>();
             services.AddOptions().Configure<SymbolClientOptions>(o =>
