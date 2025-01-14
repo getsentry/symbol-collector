@@ -11,8 +11,8 @@ public static class ResilienceHelpers
         {
             BackoffType = DelayBackoffType.Exponential,
 #if RELEASE
-                            // TODO: Until a proper re-entrancy is built in the clients, let it retry for a while
-                            MaxRetryAttempts = 6,
+            // TODO: Until a proper re-entrancy is built in the clients, let it retry for a while
+            MaxRetryAttempts = 6,
 #else
             MaxRetryAttempts = 3,
 #endif
