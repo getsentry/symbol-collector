@@ -1,4 +1,4 @@
-export apk=src/SymbolCollector.Android/bin/Release/net8.0-android/io.sentry.symbolcollector.android-Signed.apk
+export apk=src/SymbolCollector.Android/bin/Release/net9.0-android/io.sentry.symbolcollector.android-Signed.apk
 export package=io.sentry.symbolcollector.android
 rm $apk
 dotnet build src/SymbolCollector.Android -c Release

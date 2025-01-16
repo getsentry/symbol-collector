@@ -75,17 +75,6 @@ public class Startup
             .AddJsonOptions(options =>
                 options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
 
-        services.AddSingleton<ISymbolServiceMetrics, ProxyMetricsPublisher>();
-        services.AddSingleton<ISymbolControllerMetrics, ProxyMetricsPublisher>();
-        services.AddSingleton<IMetricsPublisher, ProxyMetricsPublisher>();
-
-        services.AddSingleton<StatsDMetricsPublisher>();
-        services.AddSingleton<SentryMetricsPublisher>();
-
-        services.AddSingleton<ProxyMetricsPublisher>(c => new ProxyMetricsPublisher(
-            c.GetRequiredService<StatsDMetricsPublisher>(),
-            c.GetRequiredService<SentryMetricsPublisher>()));
-
         services.AddOptions<StatsDOptions>()
             .Configure<IConfiguration>((o, c) => c.Bind("StatsD", o))
             .Validate(o => !string.IsNullOrWhiteSpace(o.Host), "StatD host is required.");
@@ -200,22 +189,18 @@ public class Startup
     private class SymbolServiceEventProcessor : ISentryEventProcessor
     {
         private readonly IWebHostEnvironment _environment;
-        private readonly IMetricsPublisher _metrics;
         private readonly SymbolServiceOptions _options;
         private readonly string _cores = Environment.ProcessorCount.ToString();
         public SymbolServiceEventProcessor(
             IWebHostEnvironment environment,
-            IMetricsPublisher metrics,
             IOptions<SymbolServiceOptions> options)
         {
             _environment = environment;
-            _metrics = metrics;
             _options = options.Value;
         }
 
         public SentryEvent? Process(SentryEvent @event)
         {
-            _metrics.SentryEventProcessed();
             @event.SetTag("server-endpoint", _options.BaseAddress ?? "?");
             @event.Contexts["SymbolServiceOptions"] = _options;
 

@@ -1,9 +1,8 @@
 <Project>
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <SentryVersion>4.12.0</SentryVersion>
+    <SentryVersion>5.0.1</SentryVersion>
   </PropertyGroup>
-
   <ItemGroup>
     <PackageVersion Include="Sentry.Extensions.Logging" Version="$(SentryVersion)" />
     <PackageVersion Include="Sentry.AspNetCore" Version="$(SentryVersion)" />
@@ -16,13 +15,12 @@
     <PackageVersion Include="Serilog.Enrichers.Environment" Version="2.2.0" />
     <PackageVersion Include="Serilog.Formatting.Compact" Version="1.1.0" />
     <PackageVersion Include="JustEat.StatsD" Version="4.2.0" />
-    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.Http.Polly" Version="8.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.Logging" Version="8.0.0" />
-    <PackageVersion Include="Microsoft.Maui.Essentials" Version="8.0.3" />
-    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
-    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="8.0.0" />
-    <PackageVersion Include="System.Text.Json" Version="8.0.4" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="9.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="9.0.0" />
+    <PackageVersion Include="Microsoft.Maui.Essentials" Version="9.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
+    <PackageVersion Include="System.Text.Json" Version="9.0.0" />
     <PackageVersion Include="System.CommandLine.DragonFruit" Version="0.3.0-alpha.21216.1" />
     <PackageVersion Include="UnoptimizedAssemblyDetector" Version="0.1.1" />
   </ItemGroup>

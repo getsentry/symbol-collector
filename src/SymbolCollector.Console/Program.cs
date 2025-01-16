@@ -2,8 +2,9 @@ using System.Text.Json.Serialization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Logging;
-using Polly.Extensions.Http;
+using Polly;
 using Sentry.Protocol;
 using Sentry.Profiling;
 using SymbolCollector.Core;
@@ -48,9 +49,8 @@ internal class Program
                 }
 
                 s.AddHttpClient<ISymbolClient, SymbolClient>()
-                    .AddPolicyHandler((s, r) =>
-                        HttpPolicyExtensions.HandleTransientHttpError()
-                            .SentryPolicy(s));
+                    .AddResilienceHandler("retry", builder =>
+                        builder.AddRetry(ResilienceHelpers.SentryRetryStrategy()));
 
                 s.AddSingleton(Metrics);
                 s.AddSingleton<ConsoleUploader>();
