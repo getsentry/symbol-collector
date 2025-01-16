@@ -115,17 +115,4 @@ public class ClientTests
         var sut = _fixture.GetSut();
         Assert.Equal(10, sut.ParallelTasks);
     }
-
-    private class TestMessageHandler : HttpMessageHandler
-    {
-        private readonly Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> _callback;
-
-        public TestMessageHandler(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> callback)
-            => _callback = callback;
-
-        protected override Task<HttpResponseMessage> SendAsync(
-            HttpRequestMessage request,
-            CancellationToken cancellationToken)
-            => _callback(request, cancellationToken);
-    }
 }
