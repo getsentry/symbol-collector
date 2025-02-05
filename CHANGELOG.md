@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.23.0
+
+### Various fixes & improvements
+
+- Enable Automatic Heap Dumps on the Server (#211) by @jamescrosswell
+- Use .NET 9 - Sentry SDK 5.0.1 (#203) by @bruno-garcia
+
 ## 1.22.0
 
 ### Various fixes & improvements
