@@ -21,6 +21,7 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS runtime
 WORKDIR /app
 COPY --from=builder /app/server/out ./
 
+ENV PATH="$PATH:/root/.dotnet/tools"
 # Install dotnet-gcdump globally
 RUN dotnet tool install --global dotnet-gcdump
 
