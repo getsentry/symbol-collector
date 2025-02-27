@@ -103,7 +103,7 @@ public class Program
                     });
 
 #pragma warning disable SENTRY0001
-                    o.EnableHeapDumps(50, Debouncer.PerDay(3, TimeSpan.FromHours(3)));
+                    o.EnableHeapDumps(20, Debouncer.PerDay(3, TimeSpan.FromHours(3)));
 #pragma warning restore SENTRY0001
                 });
                 webBuilder.UseStartup<Startup>();
