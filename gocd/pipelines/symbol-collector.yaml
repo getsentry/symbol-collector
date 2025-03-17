@@ -41,7 +41,7 @@ pipelines:
                                     /devinfra/scripts/checks/googlecloud/checkcloudbuild.py \
                                     ${GO_REVISION_SYMBOL_COLLECTOR_REPO} \
                                     sentryio \
-                                    "us.gcr.io/sentryio/symbol-collector"
+                                    "us-central1-docker.pkg.dev/sentryio/symbol-collector/image"
             - deploy:
                   fetch_materials: true
                   jobs:
@@ -53,5 +53,5 @@ pipelines:
                                     /devinfra/scripts/k8s/k8stunnel \
                                     && /devinfra/scripts/k8s/k8s-deploy.py \
                                     --label-selector="service=symbol-collector" \
-                                    --image="us.gcr.io/sentryio/symbol-collector:${GO_REVISION_SYMBOL_COLLECTOR_REPO}" \
+                                    --image="us-central1-docker.pkg.dev/sentryio/symbol-collector/image:${GO_REVISION_SYMBOL_COLLECTOR_REPO}" \
                                     --container-name="symbol-collector"
