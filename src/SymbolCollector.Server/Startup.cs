@@ -63,9 +63,15 @@ public class Startup
                     jsonCredentials.PrivateKey = SmokeTest.SamplePrivateKey;
                 }
 
-                var json = JsonConvert.SerializeObject(jsonCredentials, Formatting.Indented);
-                var credentials = GoogleCredential.FromJson(json);
-                g.Credential = credentials;
+                if (string.IsNullOrWhiteSpace(jsonCredentials?.PrivateKey))
+                {
+                    g.Credential = GoogleCredential.GetApplicationDefault();
+                }
+                else
+                {
+                    var json = JsonConvert.SerializeObject(jsonCredentials, Formatting.Indented);
+                    g.Credential = GoogleCredential.FromJson(json);
+                }
             })
             .Validate(o => !string.IsNullOrWhiteSpace(o.BucketName), "The GCS Bucket name is required.");
 
