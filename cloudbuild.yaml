@@ -3,15 +3,15 @@ steps:
   entrypoint: 'bash'
   args: [
     '-c',
-    'docker pull us.gcr.io/$PROJECT_ID/symbol-collector:latest || true',
+    'docker pull us-central1-docker.pkg.dev/$PROJECT_ID/symbol-collector/image:latest || true',
   ]
 
 - name: 'gcr.io/cloud-builders/docker'
   args: [
     'build',
-    '-t', 'us.gcr.io/$PROJECT_ID/symbol-collector:latest',
-    '-t', 'us.gcr.io/$PROJECT_ID/symbol-collector:$COMMIT_SHA',
-    '--cache-from', 'us.gcr.io/$PROJECT_ID/symbol-collector:latest',
+    '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/symbol-collector/image:latest',
+    '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/symbol-collector/image:$COMMIT_SHA',
+    '--cache-from', 'us-central1-docker.pkg.dev/$PROJECT_ID/symbol-collector/image:latest',
     '--build-arg', 'SENTRY_AUTH_TOKEN=$_SYMBOL_COLLECTOR_SENTRY_AUTH_TOKEN',
     '--target', 'runtime',
     '.'
@@ -22,10 +22,10 @@ steps:
   entrypoint: 'bash'
   args: [
     '-c',
-    '[[ "$BRANCH_NAME" == "main" ]] && docker push us.gcr.io/$PROJECT_ID/symbol-collector:latest || true',
+    '[[ "$BRANCH_NAME" == "main" ]] && docker push us-central1-docker.pkg.dev/$PROJECT_ID/symbol-collector/image:latest || true',
   ]
 
-- name: "us.gcr.io/$PROJECT_ID/symbol-collector:$COMMIT_SHA"
+- name: "us-central1-docker.pkg.dev/$PROJECT_ID/symbol-collector/image:$COMMIT_SHA"
   # We have to do this because Cloud Build by default sets it to /workspace where it mounts the checked out code
   dir: "/app"
   args: ['--smoke-test']
@@ -39,5 +39,5 @@ steps:
   id: "smoke test"
 
 images: [
-  'us.gcr.io/$PROJECT_ID/symbol-collector:$COMMIT_SHA',
+  'us-central1-docker.pkg.dev/$PROJECT_ID/symbol-collector/image:$COMMIT_SHA',
 ]
