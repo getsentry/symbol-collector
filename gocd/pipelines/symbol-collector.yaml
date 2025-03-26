@@ -38,10 +38,12 @@ pipelines:
                                     macos-latest \
                                     windows-latest
                               - script: |
-                                    /devinfra/scripts/checks/googlecloud/checkcloudbuild.py \
-                                    ${GO_REVISION_SYMBOL_COLLECTOR_REPO} \
+                                    /devinfra/scripts/checks/googlecloud/check_cloudbuild.py \
                                     sentryio \
-                                    "us-central1-docker.pkg.dev/sentryio/symbol-collector/image"
+                                    symbol-collector \
+                                    symbol-collector-push-to-any-branch \
+                                    ${GO_REVISION_SYMBOL_COLLECTOR_REPO} \
+                                    main
             - deploy:
                   fetch_materials: true
                   jobs:
