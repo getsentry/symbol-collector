@@ -34,8 +34,8 @@ public class MainActivity : Activity
         _host = Host.Init(this, "https://656e2e78d37d4511a4ea2cb3602e7a65@sentry.io/5953206");
         _serviceProvider = _host.Services;
 
-        var tran = SentrySdk.StartTransaction("AppStart", "activity.load");
-        _startupTransaction = tran;
+        // It's set in Host.Init above
+        SentrySdk.ConfigureScope(s => _startupTransaction = s.Transaction!);
         AddSentryContext();
 
         var span = _startupTransaction.StartChild("OnCreate");
@@ -73,7 +73,9 @@ public class MainActivity : Activity
 
             async void OnUploadButtonOnClick(object? sender, EventArgs args)
             {
-                var uploadTransaction = SentrySdk.StartTransaction("BatchUpload", "batch.upload");
+                // The scope tracks the overall app transaction while this is only batch uploading
+                var uploadTransaction = SentrySdk.StartTransaction("BatchUpload", "batch.upload", _startupTransaction.GetTraceHeader());
+
                 try
                 {
                     SentrySdk.AddBreadcrumb("OnUploadButtonOnClick", category: "ui.event");
@@ -90,7 +92,7 @@ public class MainActivity : Activity
                     // var uploadTask = uploader.StartUpload(_friendlyName, source.Token);
                     var uploadTask = Task.Run(async () =>
                     {
-                        await Task.Delay(10000);
+                        await Task.Delay(1000);
                         throw new Exception("test failed upload");
                     });
                     var updateUiTask = StartUiUpdater(source.Token, metrics);
@@ -166,7 +168,7 @@ public class MainActivity : Activity
             }
             else if (uploadTask.IsFaulted)
             {
-                ShowError(uploadTask.Exception);
+                await ShowError(uploadTask.Exception);
                 span.Finish(SpanStatus.InternalError);
             }
             else
@@ -178,7 +180,7 @@ public class MainActivity : Activity
         }
         catch (Exception e)
         {
-            ShowError(e);
+            await ShowError(e);
             span.Finish(e);
         }
         finally
@@ -300,9 +302,9 @@ public class MainActivity : Activity
             // It's 'production' by default otherwise
             s.Environment = "development";
 #elif RELEASE
-                s.SetTag("build-type", "release");
+            s.SetTag("build-type", "release");
 #else
-                s.SetTag("build-type", "other");
+            s.SetTag("build-type", "other");
 #endif
         });
     }

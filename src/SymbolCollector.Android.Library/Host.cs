@@ -71,6 +71,8 @@ public class Host
             o.Dsn = dsn;
             o.SendDefaultPii = true;
 
+            o.IsGlobalModeEnabled = true;
+
             o.AddExceptionFilterForType<OperationCanceledException>();
             o.AddInAppExclude("Interop.");
             o.SetBeforeBreadcrumb(breadcrumb
@@ -89,7 +91,6 @@ public class Host
             s.AddAttachment(new ScreenshotAttachment());
         });
 
-        // TODO: Where is this span?
         var iocSpan = tran.StartChild("container.init", "Initializing the IoC container");
         var userAgent = Java.Lang.JavaSystem.GetProperty("http.agent") ?? "Android/" + typeof(Host).Assembly.GetName().Version;
         var host = Startup.Init(services =>
