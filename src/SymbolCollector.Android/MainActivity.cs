@@ -25,13 +25,13 @@ public class MainActivity : Activity
 
     protected override void OnCreate(Bundle? savedInstanceState)
     {
-        // Can't take a screenshot otherwise: System.NullReferenceException: The current Activity can not be detected. Ensure that you have called Init in your Activity or Application class.
         Microsoft.Maui.ApplicationModel.ActivityStateManager.Default.Init(this, savedInstanceState);
 
 #pragma warning disable 618
         _friendlyName = $"Android:{Build.Manufacturer}-{Build.CpuAbi}-{Build.Model}";
 #pragma warning restore 618
-        _host = Host.Init(this, "https://656e2e78d37d4511a4ea2cb3602e7a65@sentry.io/5953206");
+        _host = Host.Init(this, "https://656e2e78d37d4511a4ea2cb3602e7a65@sentry.io/5953206",
+            SentryTraceHeader.Parse(Intent?.GetStringExtra("sentryTrace") ?? ""));
         _serviceProvider = _host.Services;
 
         // It's set in Host.Init above

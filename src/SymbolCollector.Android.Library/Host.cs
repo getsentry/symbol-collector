@@ -36,7 +36,7 @@ public class Host
     /// <summary>
     /// Initializes <see cref="IHost"/> with Sentry monitoring.
     /// </summary>
-    public static IHost Init(Context context, string dsn)
+    public static IHost Init(Context context, string dsn, SentryTraceHeader? sentryTrace = null)
     {
         SentrySdk.Init(o =>
         {
@@ -83,7 +83,10 @@ public class Host
                     ? null
                     : breadcrumb);
         });
-        var tran = SentrySdk.StartTransaction("AppStart", "activity.load");
+        var tran = sentryTrace is null
+            ? SentrySdk.StartTransaction("AppStart", "activity.load")
+            // TODO: Can we get away with 'new ()'?
+            : SentrySdk.StartTransaction("AppStart", "activity.load", sentryTrace);
 
         SentrySdk.ConfigureScope(s =>
         {
