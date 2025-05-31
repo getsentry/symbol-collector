@@ -5,10 +5,8 @@ using Android.Views;
 using Android.Views.InputMethods;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Sentry;
 using SymbolCollector.Core;
 using SymbolCollector.Android.Library;
-using AlertDialog = Android.App.AlertDialog;
 using OperationCanceledException = System.OperationCanceledException;
 using Host = SymbolCollector.Android.Library.Host;
 
@@ -250,22 +248,21 @@ public class MainActivity : Activity
         // TODO: SentryId.Empty should operator overload ==
         var message = SentryId.Empty.ToString() == lastEvent.ToString()
             ? e?.ToString() ?? "Something didn't quite work."
-            : $"Sentry id {lastEvent}:\n{e}";
+            : $"Sentry id: \n{lastEvent}\n\n{e}";
 
-        var builder = new AlertDialog.Builder(this)
-            .SetTitle("Error")
-            ?.SetMessage(message)
-            ?.SetNeutralButton("Ironic eh?", (o, eventArgs) =>
-            {
-                uploadButton.Enabled = true;
-                cancelButton.Enabled = false;
-            });
-        if (builder is null)
+        var dialogView = FindViewById<LinearLayout>(Resource.Id.dialog_error);
+        var dialogBody = FindViewById<TextView>(Resource.Id.dialog_body);
+        dialogBody!.Text = message;
+        var dismissBtn = FindViewById<Button>(Resource.Id.dialog_dismiss);
+
+        dialogView!.Visibility = ViewStates.Visible;
+
+        dismissBtn!.Click += (s, e) =>
         {
-            throw new InvalidOperationException("Couldn't get a dialog built.");
-        }
-
-        builder.Show();
+            uploadButton.Enabled = true;
+            cancelButton.Enabled = false;
+            dialogView.Visibility = ViewStates.Gone;
+        };
     }
 
     private void AddSentryContext()

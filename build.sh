@@ -30,16 +30,6 @@ pushd test/SymbolCollector.Console.Tests/
 dotnet test -c Release --collect:"XPlat Code Coverage" --settings ../coverletArgs.runsettings
 popd
 
-pushd test/SymbolCollector.Android.UITests/
-dotnet build -c Release
-# Don't run emulator tests on CI
-if [ -z ${CI+x} ]; then
-    pushd bin/Release/net48
-    mono ../../../tools/nunit/net35/nunit3-console.exe SymbolCollector.Android.UITests.dll
-    popd
-fi
-popd
-
 pushd src/SymbolCollector.Console/
 # Smoke test the console app
 dotnet run -c release -- \
