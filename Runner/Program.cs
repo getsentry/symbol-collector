@@ -2,9 +2,11 @@
 using OpenQA.Selenium;
 using OpenQA.Selenium.Appium;
 using OpenQA.Selenium.Appium.Android;
+using OpenQA.Selenium.Appium.Enums;
 
 Console.WriteLine("Starting runner...");
 const string appName = "SymbolCollector.apk";
+const string appPackage = "io.sentry.symbolcollector.android";
 
 SentrySdk.Init(options =>
 {
@@ -22,6 +24,8 @@ try
     var accessKey = Environment.GetEnvironmentVariable("SAUCE_ACCESS_KEY") ?? throw new Exception("SAUCE_ACCESS_KEY is not set");
 
     await UploadApkAsync(username, accessKey);
+    // TOOD: use specific build id
+    // {"item": {"id": "9cfe4d59-a83c-40af-8cda-4505e6023f77", "owner": {"id": "a51fe61e81024cbe81e90e218d01e762", "org_id": "bd19f16814d9436ba0e0caa55ce401b4"}, "name": "SymbolCollector.apk", "upload_timestamp": 1748721660, "etag": "CPeRk+u/zo0DEAE="
     await UploadSymbolsOnSauceLabs(username, accessKey);;
 
     transaction.Finish();
@@ -75,6 +79,7 @@ async Task UploadSymbolsOnSauceLabs(string username, string accessKey)
             throw new Exception("Didn't find Collect symbols button");
         }
         uploadButton.Click();
+        var appTerminatedMessage = "App has been terminated";
 
         try
         {
@@ -83,32 +88,36 @@ async Task UploadSymbolsOnSauceLabs(string username, string accessKey)
                 try
                 {
                     _ = wait.Until(d => d.FindElement(
-                        By.Id("io.sentry.symbolcollector.android:id/done_text")));
+                        By.Id($"{appPackage}:id/done_text")));
                     Console.WriteLine("💯!");
                     return;
                 }
                 catch (WebDriverTimeoutException)
                 {
-                    wait.Timeout = TimeSpan.FromMicroseconds(500);
+                    var state = driver.GetAppState(appPackage);
+
+                    if (state is AppState.NotRunning)
+                    {
+                        throw new Exception(appTerminatedMessage);
+                    }
+
                     try
                     {
-                        var dialogView = wait.Until(d => d.FindElement(
-                            By.Id("io.sentry.symbolcollector.android:id/dialog_error")));
-                        if (dialogView is not null && dialogView.Displayed)
+                        _ = driver.FindElement(By.Id($"{appPackage}:id/dialog_error"));
+
+                        var dialogView = driver.FindElement(
+                            By.Id($"{appPackage}:id/dialog_error"));
+                        if (dialogView is not null)
                         {
                             Console.WriteLine("Failed collecting symbols:");
-                            var dialogBody = wait.Until(d => d.FindElement(
-                                By.Id("io.sentry.symbolcollector.android:id/dialog_body")));
+                            var dialogBody = driver.FindElement(
+                                By.Id($"{appPackage}:id/dialog_body"));
                             Console.WriteLine(dialogBody!.Text);
-                            throw new Exception(dialogBody!.Text);
+                            throw new Exception(dialogBody.Text);
                         }
                     }
-                    catch (WebDriverTimeoutException)
+                    catch (NoSuchElementException)
                     {
-                    }
-                    finally
-                    {
-                        wait.Timeout = iterationTimeout;
                     }
 
                     Console.WriteLine($"Not done nor errored. Waiting {iterationTimeout}...");
@@ -119,21 +128,31 @@ async Task UploadSymbolsOnSauceLabs(string username, string accessKey)
         }
         catch (WebDriverException e)
         {
-            Console.WriteLine("App might have crashed: {0}", e);
-            Console.WriteLine("Restarting the app");
+            Console.WriteLine("WebDriver error, terminating the app: {0}", e);
             try
             {
-                driver.TerminateApp("io.sentry.symbolcollector.android");
+                driver.TerminateApp(appPackage);
+                Thread.Sleep(1000);
             }
             catch
             {
                 // ignored - Might be dead already, or not.
             }
 
-            Thread.Sleep(1000);
+            RestartAppAndCrashRunner(e);
+        }
+        catch (Exception e)  when (appTerminatedMessage.Equals(e.Message))
+        {
+            Console.WriteLine("App was not running: {0}", e);
+            RestartAppAndCrashRunner(e);
+        }
+
+        void RestartAppAndCrashRunner(Exception e)
+        {
+            Console.WriteLine("Restarting the app");
 
             // Relaunch so we can capture any crashes stored on disk on the previous run
-            driver.ActivateApp("io.sentry.symbolcollector.android");
+            driver.ActivateApp(appPackage);
             Thread.Sleep(3000);
             throw new Exception("Symbol collection failed.", e);
         }
@@ -147,7 +166,7 @@ async Task UploadSymbolsOnSauceLabs(string username, string accessKey)
 async Task UploadApkAsync(string username, string accessKey)
 {
     const string sauceUrl = "https://api.us-west-1.saucelabs.com/v1/storage/upload";
-    const string filePath = "../src/SymbolCollector.Android/bin/Release/net9.0-android/io.sentry.symbolcollector.android-Signed.apk";
+    const string filePath = $"../src/SymbolCollector.Android/bin/Release/net9.0-android/{appPackage}-Signed.apk";
 
     using var client = new HttpClient();
     var byteArray = System.Text.Encoding.ASCII.GetBytes($"{username}:{accessKey}");

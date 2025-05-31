@@ -87,7 +87,12 @@ public class MainActivity : Activity
                     uploadButton.Enabled = false;
                     source = new CancellationTokenSource();
 
-                    var uploadTask = uploader.StartUpload(_friendlyName, source.Token);
+                    // var uploadTask = uploader.StartUpload(_friendlyName, source.Token);
+                    var uploadTask = Task.Run(async () =>
+                    {
+                        await Task.Delay(10000);
+                        throw new Exception("test failed upload");
+                    });
                     var updateUiTask = StartUiUpdater(source.Token, metrics);
 
                     await UploadAsync(uploadTask, updateUiTask, metrics, cancelButton, uploadButton, uploadTransaction, source);
