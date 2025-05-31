@@ -56,8 +56,10 @@ public class InstrumentationUploadSymbols : Instrumentation
         }
         catch (Exception ex)
         {
+            SentrySdk.CaptureException(ex);
             AndroidAPI.Util.Log.Error(InstrumentationUploadSymbolTag, ex.ToString());
             resultData.PutString("result", ex.ToString());
+            await SentrySdk.FlushAsync(TimeSpan.FromSeconds(2));
             Finish(Result.Canceled, resultData);
         }
     }
