@@ -48,10 +48,7 @@ public class InstrumentationUploadSymbols : Instrumentation
 
             WaitForIdleSync();
 
-            await Task.Run(() =>
-            {
-                PressButton(activity);
-            });
+            await Task.Run(() => PressButton(activity));
 
             AndroidAPI.Util.Log.Info(InstrumentationUploadSymbolTag, "Instrumentation test completed successfully");
             resultData.PutString("result", "Instrumentation test completed successfully");
@@ -76,7 +73,7 @@ public class InstrumentationUploadSymbols : Instrumentation
             clickDone.Set();
         });
         clickDone.WaitOne();
-        AndroidAPI.Util.Log.Info(, "Clicked Upload. Waiting for batch completion");
+        AndroidAPI.Util.Log.Info(InstrumentationUploadSymbolTag, "Clicked Upload. Waiting for batch completion");
 
         var totalWaitTimeSeconds = 40 * 60;
         var retryCounter = 200;
