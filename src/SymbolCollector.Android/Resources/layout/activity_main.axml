@@ -21,7 +21,9 @@
                 android:layout_height="match_parent"
                 android:id="@+id/scroll_content"
                 android:layout_below="@+id/intro"
-                android:layout_above="@+id/footer">
+                android:layout_above="@+id/footer"
+                android:clipToPadding="false"
+                android:paddingTop="20dp">
 
         <LinearLayout android:layout_width="match_parent"
                       android:layout_height="wrap_content"
@@ -458,7 +460,7 @@
             android:layout_marginTop="12dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" 
-            android:maxLines="10"
+            android:maxLines="15"
             android:ellipsize="end"
             android:textIsSelectable="true" />
 
