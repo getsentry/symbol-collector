@@ -4,4 +4,5 @@
     <string name="upload_button">Collect symbols</string>
     <string name="cancel_button">Cancel</string>
     <string name="main_text">Help fixing bugs in apps by collecting this device\'s debug symbols and images.</string>
+    <string name="done_text">💯</string>
 </resources>

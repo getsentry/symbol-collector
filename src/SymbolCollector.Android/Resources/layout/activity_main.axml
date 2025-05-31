@@ -430,4 +430,43 @@
             android:layout_marginBottom="10dp"
             android:layout_alignParentBottom="true"/>
 
+    <!-- Error dialog -->
+    <LinearLayout
+        android:id="@+id/dialog_error"
+        android:orientation="vertical"
+        android:layout_gravity="center"
+        android:background="@android:color/white"
+        android:elevation="8dp"
+        android:padding="24dp"
+        android:visibility="gone"
+        android:layout_centerInParent="true"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+        
+        <TextView
+            android:id="@+id/dialog_title"
+            android:text="Collection failed"
+            android:textStyle="bold"
+            android:textSize="18sp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/dialog_body"
+            android:text="This is a longer message with more details about the error or information. It can span multiple lines if needed."
+            android:textSize="16sp"
+            android:layout_marginTop="12dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" 
+            android:maxLines="10"
+            android:ellipsize="end"
+            android:textIsSelectable="true" />
+
+        <Button
+            android:id="@+id/dialog_dismiss"
+            android:text="Ironic eh?"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
 </RelativeLayout>

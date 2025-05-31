@@ -147,6 +147,8 @@ public class MainActivity : Activity
 
         try
         {
+            await Task.Delay(2000);
+            throw new Exception("test");
             cancelButton.Enabled = true;
             await Task.WhenAny(uploadTask, updateUiTask);
             if (uploadTask.IsCompletedSuccessfully)
@@ -250,22 +252,36 @@ public class MainActivity : Activity
         // TODO: SentryId.Empty should operator overload ==
         var message = SentryId.Empty.ToString() == lastEvent.ToString()
             ? e?.ToString() ?? "Something didn't quite work."
-            : $"Sentry id {lastEvent}:\n{e}";
+            : $"Sentry id: \n{lastEvent}\n{e}";
 
-        var builder = new AlertDialog.Builder(this)
-            .SetTitle("Error")
-            ?.SetMessage(message)
-            ?.SetNeutralButton("Ironic eh?", (o, eventArgs) =>
-            {
-                uploadButton.Enabled = true;
-                cancelButton.Enabled = false;
-            });
-        if (builder is null)
+        var dialogView = FindViewById<LinearLayout>(Resource.Id.dialog_error);
+        var dialogBody = FindViewById<TextView>(Resource.Id.dialog_body);
+        dialogBody!.Text = message;
+        var dismissBtn = FindViewById<Button>(Resource.Id.dialog_dismiss);
+
+        dialogView!.Visibility = ViewStates.Visible;
+
+        dismissBtn!.Click += (s, e) =>
         {
-            throw new InvalidOperationException("Couldn't get a dialog built.");
-        }
+            uploadButton.Enabled = true;
+            cancelButton.Enabled = false;
+            dialogView.Visibility = ViewStates.Gone;
+        };
 
-        builder.Show();
+        // var builder = new AlertDialog.Builder(this)
+        //     .SetTitle(Resource.String.alert_title)
+        //     ?.SetMessage(message)
+        //     ?.SetNeutralButton("Ironic eh?", (o, eventArgs) =>
+        //     {
+        //         uploadButton.Enabled = true;
+        //         cancelButton.Enabled = false;
+        //     });
+        // if (builder is null)
+        // {
+        //     throw new InvalidOperationException("Couldn't get a dialog built.");
+        // }
+        //
+        // builder.Show();
     }
 
     private void AddSentryContext()
