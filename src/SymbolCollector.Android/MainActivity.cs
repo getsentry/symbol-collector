@@ -230,18 +230,9 @@ public class MainActivity : Activity
             }
         }, token);
 
-    private void ShowError(Exception? e)
+    private async Task ShowError(Exception e)
     {
-        if (e is null)
-        {
-            SentrySdk.CaptureMessage("ShowError called but no Exception instance provided.", SentryLevel.Error);
-        }
-        else
-        {
-            SentrySdk.CaptureException(e);
-        }
-
-        if (e is AggregateException ae && ae.InnerExceptions.Count == 1)
+        if (e is AggregateException { InnerExceptions.Count: 1 } ae)
         {
             e = ae.InnerExceptions[0];
         }
@@ -249,11 +240,8 @@ public class MainActivity : Activity
         var uploadButton = (Button)base.FindViewById(Resource.Id.btnUpload)!;
         var cancelButton = (Button)base.FindViewById(Resource.Id.btnCancel)!;
 
-        var lastEvent = SentrySdk.LastEventId;
-        // TODO: SentryId.Empty should operator overload ==
-        var message = SentryId.Empty.ToString() == lastEvent.ToString()
-            ? e?.ToString() ?? "Something didn't quite work."
-            : $"Sentry id: \n{lastEvent}\n\n{e}";
+        var sentryEvent = new SentryEvent(e);
+        var message = $"Sentry id: \n{sentryEvent.EventId}\n\n{e}";
 
         var dialogView = FindViewById<LinearLayout>(Resource.Id.dialog_error);
         var dialogBody = FindViewById<TextView>(Resource.Id.dialog_body);
@@ -268,6 +256,11 @@ public class MainActivity : Activity
             cancelButton.Enabled = false;
             dialogView.Visibility = ViewStates.Gone;
         };
+
+        // Let the UI thread run for the dialog to show up
+        await Task.Yield();
+
+        SentrySdk.CaptureEvent(sentryEvent);
     }
 
     private void AddSentryContext()
