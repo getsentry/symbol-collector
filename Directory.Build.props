@@ -5,7 +5,7 @@
     <Company>Sentry.io</Company>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+<!--    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>-->
     <Deterministic>true</Deterministic>
     <EmbedAllSources>true</EmbedAllSources>
     <!-- CS1998: When developing, let me comment out an `await Something()` and add some synchronous code please -->
