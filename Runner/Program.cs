@@ -1,4 +1,5 @@
 ﻿using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Appium;
 using OpenQA.Selenium.Appium.Android;
@@ -23,10 +24,15 @@ try
     var username = Environment.GetEnvironmentVariable("SAUCE_USERNAME") ?? throw new Exception("SAUCE_USERNAME is not set");
     var accessKey = Environment.GetEnvironmentVariable("SAUCE_ACCESS_KEY") ?? throw new Exception("SAUCE_ACCESS_KEY is not set");
 
-    await UploadApkAsync(username, accessKey);
-    // TOOD: use specific build id
-    // {"item": {"id": "9cfe4d59-a83c-40af-8cda-4505e6023f77", "owner": {"id": "a51fe61e81024cbe81e90e218d01e762", "org_id": "bd19f16814d9436ba0e0caa55ce401b4"}, "name": "SymbolCollector.apk", "upload_timestamp": 1748721660, "etag": "CPeRk+u/zo0DEAE="
-    await UploadSymbolsOnSauceLabs(username, accessKey);;
+    var app = $"storage:filename={appName}";
+
+    if (args.Length > 0 && bool.TryParse(args[0], out var uploadApp) && uploadApp)
+    {
+        var buildId = await UploadApkAsync(username, accessKey);
+        // Run on this specific app
+        app = $"storage:{buildId}";
+    }
+    UploadSymbolsOnSauceLabs(username, accessKey, app);
 
     transaction.Finish();
 }
@@ -39,7 +45,7 @@ catch (Exception e)
 
 return;
 
-async Task UploadSymbolsOnSauceLabs(string username, string accessKey)
+void UploadSymbolsOnSauceLabs(string username, string accessKey, string app)
 {
     const string driverUrl = "https://ondemand.us-west-1.saucelabs.com:443/wd/hub";
 
@@ -49,7 +55,7 @@ async Task UploadSymbolsOnSauceLabs(string username, string accessKey)
         DeviceName = "Google.*", // TODO: Get devices
         PlatformVersion = "13",
         AutomationName = "UiAutomator2",
-        App = $"storage:filename={appName}",
+        App = app,
     };
 
     var sauceOptions = new Dictionary<string, object>
@@ -112,7 +118,6 @@ async Task UploadSymbolsOnSauceLabs(string username, string accessKey)
                             Console.WriteLine("Failed collecting symbols:");
                             var dialogBody = driver.FindElement(
                                 By.Id($"{appPackage}:id/dialog_body"));
-                            Console.WriteLine(dialogBody!.Text);
                             throw new Exception(dialogBody.Text);
                         }
                     }
@@ -163,7 +168,7 @@ async Task UploadSymbolsOnSauceLabs(string username, string accessKey)
     }
 }
 
-async Task UploadApkAsync(string username, string accessKey)
+async Task<string> UploadApkAsync(string username, string accessKey)
 {
     const string sauceUrl = "https://api.us-west-1.saucelabs.com/v1/storage/upload";
     const string filePath = $"../src/SymbolCollector.Android/bin/Release/net9.0-android/{appPackage}-Signed.apk";
@@ -184,15 +189,26 @@ async Task UploadApkAsync(string username, string accessKey)
     Console.WriteLine("Uploading APK to Sauce Labs...");
 
     var response = await client.PostAsync(sauceUrl, form);
-    var result = await response.Content.ReadAsStringAsync();
-
-    Console.WriteLine($"Response: {(int)response.StatusCode} {response.ReasonPhrase}");
-    Console.WriteLine(result);
 
     if (!response.IsSuccessStatusCode)
     {
-        throw new Exception($"Failed to upload APK to Sauce Labs: {result}");
+        throw new Exception($"Failed to upload APK to Sauce Labs: {(int)response.StatusCode} {response.ReasonPhrase}");
     }
+
+
+    var result = await response.Content.ReadFromJsonAsync<AppUploadResult>();
+    var id = result!.Item.Id;
+    Console.WriteLine("App uploaded successfully. Id: {0}", id);
+    return id;
 }
 
+class AppUploadResult
+{
+    // {"item": {"id": "9cfe4d59-a83c-40af-8cda-4505e6023f77", "owner": {"id": "a51fe61e81024cbe81e90e218d01e762", "org_id": "bd19f16814d9436ba0e0caa55ce401b4"}, "name": "SymbolCollector.apk", "upload_timestamp": 1748721660, "etag": "CPeRk+u/zo0DEAE="
+    public ItemResult Item { get; set; } = null!;
+    public class ItemResult
+    {
+        public string Id { get; set; } = null!;
+    }
+}
 
