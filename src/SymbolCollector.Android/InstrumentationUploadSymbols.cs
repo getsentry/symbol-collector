@@ -10,6 +10,7 @@ namespace SymbolCollector.Android;
 public class InstrumentationUploadSymbols : Instrumentation
 {
     public static InstrumentationUploadSymbols Instance { get; private set; } = null!;
+    private const string InstrumentationUploadSymbolTag = "InstrumentationUploadSymbol";
 
     public InstrumentationUploadSymbols(IntPtr handle, JniHandleOwnership transfer) : base(handle, transfer)
     {
@@ -17,7 +18,7 @@ public class InstrumentationUploadSymbols : Instrumentation
     }
     public override void OnCreate(Bundle? arguments)
     {
-        AndroidAPI.Util.Log.Error("InstrumentationUploadSymbol", "Starting");
+        AndroidAPI.Util.Log.Error(InstrumentationUploadSymbolTag, "Starting");
         base.OnCreate(arguments);
         Start();
     }
@@ -52,13 +53,13 @@ public class InstrumentationUploadSymbols : Instrumentation
                 PressButton(activity);
             });
 
-            AndroidAPI.Util.Log.Info("InstrumentationUploadSymbol", "Instrumentation test completed successfully");
+            AndroidAPI.Util.Log.Info(InstrumentationUploadSymbolTag, "Instrumentation test completed successfully");
             resultData.PutString("result", "Instrumentation test completed successfully");
             Finish(Result.Ok, resultData);
         }
         catch (Exception ex)
         {
-            AndroidAPI.Util.Log.Error("InstrumentationUploadSymbol", ex.ToString());
+            AndroidAPI.Util.Log.Error(InstrumentationUploadSymbolTag, ex.ToString());
             resultData.PutString("result", ex.ToString());
             Finish(Result.Canceled, resultData);
         }
@@ -75,7 +76,7 @@ public class InstrumentationUploadSymbols : Instrumentation
             clickDone.Set();
         });
         clickDone.WaitOne();
-        AndroidAPI.Util.Log.Info("InstrumentationUploadSymbol", "Clicked Upload. Waiting for batch completion");
+        AndroidAPI.Util.Log.Info(, "Clicked Upload. Waiting for batch completion");
 
         var totalWaitTimeSeconds = 40 * 60;
         var retryCounter = 200;
@@ -97,7 +98,7 @@ public class InstrumentationUploadSymbols : Instrumentation
                 throw new Exception(dialogBody!.Text);
             }
 
-            AndroidAPI.Util.Log.Debug("InstrumentationUploadSymbol", $"Not done nor errored. Waiting {iterationTimeout}...");
+            AndroidAPI.Util.Log.Debug(InstrumentationUploadSymbolTag, $"Not done nor errored. Waiting {iterationTimeout}...");
             Thread.Sleep(iterationTimeout);
         } while (--retryCounter != 0);
 
