@@ -2,7 +2,13 @@ using OpenQA.Selenium.Remote;
 
 namespace SymbolCollector.Runner;
 
-public class SauceLabsClient : IDisposable
+public interface IRunnerClient : IDisposable
+{
+    Task<string> UploadApkAsync(string apkPath, string appName);
+    public AndroidDriver GetDriver(AppiumOptions options);
+}
+
+public class SauceLabsClient : IRunnerClient
 {
     private const string UploadFileUrl = "https://api.us-west-1.saucelabs.com/v1/storage/upload";
     private const string DriverUrl = "https://ondemand.us-west-1.saucelabs.com:443/wd/hub";

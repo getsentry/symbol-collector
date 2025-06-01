@@ -1,8 +1,18 @@
-﻿// To skip uploading the package, pass 'false' as the first argument
+﻿// To skip uploading the package, pass 'skipUpload:true' as an argument
+// To run locally, pass localAppium:true as an argument
 
 using SymbolCollector.Runner;
 
-Console.WriteLine("Starting runner...");
+var localAppium = false;
+var skipUpload = false;
+
+if (args.Length > 0)
+{
+    localAppium = args.Any(a => a.Equals("localAppium:true", StringComparison.OrdinalIgnoreCase));
+    skipUpload = args.Any(a => a.Equals("skipUpload:true", StringComparison.OrdinalIgnoreCase));
+}
+
+Console.WriteLine($"Starting runner (localAppium:{localAppium}, skipUpload:{skipUpload})...");
 
 const string appName = "SymbolCollector.apk";
 const string appPackage = "io.sentry.symbolcollector.android";
@@ -16,18 +26,18 @@ SentrySdk.Init(options =>
     options.TracesSampleRate = 1.0;
 });
 
-var transaction = SentrySdk.StartTransaction("appium.runner", "runner appium to upload apk to saucelabs and collect symbols real devices");
+var transaction = SentrySdk.StartTransaction("appium.runner", $"runner appium to upload apk to {(localAppium ? "local emulator" : "saucelabs and collect symbols real devices")}");
 SentrySdk.ConfigureScope(s => s.Transaction = transaction);
 
 try
 {
-    using var client = new SauceLabsClient();
+    using IRunnerClient client = localAppium ? new LocalClient() : new SauceLabsClient();
 
     var app = $"storage:filename={appName}";
 
-    if (args.Length == 0 || bool.TryParse(args[0], out var skipUploadApp) && !skipUploadApp)
+    if (skipUpload)
     {
-        var span = transaction.StartChild("appium.upload-apk", "uploading apk to saucelabs");
+        var span = transaction.StartChild($"appium.upload-apk.{(localAppium ? "emulator" : "saucelabs")}", $"uploading apk to {(localAppium ? "local emulator" : "saucelabs")}");
         var buildId = await client.UploadApkAsync(filePath, appName);
         span.Finish();
         app = $"storage:{buildId}";
@@ -54,9 +64,10 @@ finally
 
 return;
 
-void UploadSymbolsOnSauceLabs(string app, ISpan span, SauceLabsClient client)
+void UploadSymbolsOnSauceLabs(string app, ISpan span, IRunnerClient client)
 {
     var uploadSymbolsSpan = span.StartChild("appium.symbol.upload", "instructing app to start uploading symbols");
+    span.SetData("device_type", localAppium ? "emulator" : "real-device");
 
     var options = new AppiumOptions
     {
@@ -75,12 +86,12 @@ void UploadSymbolsOnSauceLabs(string app, ISpan span, SauceLabsClient client)
         options.AddAdditionalAppiumOption("optionalIntentArguments", $"--es sentryTrace {trace}");
     }
 
-    var sauceOptions = new Dictionary<string, object>
+    var driverOptions = new Dictionary<string, object>
     {
         { "name", "CollectSymbolInstrumentation" },
     };
 
-    options.AddAdditionalAppiumOption("sauce:options", sauceOptions);
+    options.AddAdditionalAppiumOption("sauce:options", driverOptions);
     options.AddAdditionalAppiumOption("appWaitActivity", "*");
 
     var driverSpan = uploadSymbolsSpan.StartChild("appium.start-driver", "Starting the Appium driver");
