@@ -2,7 +2,10 @@
 
 using SymbolCollector.Runner;
 
-Console.WriteLine("Starting runner...");
+var skipUpload = args.Any(a => a.Equals("skipUpload:true", StringComparison.OrdinalIgnoreCase));
+var apkPath = args.Any(a => a.Equals("apkPath:", StringComparison.OrdinalIgnoreCase));
+
+Console.WriteLine($"Starting runner (skipUpload:{skipUpload},apk:{apkPath})...");
 
 const string appName = "SymbolCollector.apk";
 const string appPackage = "io.sentry.symbolcollector.android";
@@ -40,13 +43,12 @@ try
 
     var app = $"storage:filename={appName}";
 
-    if (args.Length == 0 || bool.TryParse(args[0], out var skipUploadApp) && !skipUploadApp)
+    if (skipUpload)
     {
         var span = transaction.StartChild("appium.upload-apk", "uploading apk to saucelabs");
-        // var buildId = await client.UploadApkAsync(filePath, appName);
+        var buildId = await client.UploadApkAsync(filePath, appName);
         span.Finish();
-        // app = $"storage:{buildId}";
-        app = $"storage:c4be83c3-a0f3-4bbd-9fb0-58b0f47f0cbf";
+        app = $"storage:{buildId}";
     }
     else
     {
