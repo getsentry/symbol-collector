@@ -1,4 +1,3 @@
-using System.Net;
 using OpenQA.Selenium.Remote;
 
 namespace SymbolCollector.Runner;

@@ -7,12 +7,10 @@ Console.WriteLine("Starting runner...");
 const string appName = "SymbolCollector.apk";
 const string appPackage = "io.sentry.symbolcollector.android";
 const string filePath = $"src/SymbolCollector.Android/bin/Release/net9.0-android/{appPackage}-Signed.apk";
-// const string filePath = $"../../../../../src/SymbolCollector.Android/bin/Release/net9.0-android/io.sentry.symbolcollector.android-Signed.apk";
 
 SentrySdk.Init(options =>
 {
-    // options.Dsn = "https://ea58a7607ff1b39433af3a6c10365925@o1.ingest.us.sentry.io/4509420348964864";
-    options.Dsn = "";
+    options.Dsn = "https://ea58a7607ff1b39433af3a6c10365925@o1.ingest.us.sentry.io/4509420348964864";
     options.Debug = false;
     options.AutoSessionTracking = true;
     options.TracesSampleRate = 1.0;
@@ -32,8 +30,6 @@ try
         var span = transaction.StartChild("appium.upload-apk", "uploading apk to saucelabs");
         var buildId = await client.UploadApkAsync(filePath, appName);
         span.Finish();
-        // Run on this specific app
-        // app = $"storage:dd81a803-855f-4b5f-884c-55ee3caafa59";
         app = $"storage:{buildId}";
     }
     else
@@ -42,7 +38,6 @@ try
     }
 
     UploadSymbolsOnSauceLabs(app, transaction, client);
-    // UploadSymbolsOnSauceLabs(username, accessKey, app, transaction, client);
 
     transaction.Finish();
 }
