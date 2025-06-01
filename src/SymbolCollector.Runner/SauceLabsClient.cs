@@ -8,7 +8,30 @@ public interface IRunnerClient : IDisposable
     public AndroidDriver GetDriver(AppiumOptions options);
 }
 
-public class SauceLabsClient : IRunnerClient
+public abstract class BaseClient : IRunnerClient
+{
+    protected HttpClient CreateHttpClient(string username, string accessKey)
+    {
+        var handler = new HttpClientHandler();
+        var sentryHandler = new SentryHttpMessageHandler(handler);
+
+        var client = new HttpClient(sentryHandler);
+        var byteArray = System.Text.Encoding.ASCII.GetBytes($"{username}:{accessKey}");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
+
+        client.DefaultRequestHeaders.Accept.ParseAdd("application/json, image/png");
+        client.DefaultRequestHeaders.ExpectContinue = false;
+        client.Timeout = _timeout;
+
+        return client;
+    }
+    public void Dispose()
+    {
+        // TODO release managed resources here
+    }
+}
+
+public class SauceLabsClient : BaseClient
 {
     private const string UploadFileUrl = "https://api.us-west-1.saucelabs.com/v1/storage/upload";
     private const string DriverUrl = "https://ondemand.us-west-1.saucelabs.com:443/wd/hub";
@@ -30,22 +53,6 @@ public class SauceLabsClient : IRunnerClient
             options);
 
     public HttpClient HttpClient => _client ??= CreateHttpClient(_username, _accessKey);
-
-    private HttpClient CreateHttpClient(string username, string accessKey)
-    {
-        var handler = new HttpClientHandler();
-        var sentryHandler = new SentryHttpMessageHandler(handler);
-
-        var client = new HttpClient(sentryHandler);
-        var byteArray = System.Text.Encoding.ASCII.GetBytes($"{username}:{accessKey}");
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
-
-        client.DefaultRequestHeaders.Accept.ParseAdd("application/json, image/png");
-        client.DefaultRequestHeaders.ExpectContinue = false;
-        client.Timeout = _timeout;
-
-        return client;
-    }
 
     public async Task<string> UploadApkAsync(string apkPath, string appName)
     {
@@ -75,6 +82,7 @@ public class SauceLabsClient : IRunnerClient
 
     public void Dispose()
     {
+        base.Dispose();
         _driver?.Dispose();
         _client?.Dispose();
     }

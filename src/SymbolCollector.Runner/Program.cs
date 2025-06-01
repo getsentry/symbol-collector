@@ -3,14 +3,9 @@
 
 using SymbolCollector.Runner;
 
-var localAppium = false;
-var skipUpload = false;
-
-if (args.Length > 0)
-{
-    localAppium = args.Any(a => a.Equals("localAppium:true", StringComparison.OrdinalIgnoreCase));
-    skipUpload = args.Any(a => a.Equals("skipUpload:true", StringComparison.OrdinalIgnoreCase));
-}
+var localAppium = true;
+// var localAppium = args.Any(a => a.Equals("localAppium:true", StringComparison.OrdinalIgnoreCase));;
+var skipUpload = args.Any(a => a.Equals("skipUpload:true", StringComparison.OrdinalIgnoreCase));;
 
 Console.WriteLine($"Starting runner (localAppium:{localAppium}, skipUpload:{skipUpload})...");
 
@@ -20,13 +15,14 @@ const string filePath = $"src/SymbolCollector.Android/bin/Release/net9.0-android
 
 SentrySdk.Init(options =>
 {
-    options.Dsn = "https://ea58a7607ff1b39433af3a6c10365925@o1.ingest.us.sentry.io/4509420348964864";
+    // options.Dsn = "https://ea58a7607ff1b39433af3a6c10365925@o1.ingest.us.sentry.io/4509420348964864";
+    options.Dsn = "";
     options.Debug = false;
     options.AutoSessionTracking = true;
     options.TracesSampleRate = 1.0;
 });
 
-var transaction = SentrySdk.StartTransaction("appium.runner", $"runner appium to upload apk to {(localAppium ? "local emulator" : "saucelabs and collect symbols real devices")}");
+var transaction = SentrySdk.StartTransaction("appium.runner", $"runner appium to upload apk to {(localAppium ? "local emulator" : "saucelabs on collect symbols from real devices")}");
 SentrySdk.ConfigureScope(s => s.Transaction = transaction);
 
 try
