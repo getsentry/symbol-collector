@@ -26,13 +26,17 @@ jobs:
           path: .cache
           key: cache-folder-${{ runner.os }}-${{ github.workflow }}
 
+      - name: Download the Android app if there's a new version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          pwsh ./scripts/download-latest-android-apk.ps1
+
       - name: Invoke Runner
         run: |
           dotnet run \
             --project src/SymbolCollector.Runner/SymbolCollector.Runner.csproj \
-            -c Release \
-            -- \
-
+            -c Release
 
       - name: Save .cache folder
         uses: actions/cache@v3

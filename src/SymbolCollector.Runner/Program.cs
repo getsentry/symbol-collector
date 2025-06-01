@@ -9,7 +9,21 @@ Console.WriteLine($"Starting runner (skipUpload:{skipUpload},apk:{apkPath})...")
 
 const string appName = "SymbolCollector.apk";
 const string appPackage = "io.sentry.symbolcollector.android";
-const string filePath = $"src/SymbolCollector.Android/bin/Release/net9.0-android/{appPackage}-Signed.apk";
+const string fullApkName = $"{appPackage}-Signed.apk";
+const string solutionBuildApkPath = $"src/SymbolCollector.Android/bin/Release/net9.0-android/{fullApkName}";
+
+string? filePath = null;
+// if there's a one in the current directory, use that.
+// in CI, scripts/download-latest-android-apk.ps1 will download only if there's a new version
+// otherwise skip uploading apk since saucelabs uses the latest build already
+if (File.Exists(fullApkName))
+{
+    filePath = fullApkName;
+}
+else if (File.Exists(solutionBuildApkPath))
+{
+    filePath = solutionBuildApkPath;
+}
 
 SentrySdk.Init(options =>
 {
@@ -43,16 +57,25 @@ try
 
     var app = $"storage:filename={appName}";
 
-    if (skipUpload)
+    if (!skipUpload)
     {
-        var span = transaction.StartChild("appium.upload-apk", "uploading apk to saucelabs");
-        var buildId = await client.UploadApkAsync(filePath, appName);
-        span.Finish();
-        app = $"storage:{buildId}";
+        if (filePath is null)
+        {
+            Console.WriteLine("'filePath' is null, skipping apk upload.");
+        }
+        else
+        {
+            Console.WriteLine("Uploading apk: {0}", filePath);
+
+            var span = transaction.StartChild("appium.upload-apk", "uploading apk to saucelabs");
+            var buildId = await client.UploadApkAsync(filePath, appName);
+            span.Finish();
+            app = $"storage:{buildId}";
+        }
     }
     else
     {
-        Console.WriteLine("Skipping apk upload");
+        Console.WriteLine("'skipUpload' is true, skipping apk upload.");
     }
 
     UploadSymbolsOnSauceLabs(app, deviceToRun, transaction, client);
