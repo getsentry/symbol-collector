@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  run-cache-job:
+  run-symbol-upload:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -39,6 +39,8 @@ jobs:
           pwsh ./scripts/download-latest-android-apk.ps1
 
       - name: Invoke Runner
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: |
           dotnet run --project src/SymbolCollector.Runner/SymbolCollector.Runner.csproj -c Release
 
