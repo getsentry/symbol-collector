@@ -1,12 +1,26 @@
-﻿// To skip uploading the package, pass 'false' as the first argument
+﻿// Runner uploads the apk by default (on current directory or under the apps' bin).
+// To skip, pass 'skipUpload:true' as the first argument
+var skipUpload = args.Any(a => a.Equals("skipUpload:true", StringComparison.OrdinalIgnoreCase));
 
-using SymbolCollector.Runner;
-
-Console.WriteLine("Starting runner...");
+Console.WriteLine($"Starting runner (skipUpload:{skipUpload}...");
 
 const string appName = "SymbolCollector.apk";
 const string appPackage = "io.sentry.symbolcollector.android";
-const string filePath = $"src/SymbolCollector.Android/bin/Release/net9.0-android/{appPackage}-Signed.apk";
+const string fullApkName = $"{appPackage}-Signed.apk";
+const string solutionBuildApkPath = $"src/SymbolCollector.Android/bin/Release/net9.0-android/{fullApkName}";
+
+string? filePath = null;
+// if there's a one in the current directory, use that.
+// in CI, scripts/download-latest-android-apk.ps1 will download only if there's a new version
+// otherwise skip uploading apk since saucelabs uses the latest build already
+if (File.Exists(fullApkName))
+{
+    filePath = fullApkName;
+}
+else if (File.Exists(solutionBuildApkPath))
+{
+    filePath = solutionBuildApkPath;
+}
 
 SentrySdk.Init(options =>
 {
@@ -22,22 +36,51 @@ SentrySdk.ConfigureScope(s => s.Transaction = transaction);
 try
 {
     using var client = new SauceLabsClient();
-
-    var app = $"storage:filename={appName}";
-
-    if (args.Length == 0 || bool.TryParse(args[0], out var skipUploadApp) && !skipUploadApp)
+    var getDevicesSpan = transaction.StartChild("appium.cache-results", "caching results");
+    var devices = await client.GetDevices();
+    getDevicesSpan.Finish();
+    // Prioritize devices that don't have a timestamp saved in the cache yet
+    if (devices.FirstOrDefault(p => p.LastSymbolUploadRanTime is null) is not { } deviceToRun)
     {
-        var span = transaction.StartChild("appium.upload-apk", "uploading apk to saucelabs");
-        var buildId = await client.UploadApkAsync(filePath, appName);
-        span.Finish();
-        app = $"storage:{buildId}";
+        Console.WriteLine("No new devices, running on the one we ran last.");
+        // TODO: Skip if ran last than 30 days ago
+        deviceToRun = devices.OrderBy(d => d.LastSymbolUploadRanTime).First();
+        Console.WriteLine("Running on device that ran last {0}: {1}", deviceToRun.LastSymbolUploadRanTime, deviceToRun);
     }
     else
     {
-        Console.WriteLine("Skipping apk upload");
+        Console.WriteLine("Brand new device detected: {0}", deviceToRun);
     }
 
-    UploadSymbolsOnSauceLabs(app, transaction, client);
+    var app = $"storage:filename={appName}";
+
+    if (!skipUpload)
+    {
+        if (filePath is null)
+        {
+            Console.WriteLine("'filePath' is null, skipping apk upload.");
+        }
+        else
+        {
+            Console.WriteLine("Uploading apk: {0}", filePath);
+
+            var span = transaction.StartChild("appium.upload-apk", "uploading apk to saucelabs");
+            var buildId = await client.UploadApkAsync(filePath, appName);
+            span.Finish();
+            app = $"storage:{buildId}";
+        }
+    }
+    else
+    {
+        Console.WriteLine("'skipUpload' is true, skipping apk upload.");
+    }
+
+    UploadSymbolsOnSauceLabs(app, deviceToRun, transaction, client);
+
+    var cacheSpan = transaction.StartChild("appium.cache-results", "caching results");
+    deviceToRun.LastSymbolUploadRanTime = DateTime.UtcNow;
+    await client.SaveResults(devices);
+    cacheSpan.Finish();
 
     transaction.Finish();
 }
@@ -54,30 +97,32 @@ finally
 
 return;
 
-void UploadSymbolsOnSauceLabs(string app, ISpan span, SauceLabsClient client)
+void UploadSymbolsOnSauceLabs(string app, SauceLabsDevice deviceToRun, ISpan span, SauceLabsClient client)
 {
     var uploadSymbolsSpan = span.StartChild("appium.symbol.upload", "instructing app to start uploading symbols");
+    span.SetData("device", deviceToRun.Id);
 
     var options = new AppiumOptions
     {
         PlatformName = "Android",
-        DeviceName = "Google.*", // TODO: Get devices
-        PlatformVersion = "13",
+        DeviceName = deviceToRun.Id,
         AutomationName = "UiAutomator2",
         App = app,
     };
 
+    options.AddAdditionalAppiumOption("appiumVersion", "stable");
     options.AddAdditionalAppiumOption("intentAction", "android.intent.action.MAIN");
     options.AddAdditionalAppiumOption("intentCategory", "android.intent.category.LAUNCHER");
-    if (span.GetTraceHeader() is { } trace)
+    if (span.GetTraceHeader() is { } trace && !trace.TraceId.Equals(SentryId.Empty))
     {
-        // TODO: Can I propagate this under the hood with the client?
         options.AddAdditionalAppiumOption("optionalIntentArguments", $"--es sentryTrace {trace}");
     }
 
     var sauceOptions = new Dictionary<string, object>
     {
         { "name", "CollectSymbolInstrumentation" },
+        // appiumVersion is mandatory to use Appium 2
+        { "appiumVersion", "stable" },
     };
 
     options.AddAdditionalAppiumOption("sauce:options", sauceOptions);

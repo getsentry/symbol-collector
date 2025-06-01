@@ -1,6 +1,7 @@
 .idea/
 .vs/
 .DS_Store
+.cache/
 bin/
 obj/
 out/
@@ -12,3 +13,4 @@ TestResult.xml
 **/*.zip
 packages/
 **/uitest/
+io.sentry.symbolcollector.android-Signed.apk
