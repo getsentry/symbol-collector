@@ -11,7 +11,6 @@ const string filePath = $"src/SymbolCollector.Android/bin/Release/net9.0-android
 SentrySdk.Init(options =>
 {
     options.Dsn = "https://ea58a7607ff1b39433af3a6c10365925@o1.ingest.us.sentry.io/4509420348964864";
-    options.Dsn = "";
     options.Debug = false;
     options.AutoSessionTracking = true;
     options.TracesSampleRate = 1.0;
@@ -23,7 +22,9 @@ SentrySdk.ConfigureScope(s => s.Transaction = transaction);
 try
 {
     using var client = new SauceLabsClient();
+    var getDevicesSpan = transaction.StartChild("appium.cache-results", "caching results");
     var devices = await client.GetDevices();
+    getDevicesSpan.Finish();
     // Prioritize devices that don't have a timestamp saved in the cache yet
     if (devices.FirstOrDefault(p => p.LastSymbolUploadRanTime is null) is not { } deviceToRun)
     {
