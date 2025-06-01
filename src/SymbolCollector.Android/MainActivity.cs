@@ -93,7 +93,9 @@ public class MainActivity : Activity
                     var uploadTask = Task.Run(async () =>
                     {
                         await Task.Delay(1000);
-                        throw new Exception("test failed upload");
+#pragma warning disable CS0618 // Type or member is obsolete
+                        SentrySdk.CauseCrash(CrashType.Java);
+#pragma warning restore CS0618 // Type or member is obsolete
                     });
                     var updateUiTask = StartUiUpdater(source.Token, metrics);
 

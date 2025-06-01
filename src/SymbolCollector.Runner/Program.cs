@@ -105,7 +105,7 @@ void UploadSymbolsOnSauceLabs(string username, string accessKey, string app, ISp
         }
 
         uploadButton.Click();
-        var appTerminatedMessage = "App has been terminated";
+        const string appTerminatedMessage = "App has been terminated";
 
         try
         {
@@ -187,6 +187,7 @@ void UploadSymbolsOnSauceLabs(string username, string accessKey, string app, ISp
     catch (Exception e)
     {
         uploadSymbolsSpan.Finish(e);
+        FailJob(driver);
         throw;
     }
     finally
@@ -210,13 +211,13 @@ async Task<string> UploadApkAsync(string username, string accessKey)
     form.Add(new StringContent(appName), "name");
     form.Add(new StringContent("true"), "overwrite");
 
-    Console.WriteLine("Uploading APK to Sauce Labs...");
+    Console.WriteLine("Uploading APK to device farm...");
 
     var response = await client.PostAsync(sauceUrl, form);
 
     if (!response.IsSuccessStatusCode)
     {
-        throw new Exception($"Failed to upload APK to Sauce Labs: {(int)response.StatusCode} {response.ReasonPhrase}");
+        throw new Exception($"Failed to upload APK to device farm: {(int)response.StatusCode} {response.ReasonPhrase}");
     }
 
     var result = await response.Content.ReadFromJsonAsync<AppUploadResult>();
@@ -225,13 +226,16 @@ async Task<string> UploadApkAsync(string username, string accessKey)
     return id;
 }
 
+static void FailJob(IWebDriver driver)
+{
+    ((IJavaScriptExecutor)driver).ExecuteScript("sauce:job-result=failed");
+}
+
 class AppUploadResult
 {
-    // {"item": {"id": "9cfe4d59-a83c-40af-8cda-4505e6023f77", "owner": {"id": "a51fe61e81024cbe81e90e218d01e762", "org_id": "bd19f16814d9436ba0e0caa55ce401b4"}, "name": "SymbolCollector.apk", "upload_timestamp": 1748721660, "etag": "CPeRk+u/zo0DEAE="
     public ItemResult Item { get; set; } = null!;
     public class ItemResult
     {
         public string Id { get; set; } = null!;
     }
 }
-
