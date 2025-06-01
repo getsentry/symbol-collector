@@ -89,14 +89,7 @@ public class MainActivity : Activity
                     uploadButton.Enabled = false;
                     source = new CancellationTokenSource();
 
-                    // var uploadTask = uploader.StartUpload(_friendlyName, source.Token);
-                    var uploadTask = Task.Run(async () =>
-                    {
-                        await Task.Delay(1000);
-#pragma warning disable CS0618 // Type or member is obsolete
-                        SentrySdk.CauseCrash(CrashType.Java);
-#pragma warning restore CS0618 // Type or member is obsolete
-                    });
+                    var uploadTask = uploader.StartUpload(_friendlyName, source.Token);
                     var updateUiTask = StartUiUpdater(source.Token, metrics);
 
                     await UploadAsync(uploadTask, updateUiTask, metrics, cancelButton, uploadButton, uploadTransaction, source);
