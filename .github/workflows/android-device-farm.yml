@@ -40,9 +40,7 @@ jobs:
 
       - name: Invoke Runner
         run: |
-          dotnet run
-            --project src/SymbolCollector.Runner/SymbolCollector.Runner.csproj
-            -c Release
+          dotnet run --project src/SymbolCollector.Runner/SymbolCollector.Runner.csproj -c Release
 
       - name: Save .cache folder
         uses: actions/cache@v3
