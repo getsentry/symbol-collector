@@ -3,99 +3,101 @@ using OpenQA.Selenium.Remote;
 
 namespace SymbolCollector.Runner;
 
-public class SauceLabsClient
+public class SauceLabsClient : IDisposable
 {
+    private const string UploadFileUrl = "https://api.us-west-1.saucelabs.com/v1/storage/upload";
     private const string DriverUrl = "https://ondemand.us-west-1.saucelabs.com:443/wd/hub";
     private HttpClient? _client;
     private AndroidDriver? _driver;
-    private readonly string _username;
-    private readonly string _accessKey;
+    private readonly TimeSpan _timeout = TimeSpan.FromMinutes(2);
+    private readonly string _username = Environment.GetEnvironmentVariable("SAUCE_USERNAME") ??
+                                        throw new Exception("SAUCE_USERNAME is not set");
+    private readonly string _accessKey = Environment.GetEnvironmentVariable("SAUCE_ACCESS_KEY") ??
+                                         throw new Exception("SAUCE_ACCESS_KEY is not set");
 
-    public AndroidDriver CreateDriver(AppiumOptions options)
-    {
-        if (_driver is not null)
-        {
-            return _driver;
-        }
-        return _driver = new AndroidDriver(
+    public AndroidDriver GetDriver(AppiumOptions options) =>
+        _driver ??= new AndroidDriver(
             new SentryHttpCommandExecutor(
                 HttpClient,
                 new Uri(DriverUrl),
-                TimeSpan.FromMinutes(5),
-                // TimeSpan.FromSeconds(5),
+                _timeout,
                 true),
             options);
-        // return _driver = new AndroidDriver(new Uri(DriverUrl), options, TimeSpan.FromMinutes(10));
-    }
 
     public HttpClient HttpClient => _client ??= CreateHttpClient(_username, _accessKey);
 
-    public SauceLabsClient() : base()
-    {
-        _username = Environment.GetEnvironmentVariable("SAUCE_USERNAME") ??
-                       throw new Exception("SAUCE_USERNAME is not set");
-        _accessKey = Environment.GetEnvironmentVariable("SAUCE_ACCESS_KEY") ??
-                        throw new Exception("SAUCE_ACCESS_KEY is not set");
-
-    }
-
-    private static HttpClient CreateHttpClient(string username, string accessKey)
+    private HttpClient CreateHttpClient(string username, string accessKey)
     {
         var handler = new HttpClientHandler();
-
         var sentryHandler = new SentryHttpMessageHandler(handler);
 
         var client = new HttpClient(sentryHandler);
-        // Basic auth used to call web APIs like apk upload
         var byteArray = System.Text.Encoding.ASCII.GetBytes($"{username}:{accessKey}");
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
 
-        // client.DefaultRequestHeaders.UserAgent.ParseAdd("selenium/{0} (.net Appium)");
         client.DefaultRequestHeaders.Accept.ParseAdd("application/json, image/png");
         client.DefaultRequestHeaders.ExpectContinue = false;
-        // if (!this.IsKeepAliveEnabled)
-            client.DefaultRequestHeaders.Connection.ParseAdd("close");
-        // client.Timeout = this.serverResponseTimeout;
+        client.Timeout = _timeout;
 
         return client;
     }
 
-    // public void Dispose() => _client.Dispose();
+    public async Task<string> UploadApkAsync(string apkPath, string appName)
+    {
+        using var form = new MultipartFormDataContent();
+
+        var fileBytes = await File.ReadAllBytesAsync(apkPath);
+        var fileContent = new ByteArrayContent(fileBytes);
+        fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse("application/octet-stream");
+        form.Add(fileContent, "payload", appName);
+        form.Add(new StringContent(appName), "name");
+        form.Add(new StringContent("true"), "overwrite");
+
+        Console.WriteLine("Uploading APK to device farm...");
+
+        var response = await HttpClient.PostAsync(UploadFileUrl, form);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new Exception($"Failed to upload APK to device farm: {(int)response.StatusCode} {response.ReasonPhrase}");
+        }
+
+        var result = await response.Content.ReadFromJsonAsync<AppUploadResult>();
+        var id = result!.Item.Id;
+        Console.WriteLine("App uploaded successfully. Id: {0}", id);
+        return id;
+    }
+
+    public void Dispose()
+    {
+        _driver?.Dispose();
+        _client?.Dispose();
+    }
 }
 
-public class SentryHttpCommandExecutor : HttpCommandExecutor
+public class SentryHttpCommandExecutor(
+    HttpClient client,
+    Uri addressOfRemoteServer,
+    TimeSpan timeout,
+    bool enableKeepAlive)
+    : HttpCommandExecutor(addressOfRemoteServer, timeout, enableKeepAlive)
 {
-    private readonly HttpClient _client;
-    private readonly TimeSpan _timeout;
+    protected override HttpClient CreateHttpClient() => client;
+}
 
-    public SentryHttpCommandExecutor(HttpClient client, Uri addressOfRemoteServer, TimeSpan timeout)
-        : base(addressOfRemoteServer, timeout)
+class AppUploadResult
+{
+    public ItemResult Item { get; set; } = null!;
+    public class ItemResult
     {
-        _timeout = timeout;
-        _client = client;
+        public string Id { get; set; } = null!;
     }
+}
 
-    public SentryHttpCommandExecutor(HttpClient client, Uri addressOfRemoteServer, TimeSpan timeout, bool enableKeepAlive)
-        : base(addressOfRemoteServer, timeout, enableKeepAlive)
+static class AndroidDriverExtensions
+{
+    public static void FailJob(this IWebDriver driver)
     {
-        _client = client;
-        _timeout = timeout;
-    }
-
-    protected override HttpClient CreateHttpClient()
-    {
-        return _client;
-        var clientHandler = CreateHttpClientHandler();
-        // var handler = new SentryHttpMessageHandler(clientHandler);
-        // var httpClient = new HttpClient(handler);
-        // httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(this.UserAgent);
-        // httpClient.DefaultRequestHeaders.Accept.ParseAdd("application/json, image/png");
-        // httpClient.DefaultRequestHeaders.ExpectContinue = false;
-        // if (!IsKeepAliveEnabled)
-        // {
-        //     httpClient.DefaultRequestHeaders.Connection.ParseAdd("close");
-        // }
-        // httpClient.Timeout = _timeout;
-        // return httpClient;
+        ((IJavaScriptExecutor)driver).ExecuteScript("sauce:job-result=failed");
     }
 }

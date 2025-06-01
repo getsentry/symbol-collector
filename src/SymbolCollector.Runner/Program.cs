@@ -6,7 +6,6 @@ Console.WriteLine("Starting runner...");
 
 const string appName = "SymbolCollector.apk";
 const string appPackage = "io.sentry.symbolcollector.android";
-const string sauceUrl = "https://api.us-west-1.saucelabs.com/v1/storage/upload";
 const string filePath = $"src/SymbolCollector.Android/bin/Release/net9.0-android/{appPackage}-Signed.apk";
 // const string filePath = $"../../../../../src/SymbolCollector.Android/bin/Release/net9.0-android/io.sentry.symbolcollector.android-Signed.apk";
 
@@ -24,18 +23,18 @@ SentrySdk.ConfigureScope(s => s.Transaction = transaction);
 
 try
 {
-    var client = new SauceLabsClient();
+    using var client = new SauceLabsClient();
 
     var app = $"storage:filename={appName}";
 
     if (args.Length == 0 || bool.TryParse(args[0], out var skipUploadApp) && !skipUploadApp)
     {
         var span = transaction.StartChild("appium.upload-apk", "uploading apk to saucelabs");
-        // var buildId = await UploadApkAsync(client.HttpClient);
+        var buildId = await client.UploadApkAsync(filePath, appName);
         span.Finish();
         // Run on this specific app
-        app = $"storage:dd81a803-855f-4b5f-884c-55ee3caafa59";
-        // app = $"storage:{buildId}";
+        // app = $"storage:dd81a803-855f-4b5f-884c-55ee3caafa59";
+        app = $"storage:{buildId}";
     }
     else
     {
@@ -90,7 +89,7 @@ void UploadSymbolsOnSauceLabs(string app, ISpan span, SauceLabsClient client)
     options.AddAdditionalAppiumOption("appWaitActivity", "*");
 
     var driverSpan = uploadSymbolsSpan.StartChild("appium.start-driver", "Starting the Appium driver");
-    var driver = client.CreateDriver(options);
+    var driver = client.GetDriver(options);
     driverSpan.Finish();
 
     try
@@ -191,55 +190,11 @@ void UploadSymbolsOnSauceLabs(string app, ISpan span, SauceLabsClient client)
     catch (Exception e)
     {
         uploadSymbolsSpan.Finish(e);
-        FailJob(driver);
+        driver.FailJob();
         throw;
     }
     finally
     {
         driver.Quit();
-    }
-}
-
-async Task GetAllDevices()
-{
-}
-
-async Task<string> UploadApkAsync(HttpClient client)
-{
-    using var form = new MultipartFormDataContent();
-
-    var fileBytes = await File.ReadAllBytesAsync(filePath);
-    var fileContent = new ByteArrayContent(fileBytes);
-    fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse("application/octet-stream");
-    form.Add(fileContent, "payload", appName);
-    form.Add(new StringContent(appName), "name");
-    form.Add(new StringContent("true"), "overwrite");
-
-    Console.WriteLine("Uploading APK to device farm...");
-
-    var response = await client.PostAsync(sauceUrl, form);
-
-    if (!response.IsSuccessStatusCode)
-    {
-        throw new Exception($"Failed to upload APK to device farm: {(int)response.StatusCode} {response.ReasonPhrase}");
-    }
-
-    var result = await response.Content.ReadFromJsonAsync<AppUploadResult>();
-    var id = result!.Item.Id;
-    Console.WriteLine("App uploaded successfully. Id: {0}", id);
-    return id;
-}
-
-static void FailJob(IWebDriver driver)
-{
-    ((IJavaScriptExecutor)driver).ExecuteScript("sauce:job-result=failed");
-}
-
-class AppUploadResult
-{
-    public ItemResult Item { get; set; } = null!;
-    public class ItemResult
-    {
-        public string Id { get; set; } = null!;
     }
 }
