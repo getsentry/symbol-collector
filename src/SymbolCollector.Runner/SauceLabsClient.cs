@@ -1,9 +1,5 @@
 using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Text.RegularExpressions;
 using OpenQA.Selenium.Remote;
-
-namespace SymbolCollector.Runner;
 
 public class SauceLabsClient : IDisposable
 {
@@ -74,9 +70,7 @@ public class SauceLabsClient : IDisposable
 
     private const string CacheDirectory = ".cache";
     private const string CacheFile = CacheDirectory + "/devices.json";
-    // Will use a single file name in the cache to represent the last status of a device
-    // if a new device shows up in the device farm, we'll schedule those first
-    // if a device ran last time
+
     public async Task<List<SauceLabsDevice>> GetDevices()
     {
         // GitHub will remove any cache entries that have not been accessed in over 7 days. There is no limit on the number of caches you can store, but the total size of all caches in a repository is limited to 10 GB.
@@ -145,12 +139,12 @@ public class SauceLabsClient : IDisposable
             throw new Exception("Failed to parse response while getting devices");
         }
 
-        // Console.WriteLine("{0} total real devices found. Filtering by Android and sorting by API level..", devices.Count);
+        Console.WriteLine("{0} total real devices found. Filtering by Android and sorting by API level..", devices.Count);
         var androidRealDevices = devices
             .Where(d => string.Equals(d.Os, "android", StringComparison.OrdinalIgnoreCase))
             .OrderByDescending(d => d.ApiLevel)
             .ToList();
-        // Console.WriteLine("{0} Android devices", androidRealDevices.Count);
+        Console.WriteLine("{0} Android devices", androidRealDevices.Count);
         return androidRealDevices;
     }
 

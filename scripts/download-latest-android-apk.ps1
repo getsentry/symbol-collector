@@ -3,11 +3,15 @@ $ErrorActionPreference = "Stop"
 Install-Module -Name Sentry -RequiredVersion 0.3.0 -Scope CurrentUser -Force -AllowClobber
 Import-Module Sentry
 
+$commitSha = $env:GITHUB_SHA
+if (-not $commitSha) {
+    $commitSha = "local-dev"
+}
 Start-Sentry -Debug {
     $_.Dsn = "https://ea58a7607ff1b39433af3a6c10365925@o1.ingest.us.sentry.io/4509420348964864"
     $_.TracesSampleRate = 1.0
     $_.Environment = "github-actions"
-    $_.Release = $env:GITHUB_SHA
+    $_.Release = $commitSha
 }
 $transaction = Start-SentryTransaction -Name "download-latest-release" -Operation "release.download"
 

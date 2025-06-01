@@ -1,11 +1,8 @@
-﻿// To skip uploading the package, pass 'false' as the first argument
-
-using SymbolCollector.Runner;
-
+﻿// Runner uploads the apk by default (on current directory or under the apps' bin).
+// To skip, pass 'skipUpload:true' as the first argument
 var skipUpload = args.Any(a => a.Equals("skipUpload:true", StringComparison.OrdinalIgnoreCase));
-var apkPath = args.Any(a => a.Equals("apkPath:", StringComparison.OrdinalIgnoreCase));
 
-Console.WriteLine($"Starting runner (skipUpload:{skipUpload},apk:{apkPath})...");
+Console.WriteLine($"Starting runner (skipUpload:{skipUpload}...");
 
 const string appName = "SymbolCollector.apk";
 const string appPackage = "io.sentry.symbolcollector.android";
