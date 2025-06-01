@@ -1,18 +1,16 @@
-﻿using System.Net.Http.Headers;
-using System.Net.Http.Json;
-using OpenQA.Selenium;
-using OpenQA.Selenium.Appium;
-using OpenQA.Selenium.Appium.Android;
-using OpenQA.Selenium.Appium.Enums;
+﻿// To skip uploading the package, pass 'false' as the first argument
 
 Console.WriteLine("Starting runner...");
+
 const string appName = "SymbolCollector.apk";
 const string appPackage = "io.sentry.symbolcollector.android";
+const string sauceUrl = "https://api.us-west-1.saucelabs.com/v1/storage/upload";
+const string filePath = $"src/SymbolCollector.Android/bin/Release/net9.0-android/{appPackage}-Signed.apk";
 
 SentrySdk.Init(options =>
 {
     options.Dsn = "https://ea58a7607ff1b39433af3a6c10365925@o1.ingest.us.sentry.io/4509420348964864";
-    // options.Debug = true;
+    options.Debug = false;
     options.AutoSessionTracking = true;
     options.TracesSampleRate = 1.0;
 });
@@ -29,13 +27,17 @@ try
 
     var app = $"storage:filename={appName}";
 
-    if (args.Length > 0 && bool.TryParse(args[0], out var uploadApp) && uploadApp)
+    if (args.Length == 0 || bool.TryParse(args[0], out var skipUploadApp) && !skipUploadApp)
     {
         var span = transaction.StartChild("appium.upload-apk", "uploading apk to saucelabs");
         var buildId = await UploadApkAsync(username, accessKey);
         span.Finish();
         // Run on this specific app
         app = $"storage:{buildId}";
+    }
+    else
+    {
+        Console.WriteLine("Skipping apk upload");
     }
 
     UploadSymbolsOnSauceLabs(username, accessKey, app, transaction);
@@ -195,9 +197,6 @@ void UploadSymbolsOnSauceLabs(string username, string accessKey, string app, ISp
 
 async Task<string> UploadApkAsync(string username, string accessKey)
 {
-    const string sauceUrl = "https://api.us-west-1.saucelabs.com/v1/storage/upload";
-    const string filePath = $"../src/SymbolCollector.Android/bin/Release/net9.0-android/{appPackage}-Signed.apk";
-
     using var client = new HttpClient(new SentryHttpMessageHandler());
     var byteArray = System.Text.Encoding.ASCII.GetBytes($"{username}:{accessKey}");
     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
