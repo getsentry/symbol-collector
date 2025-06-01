@@ -1,6 +1,7 @@
 .idea/
 .vs/
 .DS_Store
+.cache/
 bin/
 obj/
 out/

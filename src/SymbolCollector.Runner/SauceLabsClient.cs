@@ -1,11 +1,16 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using OpenQA.Selenium.Remote;
 
 namespace SymbolCollector.Runner;
 
 public class SauceLabsClient : IDisposable
 {
-    private const string UploadFileUrl = "https://api.us-west-1.saucelabs.com/v1/storage/upload";
-    private const string DriverUrl = "https://ondemand.us-west-1.saucelabs.com:443/wd/hub";
+    private const string SauceLabsBaseDomainWithRegion = "us-west-1.saucelabs.com";
+    private const string SauceLabsApiBaseAddress = "https://api." + SauceLabsBaseDomainWithRegion;
+    private const string DriverUrl = "https://ondemand." + SauceLabsBaseDomainWithRegion + ":443/wd/hub";
+    private const string UploadFileUrl = SauceLabsApiBaseAddress + "/v1/storage/upload";
     private HttpClient? _client;
     private AndroidDriver? _driver;
     private readonly TimeSpan _timeout = TimeSpan.FromMinutes(2);
@@ -67,6 +72,84 @@ public class SauceLabsClient : IDisposable
         return id;
     }
 
+    private const string CacheFile = ".cache/devices.json";
+    // Will use a single file name in the cache to represent the last status of a device
+    // if a new device shows up in the device farm, we'll schedule those first
+    // if a device ran last time
+    public async Task<List<SauceLabsDevice>> GetDevices()
+    {
+        // GitHub will remove any cache entries that have not been accessed in over 7 days. There is no limit on the number of caches you can store, but the total size of all caches in a repository is limited to 10 GB.
+        // https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/caching-dependencies-to-speed-up-workflows
+        var getDevicesTask = GetAndroidRealDevices();
+        var cacheDir = Directory.CreateDirectory(".cache");
+        var liveDevices = await getDevicesTask;
+        var cachedDevices = new List<SauceLabsDevice>();
+
+        if (!cacheDir.Exists)
+        {
+            throw new InvalidOperationException("Failed to create cache directory");
+        }
+        if (File.Exists(CacheFile))
+        {
+            await using var cacheFileStream = File.OpenRead(CacheFile);
+            try
+            {
+                cachedDevices = await JsonSerializer.DeserializeAsync<List<SauceLabsDevice>>(cacheFileStream);
+                // Should either throw or return an empty list
+                ArgumentNullException.ThrowIfNull(cachedDevices);
+                Console.WriteLine("{0} cached devices restored", cachedDevices.Count);
+            }
+            // got type System.Text.Json.JsonReaderException but not accessible?
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                SentrySdk.CaptureException(e);
+            }
+        }
+        else
+        {
+            Console.WriteLine("No cache device info found.");
+        }
+
+        // hydrate the liveDevice list with the cached information. What's in the cache but no longer live will be removed
+        var newList = liveDevices.Select(cd =>
+            cachedDevices!.FirstOrDefault(d => d.Id == cd.Id) ?? cd).ToList();
+        return newList;
+    }
+
+    public async Task SaveResults(List<SauceLabsDevice> devices)
+    {
+        var cacheDir = Directory.CreateDirectory(".cache");
+        if (!cacheDir.Exists)
+        {
+            throw new InvalidOperationException("Failed to create cache directory");
+        }
+
+        await using var cacheFileStream = File.Open(".cache/devices.json", FileMode.OpenOrCreate, FileAccess.ReadWrite);
+        await JsonSerializer.SerializeAsync(cacheFileStream, devices);
+        Console.WriteLine("Cached {0} devices.", devices.Count);
+    }
+
+    private async Task<List<SauceLabsDevice>> GetAndroidRealDevices()
+    {
+        var response = await HttpClient.GetAsync($"{SauceLabsApiBaseAddress}/v1/rdc/devices");
+        response.EnsureSuccessStatusCode();
+
+        var devices = await response.Content.ReadFromJsonAsync<List<SauceLabsDevice>>();
+        if (devices is null)
+        {
+            throw new Exception("Failed to parse response while getting devices");
+        }
+
+        Console.WriteLine("{0} total real devices found. Filtering by Android and sorting by API level..", devices.Count);
+        var androidRealDevices = devices
+            .Where(d => string.Equals(d.Os, "android", StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(d => d.ApiLevel)
+            .ToList();
+        Console.WriteLine("{0} Android devices", androidRealDevices.Count);
+        return androidRealDevices;
+    }
+
     public void Dispose()
     {
         _driver?.Dispose();
@@ -99,4 +182,51 @@ static class AndroidDriverExtensions
     {
         ((IJavaScriptExecutor)driver).ExecuteScript("sauce:job-result=failed");
     }
+}
+
+public class SauceLabsDevice
+{
+    // Not defined by the API, but we need it for the cache
+    public DateTimeOffset? LastSymbolUploadRanTime { get; set; }
+
+    // Defined by the API
+    public string? AbiType { get; set; }
+    public int ApiLevel { get; set; }
+    public int CpuCores { get; set; }
+    public int CpuFrequency { get; set; }
+    public string? DefaultOrientation { get; set; }
+    public int Dpi { get; set; }
+    public bool HasOnScreenButtons { get; set; }
+    public string? Id { get; set; }
+    public string? InternalOrientation { get; set; }
+    public int InternalStorageSize { get; set; }
+    public bool IsArm { get; set; }
+    public bool IsKeyGuardDisabled { get; set; }
+    public bool IsPrivate { get; set; }
+    public bool IsRooted { get; set; }
+    public bool IsTablet { get; set; }
+    public List<string>? Manufacturer { get; set; }
+    public string? ModelNumber { get; set; }
+    public string? Name { get; set; }
+    public string? Os { get; set; }
+    public string? OsVersion { get; set; }
+    public double PixelsPerPoint { get; set; }
+    public int RamSize { get; set; }
+    public int ResolutionHeight { get; set; }
+    public int ResolutionWidth { get; set; }
+    public double ScreenSize { get; set; }
+    public int SdCardSize { get; set; }
+    public bool SupportsAppiumWebAppTesting { get; set; }
+    public bool SupportsGlobalProxy { get; set; }
+    public bool SupportsMinicapSocketConnection { get; set; }
+    public bool SupportsMockLocations { get; set; }
+    public string? CpuType { get; set; }
+    public string? DeviceFamily { get; set; }
+    public string? DpiName { get; set; }
+    public bool IsAlternativeIoEnabled { get; set; }
+    public bool SupportsManualWebTesting { get; set; }
+    public bool SupportsMultiTouch { get; set; }
+    public bool SupportsXcuiTest { get; set; }
+
+    public override string ToString() => $"id:{Id} - name:{Name} - API: {ApiLevel}";
 }
