@@ -10,7 +10,7 @@ const string filePath = $"src/SymbolCollector.Android/bin/Release/net9.0-android
 
 SentrySdk.Init(options =>
 {
-    // options.Dsn = "https://ea58a7607ff1b39433af3a6c10365925@o1.ingest.us.sentry.io/4509420348964864";
+    options.Dsn = "https://ea58a7607ff1b39433af3a6c10365925@o1.ingest.us.sentry.io/4509420348964864";
     options.Dsn = "";
     options.Debug = false;
     options.AutoSessionTracking = true;
@@ -24,26 +24,40 @@ try
 {
     using var client = new SauceLabsClient();
     var devices = await client.GetDevices();
-    Console.WriteLine(devices.FirstOrDefault()?.ToString() ?? "No devices found");
+    // Prioritize devices that don't have a timestamp saved in the cache yet
+    if (devices.FirstOrDefault(p => p.LastSymbolUploadRanTime is null) is not { } deviceToRun)
+    {
+        Console.WriteLine("No new devices, running on the one we ran last.");
+        // TODO: Skip if ran last than 30 days ago
+        deviceToRun = devices.OrderBy(d => d.LastSymbolUploadRanTime).First();
+        Console.WriteLine("Running on device that ran last {0}: {1}", deviceToRun.LastSymbolUploadRanTime, deviceToRun);
+    }
+    else
+    {
+        Console.WriteLine("Brand new device detected: {0}", deviceToRun);
+    }
 
-    await client.SaveResults(devices);
-
-    return;
     var app = $"storage:filename={appName}";
 
     if (args.Length == 0 || bool.TryParse(args[0], out var skipUploadApp) && !skipUploadApp)
     {
         var span = transaction.StartChild("appium.upload-apk", "uploading apk to saucelabs");
-        var buildId = await client.UploadApkAsync(filePath, appName);
+        // var buildId = await client.UploadApkAsync(filePath, appName);
         span.Finish();
-        app = $"storage:{buildId}";
+        // app = $"storage:{buildId}";
+        app = $"storage:c4be83c3-a0f3-4bbd-9fb0-58b0f47f0cbf";
     }
     else
     {
         Console.WriteLine("Skipping apk upload");
     }
 
-    UploadSymbolsOnSauceLabs(app, transaction, client);
+    UploadSymbolsOnSauceLabs(app, deviceToRun, transaction, client);
+
+    var cacheSpan = transaction.StartChild("appium.cache-results", "caching results");
+    deviceToRun.LastSymbolUploadRanTime = DateTime.UtcNow;
+    await client.SaveResults(devices);
+    cacheSpan.Finish();
 
     transaction.Finish();
 }
@@ -60,30 +74,32 @@ finally
 
 return;
 
-void UploadSymbolsOnSauceLabs(string app, ISpan span, SauceLabsClient client)
+void UploadSymbolsOnSauceLabs(string app, SauceLabsDevice deviceToRun, ISpan span, SauceLabsClient client)
 {
     var uploadSymbolsSpan = span.StartChild("appium.symbol.upload", "instructing app to start uploading symbols");
+    span.SetData("device", deviceToRun.Id);
 
     var options = new AppiumOptions
     {
         PlatformName = "Android",
-        DeviceName = "Google.*", // TODO: Get devices
-        PlatformVersion = "13",
+        DeviceName = deviceToRun.Id,
         AutomationName = "UiAutomator2",
         App = app,
     };
 
+    options.AddAdditionalAppiumOption("appiumVersion", "stable");
     options.AddAdditionalAppiumOption("intentAction", "android.intent.action.MAIN");
     options.AddAdditionalAppiumOption("intentCategory", "android.intent.category.LAUNCHER");
-    if (span.GetTraceHeader() is { } trace)
+    if (span.GetTraceHeader() is { } trace && !trace.TraceId.Equals(SentryId.Empty))
     {
-        // TODO: Can I propagate this under the hood with the client?
         options.AddAdditionalAppiumOption("optionalIntentArguments", $"--es sentryTrace {trace}");
     }
 
     var sauceOptions = new Dictionary<string, object>
     {
         { "name", "CollectSymbolInstrumentation" },
+        // appiumVersion is mandatory to use Appium 2
+        { "appiumVersion", "stable" },
     };
 
     options.AddAdditionalAppiumOption("sauce:options", sauceOptions);

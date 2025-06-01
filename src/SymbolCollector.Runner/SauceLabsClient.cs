@@ -72,7 +72,8 @@ public class SauceLabsClient : IDisposable
         return id;
     }
 
-    private const string CacheFile = ".cache/devices.json";
+    private const string CacheDirectory = ".cache";
+    private const string CacheFile = CacheDirectory + "/devices.json";
     // Will use a single file name in the cache to represent the last status of a device
     // if a new device shows up in the device farm, we'll schedule those first
     // if a device ran last time
@@ -81,7 +82,7 @@ public class SauceLabsClient : IDisposable
         // GitHub will remove any cache entries that have not been accessed in over 7 days. There is no limit on the number of caches you can store, but the total size of all caches in a repository is limited to 10 GB.
         // https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/caching-dependencies-to-speed-up-workflows
         var getDevicesTask = GetAndroidRealDevices();
-        var cacheDir = Directory.CreateDirectory(".cache");
+        var cacheDir = Directory.CreateDirectory(CacheDirectory);
         var liveDevices = await getDevicesTask;
         var cachedDevices = new List<SauceLabsDevice>();
 
@@ -102,6 +103,9 @@ public class SauceLabsClient : IDisposable
             // got type System.Text.Json.JsonReaderException but not accessible?
             catch (Exception e)
             {
+                // System.Text.Json.JsonException: ']' is invalid after a single JSON value. Expected end of data. Path: $ | LineNumber: 0 | BytePositionInLine: 128242.
+                // If it gets into a broken state, it gets stuck. So we'll nuke the cache and start over.
+                File.Delete(CacheFile);
                 Console.WriteLine(e);
                 SentrySdk.CaptureException(e);
             }
@@ -119,13 +123,13 @@ public class SauceLabsClient : IDisposable
 
     public async Task SaveResults(List<SauceLabsDevice> devices)
     {
-        var cacheDir = Directory.CreateDirectory(".cache");
+        var cacheDir = Directory.CreateDirectory(CacheDirectory);
         if (!cacheDir.Exists)
         {
             throw new InvalidOperationException("Failed to create cache directory");
         }
 
-        await using var cacheFileStream = File.Open(".cache/devices.json", FileMode.OpenOrCreate, FileAccess.ReadWrite);
+        await using var cacheFileStream = File.Create(CacheFile);
         await JsonSerializer.SerializeAsync(cacheFileStream, devices);
         Console.WriteLine("Cached {0} devices.", devices.Count);
     }
@@ -141,12 +145,12 @@ public class SauceLabsClient : IDisposable
             throw new Exception("Failed to parse response while getting devices");
         }
 
-        Console.WriteLine("{0} total real devices found. Filtering by Android and sorting by API level..", devices.Count);
+        // Console.WriteLine("{0} total real devices found. Filtering by Android and sorting by API level..", devices.Count);
         var androidRealDevices = devices
             .Where(d => string.Equals(d.Os, "android", StringComparison.OrdinalIgnoreCase))
             .OrderByDescending(d => d.ApiLevel)
             .ToList();
-        Console.WriteLine("{0} Android devices", androidRealDevices.Count);
+        // Console.WriteLine("{0} Android devices", androidRealDevices.Count);
         return androidRealDevices;
     }
 
