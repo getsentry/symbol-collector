@@ -21,6 +21,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SymbolCollector.Android.Lib
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SymbolCollector.Console.Tests", "test\SymbolCollector.Console.Tests\SymbolCollector.Console.Tests.csproj", "{DF467643-472E-4B46-9D3C-6F71E2D67687}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SymbolCollector.Runner", "src\SymbolCollector.Runner\SymbolCollector.Runner.csproj", "{24CA380D-66DA-4494-BC03-2B296F1477E5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -139,6 +141,18 @@ Global
 		{DF467643-472E-4B46-9D3C-6F71E2D67687}.Release|x64.Build.0 = Release|Any CPU
 		{DF467643-472E-4B46-9D3C-6F71E2D67687}.Release|x86.ActiveCfg = Release|Any CPU
 		{DF467643-472E-4B46-9D3C-6F71E2D67687}.Release|x86.Build.0 = Release|Any CPU
+		{24CA380D-66DA-4494-BC03-2B296F1477E5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{24CA380D-66DA-4494-BC03-2B296F1477E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{24CA380D-66DA-4494-BC03-2B296F1477E5}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{24CA380D-66DA-4494-BC03-2B296F1477E5}.Debug|x64.Build.0 = Debug|Any CPU
+		{24CA380D-66DA-4494-BC03-2B296F1477E5}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{24CA380D-66DA-4494-BC03-2B296F1477E5}.Debug|x86.Build.0 = Debug|Any CPU
+		{24CA380D-66DA-4494-BC03-2B296F1477E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{24CA380D-66DA-4494-BC03-2B296F1477E5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{24CA380D-66DA-4494-BC03-2B296F1477E5}.Release|x64.ActiveCfg = Release|Any CPU
+		{24CA380D-66DA-4494-BC03-2B296F1477E5}.Release|x64.Build.0 = Release|Any CPU
+		{24CA380D-66DA-4494-BC03-2B296F1477E5}.Release|x86.ActiveCfg = Release|Any CPU
+		{24CA380D-66DA-4494-BC03-2B296F1477E5}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

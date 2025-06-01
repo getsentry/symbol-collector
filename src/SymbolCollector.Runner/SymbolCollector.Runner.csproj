@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <SentryProject>android-symbol-collector-runner</SentryProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Appium.WebDriver" />
+    <PackageReference Include="Sentry" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="System.Net.Http.Headers" />
+    <Using Include="System.Net.Http.Json" />
+    <Using Include="OpenQA.Selenium" />
+    <Using Include="OpenQA.Selenium.Appium" />
+    <Using Include="OpenQA.Selenium.Appium.Android" />
+    <Using Include="OpenQA.Selenium.Appium.Enums" />
+  </ItemGroup>
+
+</Project>

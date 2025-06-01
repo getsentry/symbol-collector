@@ -36,7 +36,7 @@ public class Host
     /// <summary>
     /// Initializes <see cref="IHost"/> with Sentry monitoring.
     /// </summary>
-    public static IHost Init(Context context, string dsn)
+    public static IHost Init(Context context, string dsn, SentryTraceHeader? sentryTrace = null)
     {
         SentrySdk.Init(o =>
         {
@@ -71,6 +71,8 @@ public class Host
             o.Dsn = dsn;
             o.SendDefaultPii = true;
 
+            o.IsGlobalModeEnabled = true;
+
             o.AddExceptionFilterForType<OperationCanceledException>();
             o.AddInAppExclude("Interop.");
             o.SetBeforeBreadcrumb(breadcrumb
@@ -81,7 +83,10 @@ public class Host
                     ? null
                     : breadcrumb);
         });
-        var tran = SentrySdk.StartTransaction("AppStart", "activity.load");
+        var tran = sentryTrace is null
+            ? SentrySdk.StartTransaction("AppStart", "activity.load")
+            // TODO: Can we get away with 'new ()'?
+            : SentrySdk.StartTransaction("AppStart", "activity.load", sentryTrace);
 
         SentrySdk.ConfigureScope(s =>
         {
@@ -89,7 +94,6 @@ public class Host
             s.AddAttachment(new ScreenshotAttachment());
         });
 
-        // TODO: Where is this span?
         var iocSpan = tran.StartChild("container.init", "Initializing the IoC container");
         var userAgent = Java.Lang.JavaSystem.GetProperty("http.agent") ?? "Android/" + typeof(Host).Assembly.GetName().Version;
         var host = Startup.Init(services =>

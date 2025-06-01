@@ -25,17 +25,17 @@ public class MainActivity : Activity
 
     protected override void OnCreate(Bundle? savedInstanceState)
     {
-        // Can't take a screenshot otherwise: System.NullReferenceException: The current Activity can not be detected. Ensure that you have called Init in your Activity or Application class.
         Microsoft.Maui.ApplicationModel.ActivityStateManager.Default.Init(this, savedInstanceState);
 
 #pragma warning disable 618
         _friendlyName = $"Android:{Build.Manufacturer}-{Build.CpuAbi}-{Build.Model}";
 #pragma warning restore 618
-        _host = Host.Init(this, "https://656e2e78d37d4511a4ea2cb3602e7a65@sentry.io/5953206");
+        _host = Host.Init(this, "https://656e2e78d37d4511a4ea2cb3602e7a65@sentry.io/5953206",
+            SentryTraceHeader.Parse(Intent?.GetStringExtra("sentryTrace") ?? ""));
         _serviceProvider = _host.Services;
 
-        var tran = SentrySdk.StartTransaction("AppStart", "activity.load");
-        _startupTransaction = tran;
+        // It's set in Host.Init above
+        SentrySdk.ConfigureScope(s => _startupTransaction = s.Transaction!);
         AddSentryContext();
 
         var span = _startupTransaction.StartChild("OnCreate");
@@ -73,7 +73,9 @@ public class MainActivity : Activity
 
             async void OnUploadButtonOnClick(object? sender, EventArgs args)
             {
-                var uploadTransaction = SentrySdk.StartTransaction("BatchUpload", "batch.upload");
+                // The scope tracks the overall app transaction while this is only batch uploading
+                var uploadTransaction = SentrySdk.StartTransaction("BatchUpload", "batch.upload", _startupTransaction.GetTraceHeader());
+
                 try
                 {
                     SentrySdk.AddBreadcrumb("OnUploadButtonOnClick", category: "ui.event");
@@ -161,7 +163,7 @@ public class MainActivity : Activity
             }
             else if (uploadTask.IsFaulted)
             {
-                ShowError(uploadTask.Exception);
+                await ShowError(uploadTask.Exception);
                 span.Finish(SpanStatus.InternalError);
             }
             else
@@ -173,7 +175,7 @@ public class MainActivity : Activity
         }
         catch (Exception e)
         {
-            ShowError(e);
+            await ShowError(e);
             span.Finish(e);
         }
         finally
@@ -225,18 +227,9 @@ public class MainActivity : Activity
             }
         }, token);
 
-    private void ShowError(Exception? e)
+    private async Task ShowError(Exception e)
     {
-        if (e is null)
-        {
-            SentrySdk.CaptureMessage("ShowError called but no Exception instance provided.", SentryLevel.Error);
-        }
-        else
-        {
-            SentrySdk.CaptureException(e);
-        }
-
-        if (e is AggregateException ae && ae.InnerExceptions.Count == 1)
+        if (e is AggregateException { InnerExceptions.Count: 1 } ae)
         {
             e = ae.InnerExceptions[0];
         }
@@ -244,11 +237,8 @@ public class MainActivity : Activity
         var uploadButton = (Button)base.FindViewById(Resource.Id.btnUpload)!;
         var cancelButton = (Button)base.FindViewById(Resource.Id.btnCancel)!;
 
-        var lastEvent = SentrySdk.LastEventId;
-        // TODO: SentryId.Empty should operator overload ==
-        var message = SentryId.Empty.ToString() == lastEvent.ToString()
-            ? e?.ToString() ?? "Something didn't quite work."
-            : $"Sentry id: \n{lastEvent}\n\n{e}";
+        var sentryEvent = new SentryEvent(e);
+        var message = $"Sentry id: \n{sentryEvent.EventId}\n\n{e}";
 
         var dialogView = FindViewById<LinearLayout>(Resource.Id.dialog_error);
         var dialogBody = FindViewById<TextView>(Resource.Id.dialog_body);
@@ -263,6 +253,11 @@ public class MainActivity : Activity
             cancelButton.Enabled = false;
             dialogView.Visibility = ViewStates.Gone;
         };
+
+        // Let the UI thread run for the dialog to show up
+        await Task.Yield();
+
+        SentrySdk.CaptureEvent(sentryEvent);
     }
 
     private void AddSentryContext()
@@ -302,9 +297,9 @@ public class MainActivity : Activity
             // It's 'production' by default otherwise
             s.Environment = "development";
 #elif RELEASE
-                s.SetTag("build-type", "release");
+            s.SetTag("build-type", "release");
 #else
-                s.SetTag("build-type", "other");
+            s.SetTag("build-type", "other");
 #endif
         });
     }

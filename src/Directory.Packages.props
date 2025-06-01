@@ -4,6 +4,7 @@
     <SentryVersion>5.9.0</SentryVersion>
   </PropertyGroup>
   <ItemGroup>
+    <PackageVersion Include="Sentry" Version="$(SentryVersion)" />
     <PackageVersion Include="Sentry.Extensions.Logging" Version="$(SentryVersion)" />
     <PackageVersion Include="Sentry.AspNetCore" Version="$(SentryVersion)" />
     <PackageVersion Include="Sentry.Serilog" Version="$(SentryVersion)" />
@@ -23,5 +24,6 @@
     <PackageVersion Include="System.Text.Json" Version="9.0.0" />
     <PackageVersion Include="System.CommandLine.DragonFruit" Version="0.3.0-alpha.21216.1" />
     <PackageVersion Include="UnoptimizedAssemblyDetector" Version="0.1.1" />
+    <PackageVersion Include="Appium.WebDriver" Version="7.2.0" />
   </ItemGroup>
 </Project>
