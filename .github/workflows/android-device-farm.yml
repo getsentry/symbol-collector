@@ -20,6 +20,11 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
 
+      - name: Install .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.200
+
       - name: Restore .cache folder
         uses: actions/cache@v3
         with:
@@ -35,8 +40,8 @@ jobs:
 
       - name: Invoke Runner
         run: |
-          dotnet run \
-            --project src/SymbolCollector.Runner/SymbolCollector.Runner.csproj \
+          dotnet run
+            --project src/SymbolCollector.Runner/SymbolCollector.Runner.csproj
             -c Release
 
       - name: Save .cache folder
