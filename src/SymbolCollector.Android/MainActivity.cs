@@ -31,7 +31,7 @@ public class MainActivity : Activity
         _friendlyName = $"Android:{Build.Manufacturer}-{Build.CpuAbi}-{Build.Model}";
 #pragma warning restore 618
         _host = Host.Init(this, "https://656e2e78d37d4511a4ea2cb3602e7a65@sentry.io/5953206",
-            SentryTraceHeader.Parse(Intent?.GetStringExtra("sentryTrace") ?? ""));
+            Intent?.GetStringExtra("sentryTrace"));
         _serviceProvider = _host.Services;
 
         // It's set in Host.Init above

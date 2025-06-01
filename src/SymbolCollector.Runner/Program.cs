@@ -1,10 +1,11 @@
 ﻿// To skip uploading the package, pass 'false' as the first argument
 
+using SymbolCollector.Runner;
+
 Console.WriteLine("Starting runner...");
 
 const string appName = "SymbolCollector.apk";
 const string appPackage = "io.sentry.symbolcollector.android";
-const string sauceUrl = "https://api.us-west-1.saucelabs.com/v1/storage/upload";
 const string filePath = $"src/SymbolCollector.Android/bin/Release/net9.0-android/{appPackage}-Signed.apk";
 
 SentrySdk.Init(options =>
@@ -20,19 +21,15 @@ SentrySdk.ConfigureScope(s => s.Transaction = transaction);
 
 try
 {
-    var username = Environment.GetEnvironmentVariable("SAUCE_USERNAME") ??
-                   throw new Exception("SAUCE_USERNAME is not set");
-    var accessKey = Environment.GetEnvironmentVariable("SAUCE_ACCESS_KEY") ??
-                    throw new Exception("SAUCE_ACCESS_KEY is not set");
+    using var client = new SauceLabsClient();
 
     var app = $"storage:filename={appName}";
 
     if (args.Length == 0 || bool.TryParse(args[0], out var skipUploadApp) && !skipUploadApp)
     {
         var span = transaction.StartChild("appium.upload-apk", "uploading apk to saucelabs");
-        var buildId = await UploadApkAsync(username, accessKey);
+        var buildId = await client.UploadApkAsync(filePath, appName);
         span.Finish();
-        // Run on this specific app
         app = $"storage:{buildId}";
     }
     else
@@ -40,7 +37,7 @@ try
         Console.WriteLine("Skipping apk upload");
     }
 
-    UploadSymbolsOnSauceLabs(username, accessKey, app, transaction);
+    UploadSymbolsOnSauceLabs(app, transaction, client);
 
     transaction.Finish();
 }
@@ -57,9 +54,8 @@ finally
 
 return;
 
-void UploadSymbolsOnSauceLabs(string username, string accessKey, string app, ISpan span)
+void UploadSymbolsOnSauceLabs(string app, ISpan span, SauceLabsClient client)
 {
-    const string driverUrl = "https://ondemand.us-west-1.saucelabs.com:443/wd/hub";
     var uploadSymbolsSpan = span.StartChild("appium.symbol.upload", "instructing app to start uploading symbols");
 
     var options = new AppiumOptions
@@ -73,12 +69,14 @@ void UploadSymbolsOnSauceLabs(string username, string accessKey, string app, ISp
 
     options.AddAdditionalAppiumOption("intentAction", "android.intent.action.MAIN");
     options.AddAdditionalAppiumOption("intentCategory", "android.intent.category.LAUNCHER");
-    options.AddAdditionalAppiumOption("optionalIntentArguments", $"--es sentryTrace {span.GetTraceHeader()}");
+    if (span.GetTraceHeader() is { } trace)
+    {
+        // TODO: Can I propagate this under the hood with the client?
+        options.AddAdditionalAppiumOption("optionalIntentArguments", $"--es sentryTrace {trace}");
+    }
 
     var sauceOptions = new Dictionary<string, object>
     {
-        { "username", username },
-        { "accessKey", accessKey },
         { "name", "CollectSymbolInstrumentation" },
     };
 
@@ -86,7 +84,7 @@ void UploadSymbolsOnSauceLabs(string username, string accessKey, string app, ISp
     options.AddAdditionalAppiumOption("appWaitActivity", "*");
 
     var driverSpan = uploadSymbolsSpan.StartChild("appium.start-driver", "Starting the Appium driver");
-    var driver = new AndroidDriver(new Uri(driverUrl), options, TimeSpan.FromMinutes(10));
+    var driver = client.GetDriver(options);
     driverSpan.Finish();
 
     try
@@ -187,55 +185,11 @@ void UploadSymbolsOnSauceLabs(string username, string accessKey, string app, ISp
     catch (Exception e)
     {
         uploadSymbolsSpan.Finish(e);
-        FailJob(driver);
+        driver.FailJob();
         throw;
     }
     finally
     {
         driver.Quit();
-    }
-}
-
-async Task<string> UploadApkAsync(string username, string accessKey)
-{
-    using var client = new HttpClient(new SentryHttpMessageHandler());
-    var byteArray = System.Text.Encoding.ASCII.GetBytes($"{username}:{accessKey}");
-    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
-
-    using var form = new MultipartFormDataContent();
-
-    var fileBytes = await File.ReadAllBytesAsync(filePath);
-    var fileContent = new ByteArrayContent(fileBytes);
-    fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse("application/octet-stream");
-    form.Add(fileContent, "payload", appName);
-    form.Add(new StringContent(appName), "name");
-    form.Add(new StringContent("true"), "overwrite");
-
-    Console.WriteLine("Uploading APK to device farm...");
-
-    var response = await client.PostAsync(sauceUrl, form);
-
-    if (!response.IsSuccessStatusCode)
-    {
-        throw new Exception($"Failed to upload APK to device farm: {(int)response.StatusCode} {response.ReasonPhrase}");
-    }
-
-    var result = await response.Content.ReadFromJsonAsync<AppUploadResult>();
-    var id = result!.Item.Id;
-    Console.WriteLine("App uploaded successfully. Id: {0}", id);
-    return id;
-}
-
-static void FailJob(IWebDriver driver)
-{
-    ((IJavaScriptExecutor)driver).ExecuteScript("sauce:job-result=failed");
-}
-
-class AppUploadResult
-{
-    public ItemResult Item { get; set; } = null!;
-    public class ItemResult
-    {
-        public string Id { get; set; } = null!;
     }
 }
