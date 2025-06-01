@@ -1,15 +1,19 @@
 ﻿// To skip uploading the package, pass 'false' as the first argument
 
+using SymbolCollector.Runner;
+
 Console.WriteLine("Starting runner...");
 
 const string appName = "SymbolCollector.apk";
 const string appPackage = "io.sentry.symbolcollector.android";
 const string sauceUrl = "https://api.us-west-1.saucelabs.com/v1/storage/upload";
-const string filePath = $"src/SymbolCollector.Android/bin/Release/net9.0-android/{appPackage}-Signed.apk";
+// const string filePath = $"src/SymbolCollector.Android/bin/Release/net9.0-android/{appPackage}-Signed.apk";
+const string filePath = $"../../../../../src/SymbolCollector.Android/bin/Release/net9.0-android/io.sentry.symbolcollector.android-Signed.apk";
 
 SentrySdk.Init(options =>
 {
-    options.Dsn = "https://ea58a7607ff1b39433af3a6c10365925@o1.ingest.us.sentry.io/4509420348964864";
+    // options.Dsn = "https://ea58a7607ff1b39433af3a6c10365925@o1.ingest.us.sentry.io/4509420348964864";
+    options.Dsn = "";
     options.Debug = false;
     options.AutoSessionTracking = true;
     options.TracesSampleRate = 1.0;
@@ -20,27 +24,26 @@ SentrySdk.ConfigureScope(s => s.Transaction = transaction);
 
 try
 {
-    var username = Environment.GetEnvironmentVariable("SAUCE_USERNAME") ??
-                   throw new Exception("SAUCE_USERNAME is not set");
-    var accessKey = Environment.GetEnvironmentVariable("SAUCE_ACCESS_KEY") ??
-                    throw new Exception("SAUCE_ACCESS_KEY is not set");
+    var client = new SauceLabsClient();
 
     var app = $"storage:filename={appName}";
 
     if (args.Length == 0 || bool.TryParse(args[0], out var skipUploadApp) && !skipUploadApp)
     {
         var span = transaction.StartChild("appium.upload-apk", "uploading apk to saucelabs");
-        var buildId = await UploadApkAsync(username, accessKey);
+        // var buildId = await UploadApkAsync(client.HttpClient);
         span.Finish();
         // Run on this specific app
-        app = $"storage:{buildId}";
+        app = $"storage:0d33b087-0472-401f-89ca-0c8899447123";
+        // app = $"storage:{buildId}";
     }
     else
     {
         Console.WriteLine("Skipping apk upload");
     }
 
-    UploadSymbolsOnSauceLabs(username, accessKey, app, transaction);
+    UploadSymbolsOnSauceLabs(app, transaction, client);
+    // UploadSymbolsOnSauceLabs(username, accessKey, app, transaction, client);
 
     transaction.Finish();
 }
@@ -57,9 +60,8 @@ finally
 
 return;
 
-void UploadSymbolsOnSauceLabs(string username, string accessKey, string app, ISpan span)
+void UploadSymbolsOnSauceLabs(string app, ISpan span, SauceLabsClient client)
 {
-    const string driverUrl = "https://ondemand.us-west-1.saucelabs.com:443/wd/hub";
     var uploadSymbolsSpan = span.StartChild("appium.symbol.upload", "instructing app to start uploading symbols");
 
     var options = new AppiumOptions
@@ -73,7 +75,13 @@ void UploadSymbolsOnSauceLabs(string username, string accessKey, string app, ISp
 
     options.AddAdditionalAppiumOption("intentAction", "android.intent.action.MAIN");
     options.AddAdditionalAppiumOption("intentCategory", "android.intent.category.LAUNCHER");
+    // TODO: Can I propagate this under the hood with the client?
     options.AddAdditionalAppiumOption("optionalIntentArguments", $"--es sentryTrace {span.GetTraceHeader()}");
+
+    var username = Environment.GetEnvironmentVariable("SAUCE_USERNAME") ??
+                throw new Exception("SAUCE_USERNAME is not set");
+    var accessKey = Environment.GetEnvironmentVariable("SAUCE_ACCESS_KEY") ??
+                 throw new Exception("SAUCE_ACCESS_KEY is not set");
 
     var sauceOptions = new Dictionary<string, object>
     {
@@ -86,7 +94,8 @@ void UploadSymbolsOnSauceLabs(string username, string accessKey, string app, ISp
     options.AddAdditionalAppiumOption("appWaitActivity", "*");
 
     var driverSpan = uploadSymbolsSpan.StartChild("appium.start-driver", "Starting the Appium driver");
-    var driver = new AndroidDriver(new Uri(driverUrl), options, TimeSpan.FromMinutes(10));
+    // var driver = new AndroidDriver(new Uri(driverUrl), options, TimeSpan.FromMinutes(10));
+    var driver = client.CreateDriver(options);
     driverSpan.Finish();
 
     try
@@ -196,12 +205,12 @@ void UploadSymbolsOnSauceLabs(string username, string accessKey, string app, ISp
     }
 }
 
-async Task<string> UploadApkAsync(string username, string accessKey)
+async Task GetAllDevices()
 {
-    using var client = new HttpClient(new SentryHttpMessageHandler());
-    var byteArray = System.Text.Encoding.ASCII.GetBytes($"{username}:{accessKey}");
-    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
+}
 
+async Task<string> UploadApkAsync(HttpClient client)
+{
     using var form = new MultipartFormDataContent();
 
     var fileBytes = await File.ReadAllBytesAsync(filePath);
