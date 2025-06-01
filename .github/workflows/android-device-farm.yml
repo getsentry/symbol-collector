@@ -41,6 +41,8 @@ jobs:
       - name: Invoke Runner
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SAUCE_USERNAME: ${{ secrets.SAUCE_USERNAME }}
+          SAUCE_ACCESS_KEY: ${{ secrets.SAUCE_ACCESS_KEY }}
         run: |
           dotnet run --project src/SymbolCollector.Runner/SymbolCollector.Runner.csproj -c Release
 
