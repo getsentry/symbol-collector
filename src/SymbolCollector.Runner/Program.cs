@@ -7,8 +7,8 @@ Console.WriteLine("Starting runner...");
 const string appName = "SymbolCollector.apk";
 const string appPackage = "io.sentry.symbolcollector.android";
 const string sauceUrl = "https://api.us-west-1.saucelabs.com/v1/storage/upload";
-// const string filePath = $"src/SymbolCollector.Android/bin/Release/net9.0-android/{appPackage}-Signed.apk";
-const string filePath = $"../../../../../src/SymbolCollector.Android/bin/Release/net9.0-android/io.sentry.symbolcollector.android-Signed.apk";
+const string filePath = $"src/SymbolCollector.Android/bin/Release/net9.0-android/{appPackage}-Signed.apk";
+// const string filePath = $"../../../../../src/SymbolCollector.Android/bin/Release/net9.0-android/io.sentry.symbolcollector.android-Signed.apk";
 
 SentrySdk.Init(options =>
 {
@@ -34,7 +34,7 @@ try
         // var buildId = await UploadApkAsync(client.HttpClient);
         span.Finish();
         // Run on this specific app
-        app = $"storage:0d33b087-0472-401f-89ca-0c8899447123";
+        app = $"storage:dd81a803-855f-4b5f-884c-55ee3caafa59";
         // app = $"storage:{buildId}";
     }
     else
@@ -75,18 +75,14 @@ void UploadSymbolsOnSauceLabs(string app, ISpan span, SauceLabsClient client)
 
     options.AddAdditionalAppiumOption("intentAction", "android.intent.action.MAIN");
     options.AddAdditionalAppiumOption("intentCategory", "android.intent.category.LAUNCHER");
-    // TODO: Can I propagate this under the hood with the client?
-    options.AddAdditionalAppiumOption("optionalIntentArguments", $"--es sentryTrace {span.GetTraceHeader()}");
-
-    var username = Environment.GetEnvironmentVariable("SAUCE_USERNAME") ??
-                throw new Exception("SAUCE_USERNAME is not set");
-    var accessKey = Environment.GetEnvironmentVariable("SAUCE_ACCESS_KEY") ??
-                 throw new Exception("SAUCE_ACCESS_KEY is not set");
+    if (span.GetTraceHeader() is { } trace)
+    {
+        // TODO: Can I propagate this under the hood with the client?
+        options.AddAdditionalAppiumOption("optionalIntentArguments", $"--es sentryTrace {trace}");
+    }
 
     var sauceOptions = new Dictionary<string, object>
     {
-        { "username", username },
-        { "accessKey", accessKey },
         { "name", "CollectSymbolInstrumentation" },
     };
 
@@ -94,7 +90,6 @@ void UploadSymbolsOnSauceLabs(string app, ISpan span, SauceLabsClient client)
     options.AddAdditionalAppiumOption("appWaitActivity", "*");
 
     var driverSpan = uploadSymbolsSpan.StartChild("appium.start-driver", "Starting the Appium driver");
-    // var driver = new AndroidDriver(new Uri(driverUrl), options, TimeSpan.FromMinutes(10));
     var driver = client.CreateDriver(options);
     driverSpan.Finish();
 

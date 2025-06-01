@@ -21,7 +21,7 @@ public class SauceLabsClient
             new SentryHttpCommandExecutor(
                 HttpClient,
                 new Uri(DriverUrl),
-                TimeSpan.FromSeconds(2),
+                TimeSpan.FromMinutes(5),
                 // TimeSpan.FromSeconds(5),
                 true),
             options);
@@ -42,14 +42,13 @@ public class SauceLabsClient
     private static HttpClient CreateHttpClient(string username, string accessKey)
     {
         var handler = new HttpClientHandler();
-        // handler.Credentials = new NetworkCredential(username, accessKey);
-        // handler.PreAuthenticate = true;
 
         var sentryHandler = new SentryHttpMessageHandler(handler);
 
         var client = new HttpClient(sentryHandler);
-        // var byteArray = System.Text.Encoding.ASCII.GetBytes($"{username}:{accessKey}");
-        // client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
+        // Basic auth used to call web APIs like apk upload
+        var byteArray = System.Text.Encoding.ASCII.GetBytes($"{username}:{accessKey}");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
 
         // client.DefaultRequestHeaders.UserAgent.ParseAdd("selenium/{0} (.net Appium)");
         client.DefaultRequestHeaders.Accept.ParseAdd("application/json, image/png");
