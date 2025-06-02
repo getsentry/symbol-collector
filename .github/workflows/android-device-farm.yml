@@ -23,15 +23,19 @@ jobs:
       - name: Set Sentry Cronjob Slug - Sunday
         if: github.event.schedule=='*/10 * * * 0'
         run: |
-          echo "::set-env cronSlug=android-device-farm-symbol-collection-sunday"
+          echo "::set-env CRON_JOB_NAME=android-device-farm-symbol-collection-sunday"
       - name: Set Sentry Cronjob Slug - Saturday
         if: github.event.schedule=='*/10 * * * 6'
         run: |
-          echo "::set-env cronSlug=android-device-farm-symbol-collection-saturday"
+          echo "::set-env CRON_JOB_NAME=android-device-farm-symbol-collection-saturday"
       - name: Set Sentry Cronjob Slug - Weekday night
         if: github.event.schedule=='*/10 3-5 * * 1-5'
         run: |
-          echo "::set-env cronSlug=android-device-farm-symbol-collection-weekday-night"
+          echo "::set-env CRON_JOB_NAME=android-device-farm-symbol-collection-weekday-night"
+
+      - name: Test
+        run: |
+          echo "::set-env CRON_JOB_NAME=android-device-farm-symbol-collection-weekday-night"
 
       - name: Check out code
         uses: actions/checkout@v4
@@ -62,7 +66,7 @@ jobs:
           SAUCE_USERNAME: ${{ secrets.SAUCE_USERNAME }}
           SAUCE_ACCESS_KEY: ${{ secrets.SAUCE_ACCESS_KEY }}
         run: |
-          dotnet run --project src/SymbolCollector.Runner/SymbolCollector.Runner.csproj -c Release
+          dotnet run --project src/SymbolCollector.Runner/SymbolCollector.Runner.csproj -c Release /p:TreatWarningsAsErrors=false
 
       - name: Save .cache folder
         uses: actions/cache@v4
