@@ -6,6 +6,8 @@ on:
     # Every 10 minutes on Saturdays and Sundays
     - cron: '*/10 * * * 6'
     - cron: '*/10 * * * 0'
+    # At 03:00 AM UTC (6 PM PST) on every day-of-week from Monday through Friday
+    - cron: '0 3 * * 1-5'
 
 concurrency:
   group: android-symbol-upload-device-farm
@@ -29,7 +31,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .cache
-          key: cache-folder-${{ runner.os }}-${{ github.workflow }}
+          key: cache-folder-${{ runner.os }}-${{ github.workflow }}-${{ github.run_id }}
+          restore-keys: |
+            cache-folder-${{ runner.os }}-${{ github.workflow }}-
 
       - name: Download the Android app if there's a new version
         env:
@@ -50,10 +54,11 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .cache
-          key: cache-folder-${{ runner.os }}-${{ github.workflow }}
+          key: cache-folder-${{ runner.os }}-${{ github.workflow }}-${{ github.run_id }}
 
       - name: Upload .cache as artifact
         uses: actions/upload-artifact@v4
         with:
           name: cache-folder
           path: .cache
+          retention-days: 7
