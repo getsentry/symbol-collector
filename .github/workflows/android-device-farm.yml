@@ -3,7 +3,7 @@ name:  Android Device Farm Symbol Collection
 on:
   workflow_dispatch: # Manual trigger
   schedule:
-    # Every 20 minutes on Saturdays and Sundays
+    # Every 10 minutes on Saturdays and Sundays
     - cron: '*/10 * * * 6'
     - cron: '*/10 * * * 0'
 
@@ -51,3 +51,9 @@ jobs:
         with:
           path: .cache
           key: cache-folder-${{ runner.os }}-${{ github.workflow }}
+
+      - name: Upload .cache as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: cache-folder
+          path: .cache

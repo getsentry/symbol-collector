@@ -80,6 +80,7 @@ try
     var cacheSpan = transaction.StartChild("appium.cache-results", "caching results");
     deviceToRun.LastSymbolUploadRanTime = DateTime.UtcNow;
     await client.SaveResults(devices);
+    Console.WriteLine($"Marked {deviceToRun.Id} with LastSymbolUploadRanTime: {deviceToRun.LastSymbolUploadRanTime}");
     cacheSpan.Finish();
 
     transaction.Finish();
