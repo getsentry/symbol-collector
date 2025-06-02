@@ -23,15 +23,15 @@ jobs:
       - name: Set Sentry Cronjob Slug - Sunday
         if: github.event.schedule=='*/10 * * * 0'
         run: |
-          echo "CRON_JOB_NAME=android-device-farm-symbol-collection-sunday" >> $GITHUB_ENV
+          echo "CRON_JOB_NAME=device-farm-symbol-collection-sunday" >> $GITHUB_ENV
       - name: Set Sentry Cronjob Slug - Saturday
         if: github.event.schedule=='*/10 * * * 6'
         run: |
-          echo "CRON_JOB_NAME=android-device-farm-symbol-collection-saturday" >> $GITHUB_ENV
+          echo "CRON_JOB_NAME=device-farm-symbol-collection-saturday" >> $GITHUB_ENV
       - name: Set Sentry Cronjob Slug - Weekday night
         if: github.event.schedule=='*/10 3-5 * * 1-5'
         run: |
-          echo "CRON_JOB_NAME=android-device-farm-symbol-collection-weekday-night" >> $GITHUB_ENV
+          echo "CRON_JOB_NAME=device-farm-symbol-collection-weekday-night" >> $GITHUB_ENV
 
       - name: Check out code
         uses: actions/checkout@v4
