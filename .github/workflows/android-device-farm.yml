@@ -7,7 +7,7 @@ on:
     - cron: '*/10 * * * 0' # Must match step below
     # Every 10 minutes on Saturdays
     - cron: '*/10 * * * 6' # Must match step below
-    # Every 10th minute passed hour 3 (03:00 AM UTC, 6 PM PST) on every day-of-week from Monday through Friday
+    # Every 10th minute passed every hour from 3 through 5 (03:00 AM UTC, 6 PM PST) on every day-of-week from Monday through Friday
     - cron: '*/10 3-5 * * 1-5' # Must match step below
 
 concurrency:
