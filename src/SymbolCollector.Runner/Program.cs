@@ -11,7 +11,10 @@ const string solutionBuildApkPath = $"src/SymbolCollector.Android/bin/Release/ne
 
 // If running on demand, no job name is passed via env var
 var cronJobName = Environment.GetEnvironmentVariable("CRON_JOB_NAME");
-Console.WriteLine("Running cron job: {0}", cronJobName);
+if (cronJobName is not null)
+{
+    Console.WriteLine("Running cron job: {0}", cronJobName);
+}
 
 string? filePath = null;
 // if there's a one in the current directory, use that.
