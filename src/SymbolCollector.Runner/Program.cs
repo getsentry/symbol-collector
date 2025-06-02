@@ -9,10 +9,9 @@ const string appPackage = "io.sentry.symbolcollector.android";
 const string fullApkName = $"{appPackage}-Signed.apk";
 const string solutionBuildApkPath = $"src/SymbolCollector.Android/bin/Release/net9.0-android/{fullApkName}";
 
+// If running on demand, no job name is passed via env var
 var cronJobName = Environment.GetEnvironmentVariable("CRON_JOB_NAME");
-Console.WriteLine("cronJobName");
-Console.WriteLine(cronJobName);
-return;
+Console.WriteLine("Running cron job: {0}", cronJobName);
 
 string? filePath = null;
 // if there's a one in the current directory, use that.

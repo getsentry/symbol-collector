@@ -4,11 +4,11 @@ on:
   workflow_dispatch: # Manual trigger
   schedule:
     # Every 10 minutes on Sundays
-    - cron: '*/10 * * * 0'
+    - cron: '*/10 * * * 0' # Must match step below
     # Every 10 minutes on Saturdays
-    - cron: '*/10 * * * 6'
+    - cron: '*/10 * * * 6' # Must match step below
     # Every 10th minute passed hour 3 (03:00 AM UTC, 6 PM PST) on every day-of-week from Monday through Friday
-    - cron: '*/10 3-5 * * 1-5'
+    - cron: '*/10 3-5 * * 1-5' # Must match step below
 
 concurrency:
   group: android-symbol-upload-device-farm
@@ -23,17 +23,13 @@ jobs:
       - name: Set Sentry Cronjob Slug - Sunday
         if: github.event.schedule=='*/10 * * * 0'
         run: |
-          echo "::set-env CRON_JOB_NAME=android-device-farm-symbol-collection-sunday"
+          echo "CRON_JOB_NAME=android-device-farm-symbol-collection-sunday" >> $GITHUB_ENV
       - name: Set Sentry Cronjob Slug - Saturday
         if: github.event.schedule=='*/10 * * * 6'
         run: |
-          echo "::set-env CRON_JOB_NAME=android-device-farm-symbol-collection-saturday"
+          echo "CRON_JOB_NAME=android-device-farm-symbol-collection-saturday" >> $GITHUB_ENV
       - name: Set Sentry Cronjob Slug - Weekday night
         if: github.event.schedule=='*/10 3-5 * * 1-5'
-        run: |
-          echo "::set-env CRON_JOB_NAME=android-device-farm-symbol-collection-weekday-night"
-
-      - name: Test
         run: |
           echo "CRON_JOB_NAME=android-device-farm-symbol-collection-weekday-night" >> $GITHUB_ENV
 
