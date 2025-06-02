@@ -1,5 +1,26 @@
 # Changelog
 
+## 2.0.0
+
+### Various fixes & improvements
+
+- run job on schedule (fe055b1c) by @bruno-garcia
+- sauce api key env var in workflow (130dc932) by @bruno-garcia
+- give cli an auth (3f83d05c) by @bruno-garcia
+- yml sucks (1ef9e650) by @bruno-garcia
+- install dotnet sdk in workflow (5543e796) by @bruno-garcia
+- get devices and cache result (#223) by @bruno-garcia
+- Use a single HTTP client instance (#222) by @bruno-garcia
+- upload and run on saucelabs (#221) by @bruno-garcia
+- Collect batch via Instrumentation (#220) by @bruno-garcia
+- bump sentry 5.9.0 (#219) by @bruno-garcia
+- ref(gocd): Cutting over to check_cloudbuild.py (#218) by @IanWoodard
+- fix(security): allow dynamic GCP credentials (#217) by @oioki
+- chore: migrate to Artifact Registry (#216) by @oioki
+- Lowered dump threshold to 20% (#215) by @jamescrosswell
+- Lower memory threshhold for heap dumps (#214) by @jamescrosswell
+- Dockerfile add dotnet tools to path (07752605) by @bruno-garcia
+
 ## 1.23.0
 
 ### Various fixes & improvements
