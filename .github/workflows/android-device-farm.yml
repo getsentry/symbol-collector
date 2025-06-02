@@ -3,11 +3,12 @@ name:  Android Device Farm Symbol Collection
 on:
   workflow_dispatch: # Manual trigger
   schedule:
-    # Every 10 minutes on Saturdays and Sundays
-    - cron: '*/10 * * * 6'
-    - cron: '*/10 * * * 0'
-    # At 03:00 AM UTC (6 PM PST) on every day-of-week from Monday through Friday
-    - cron: '0 3 * * 1-5'
+    # Every 10 minutes on Sundays
+    - cron: '*/10 * * * 0' # Must match step below
+    # Every 10 minutes on Saturdays
+    - cron: '*/10 * * * 6' # Must match step below
+    # Every 10th minute passed every hour from 3 through 5 (03:00 AM UTC, 6 PM PST) on every day-of-week from Monday through Friday
+    - cron: '*/10 3-5 * * 1-5' # Must match step below
 
 concurrency:
   group: android-symbol-upload-device-farm
@@ -19,6 +20,19 @@ jobs:
     timeout-minutes: 20
 
     steps:
+      - name: Set Sentry Cronjob Slug - Sunday
+        if: github.event.schedule=='*/10 * * * 0'
+        run: |
+          echo "CRON_JOB_NAME=android-device-farm-symbol-collection-sunday" >> $GITHUB_ENV
+      - name: Set Sentry Cronjob Slug - Saturday
+        if: github.event.schedule=='*/10 * * * 6'
+        run: |
+          echo "CRON_JOB_NAME=android-device-farm-symbol-collection-saturday" >> $GITHUB_ENV
+      - name: Set Sentry Cronjob Slug - Weekday night
+        if: github.event.schedule=='*/10 3-5 * * 1-5'
+        run: |
+          echo "CRON_JOB_NAME=android-device-farm-symbol-collection-weekday-night" >> $GITHUB_ENV
+
       - name: Check out code
         uses: actions/checkout@v4
 
@@ -48,7 +62,7 @@ jobs:
           SAUCE_USERNAME: ${{ secrets.SAUCE_USERNAME }}
           SAUCE_ACCESS_KEY: ${{ secrets.SAUCE_ACCESS_KEY }}
         run: |
-          dotnet run --project src/SymbolCollector.Runner/SymbolCollector.Runner.csproj -c Release
+          dotnet run --project src/SymbolCollector.Runner/SymbolCollector.Runner.csproj -c Release /p:TreatWarningsAsErrors=false
 
       - name: Save .cache folder
         uses: actions/cache@v4

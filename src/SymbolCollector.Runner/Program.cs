@@ -8,7 +8,10 @@ const string appName = "SymbolCollector.apk";
 const string appPackage = "io.sentry.symbolcollector.android";
 const string fullApkName = $"{appPackage}-Signed.apk";
 const string solutionBuildApkPath = $"src/SymbolCollector.Android/bin/Release/net9.0-android/{fullApkName}";
-const string cronMonitorSlug = "android-device-farm-symbol-collection-daily";
+
+// If running on demand, no job name is passed via env var
+var cronJobName = Environment.GetEnvironmentVariable("CRON_JOB_NAME");
+Console.WriteLine("Running cron job: {0}", cronJobName);
 
 string? filePath = null;
 // if there's a one in the current directory, use that.
@@ -33,7 +36,10 @@ SentrySdk.Init(options =>
 
 var transaction = SentrySdk.StartTransaction("appium.runner", "runner appium to upload apk to saucelabs and collect symbols real devices");
 SentrySdk.ConfigureScope(s => s.Transaction = transaction);
-SentrySdk.CaptureCheckIn(cronMonitorSlug, CheckInStatus.InProgress);
+if (cronJobName is not null)
+{
+    SentrySdk.CaptureCheckIn(cronJobName, CheckInStatus.InProgress);
+}
 
 try
 {
@@ -86,7 +92,10 @@ try
     cacheSpan.Finish();
 
     transaction.Finish();
-    SentrySdk.CaptureCheckIn(cronMonitorSlug, CheckInStatus.Ok);
+    if (cronJobName is not null)
+    {
+        SentrySdk.CaptureCheckIn(cronJobName, CheckInStatus.Ok);
+    }
 }
 catch (Exception e)
 {
@@ -96,7 +105,11 @@ catch (Exception e)
 }
 finally
 {
-    SentrySdk.CaptureCheckIn(cronMonitorSlug, CheckInStatus.Error);
+    if (cronJobName is not null)
+    {
+        SentrySdk.CaptureCheckIn(cronJobName, CheckInStatus.Error);
+    }
+
     await SentrySdk.FlushAsync(TimeSpan.FromSeconds(2));
 }
 
