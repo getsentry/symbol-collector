@@ -103,16 +103,15 @@ try
 catch (Exception e)
 {
     SentrySdk.CaptureException(e);
+    if (cronJobName is not null)
+    {
+        SentrySdk.CaptureCheckIn(cronJobName, CheckInStatus.Error);
+    }
     transaction.Finish(e);
     throw;
 }
 finally
 {
-    if (cronJobName is not null)
-    {
-        SentrySdk.CaptureCheckIn(cronJobName, CheckInStatus.Error);
-    }
-
     await SentrySdk.FlushAsync(TimeSpan.FromSeconds(2));
 }
 
