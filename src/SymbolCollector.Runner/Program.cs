@@ -86,13 +86,16 @@ try
         Console.WriteLine("'skipUpload' is true, skipping apk upload.");
     }
 
-    UploadSymbolsOnSauceLabs(app, deviceToRun, transaction, client);
-
+    // Saucelabs reports devices it actually doesn't have available ever. So we'll store in the cache whatever the result of the run, and skip to the next.
+    // "All devices busy: Your test could not be executed, because the device type you requested was in high demand, and after a 15-minute search in our US-West data center, we couldn't find an available device for you."
+    // Otherwise we stay retrying the same device day after day and going nowhere.
     var cacheSpan = transaction.StartChild("appium.cache-results", "caching results");
     deviceToRun.LastSymbolUploadRanTime = DateTime.UtcNow;
     await client.SaveResults(devices);
     Console.WriteLine($"Marked {deviceToRun.Id} with LastSymbolUploadRanTime: {deviceToRun.LastSymbolUploadRanTime}");
     cacheSpan.Finish();
+
+    UploadSymbolsOnSauceLabs(app, deviceToRun, transaction, client);
 
     transaction.Finish();
     if (cronJobName is not null)
