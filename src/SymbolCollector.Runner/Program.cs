@@ -47,7 +47,7 @@ if (cronJobName is not null)
 try
 {
     using var client = new SauceLabsClient();
-    var getDevicesSpan = transaction.StartChild("appium.cache-results", "caching results");
+    var getDevicesSpan = transaction.StartChild("appium.cache-results", "reading caching results");
     var devices = await client.GetDevices();
     getDevicesSpan.Finish();
     // Prioritize devices that don't have a timestamp saved in the cache yet
@@ -89,7 +89,7 @@ try
     // Saucelabs reports devices it actually doesn't have available ever. So we'll store in the cache whatever the result of the run, and skip to the next.
     // "All devices busy: Your test could not be executed, because the device type you requested was in high demand, and after a 15-minute search in our US-West data center, we couldn't find an available device for you."
     // Otherwise we stay retrying the same device day after day and going nowhere.
-    var cacheSpan = transaction.StartChild("appium.cache-results", "caching results");
+    var cacheSpan = transaction.StartChild("appium.cache-results", "persisting updated device list to cache");
     deviceToRun.LastSymbolUploadRanTime = DateTime.UtcNow;
     await client.SaveResults(devices);
     Console.WriteLine($"Marked {deviceToRun.Id} with LastSymbolUploadRanTime: {deviceToRun.LastSymbolUploadRanTime}");
