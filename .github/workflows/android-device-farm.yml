@@ -66,6 +66,8 @@ jobs:
 
       - name: Save .cache folder
         uses: actions/cache@v4
+        # Always cache to skip over failed devices because saucelabs reports devices they never have available essentially blocking any progress here
+        if: always()
         with:
           path: .cache
           key: cache-folder-${{ runner.os }}-${{ github.workflow }}-${{ github.run_id }}
