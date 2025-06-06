@@ -45,7 +45,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .cache
-          key: cache-folder-${{ runner.os }}-${{ github.workflow }}-${{ github.run_id }}
+          key: cache-folder-${{ runner.os }}-${{ github.workflow }}
           restore-keys: |
             cache-folder-${{ runner.os }}-${{ github.workflow }}-
 
