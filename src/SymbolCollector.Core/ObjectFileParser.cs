@@ -7,7 +7,6 @@ using ELFSharp.ELF.Segments;
 using ELFSharp.MachO;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Sentry;
 using FileType = ELFSharp.ELF.FileType;
 using ELFMachine = ELFSharp.ELF.Machine;
 using MachOMachine = ELFSharp.MachO.Machine;

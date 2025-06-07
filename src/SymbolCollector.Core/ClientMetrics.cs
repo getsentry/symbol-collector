@@ -1,6 +1,3 @@
-using System.Collections;
-using Sentry;
-
 namespace SymbolCollector.Core;
 
 public class ClientMetrics : IClientMetrics

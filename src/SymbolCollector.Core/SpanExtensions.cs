@@ -1,5 +1,3 @@
-using Sentry;
-
 namespace SymbolCollector.Core;
 
 public static class SpanExtensions

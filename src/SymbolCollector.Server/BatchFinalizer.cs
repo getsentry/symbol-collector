@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Options;
-using Sentry;
 using SymbolCollector.Core;
 using SymbolCollector.Server.Models;
 

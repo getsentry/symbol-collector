@@ -1,5 +1,4 @@
 using Microsoft.Maui.Media;
-using Sentry;
 
 namespace SymbolCollector.Android.Library;
 

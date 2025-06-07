@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Sentry;
 using SymbolCollector.Core;
 using Exception = System.Exception;
 

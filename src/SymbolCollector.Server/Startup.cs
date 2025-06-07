@@ -6,7 +6,6 @@ using Google.Apis.Auth.OAuth2;
 using JustEat.StatsD;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using Sentry;
 using Sentry.Extensibility;
 using SymbolCollector.Core;
 using SymbolCollector.Server.Properties;
