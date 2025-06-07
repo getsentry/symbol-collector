@@ -39,9 +39,10 @@ SentrySdk.Init(options =>
 
 var transaction = SentrySdk.StartTransaction("appium.runner", "runner appium to upload apk to saucelabs and collect symbols real devices");
 SentrySdk.ConfigureScope(s => s.Transaction = transaction);
+var jobId = SentryId.Empty;
 if (cronJobName is not null)
 {
-    SentrySdk.CaptureCheckIn(cronJobName, CheckInStatus.InProgress);
+    jobId = SentrySdk.CaptureCheckIn(cronJobName, CheckInStatus.InProgress);
 }
 
 try
@@ -100,7 +101,7 @@ try
     transaction.Finish();
     if (cronJobName is not null)
     {
-        SentrySdk.CaptureCheckIn(cronJobName, CheckInStatus.Ok);
+        SentrySdk.CaptureCheckIn(cronJobName, CheckInStatus.Ok, jobId);
     }
 }
 catch (Exception e)
@@ -108,7 +109,7 @@ catch (Exception e)
     SentrySdk.CaptureException(e);
     if (cronJobName is not null)
     {
-        SentrySdk.CaptureCheckIn(cronJobName, CheckInStatus.Error);
+        SentrySdk.CaptureCheckIn(cronJobName, CheckInStatus.Error, jobId);
     }
     transaction.Finish(e);
     throw;
