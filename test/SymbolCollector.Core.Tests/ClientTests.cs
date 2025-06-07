@@ -70,7 +70,7 @@ public class ClientTests
             new HttpClient(_fixture.HttpMessageHandler));
 
         var sut = _fixture.GetSut();
-        await sut.UploadAllPathsAsync("friendly name", BatchType.IOS, new[] {"TestFiles"}, CancellationToken.None);
+        await sut.UploadAllPathsAsync("friendly name", BatchType.IOS, new[] {"TestFiles"}, SentrySdk.StartTransaction("test", "test-op"), CancellationToken.None);
 
         // number of valid test files in TestFiles
         Assert.Equal(12, counter);
@@ -84,7 +84,7 @@ public class ClientTests
             Substitute.For<ILogger<ObjectFileParser>>(), new FatBinaryReader());
 
         var sut = _fixture.GetSut();
-        await sut.UploadAllPathsAsync("friendly name", BatchType.IOS, new[] {"TestFiles"}, CancellationToken.None);
+        await sut.UploadAllPathsAsync("friendly name", BatchType.IOS, new[] {"TestFiles"}, SentrySdk.StartTransaction("test", "test-op"), CancellationToken.None);
 
         // Make sure all valid test files were picked up
         var testFiles = new ObjectFileResultTestCases()

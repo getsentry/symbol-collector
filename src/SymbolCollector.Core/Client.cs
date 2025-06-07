@@ -30,59 +30,75 @@ public class Client : IDisposable
         SentrySdk.ConfigureScope(s => s.SetExtra(nameof(Metrics), Metrics));
     }
 
-    public async Task UploadAllPathsAsync(
-        string friendlyName,
+    public async Task UploadAllPathsAsync(string friendlyName,
         BatchType type,
         IEnumerable<string> topLevelPaths,
+        ISpan span,
         CancellationToken cancellationToken)
     {
-        var groupsSpan = SentrySdk.GetSpan()?.StartChild("group.get", "Get the group of directories to search in parallel");
+        List<List<string>> groups;
         var counter = 0;
-        var groups =
-            (from topPath in topLevelPaths
-                from lookupDirectory in SafeGetDirectories(topPath)
-                where _blockListedPaths?.Contains(lookupDirectory) != true
-                let c = counter++
-                group lookupDirectory by c / ParallelTasks
-                into grp
-                select grp.ToList()).ToList();
-        groupsSpan?.Finish();
+        {
+            var groupsSpan = span.StartChild("group.get", "Get the group of directories to search in parallel");
+            groups =
+                (from topPath in topLevelPaths
+                    from lookupDirectory in SafeGetDirectories(topPath)
+                    where _blockListedPaths?.Contains(lookupDirectory) != true
+                    let c = counter++
+                    group lookupDirectory by c / ParallelTasks
+                    into grp
+                    select grp.ToList()).ToList();
+            groupsSpan.Finish();
+        }
 
-        var startSpan = SentrySdk.GetSpan()?.StartChild("batch.start");
         Guid batchId;
-        try
         {
-            batchId = await _symbolClient.Start(friendlyName, type, cancellationToken);
-            startSpan?.Finish(SpanStatus.Ok);
-        }
-        catch (Exception e)
-        {
-            startSpan?.Finish(e);
-            throw;
-        }
-
-        var uploadSpan = SentrySdk.GetSpan()?.StartChild("batch.upload");
-        uploadSpan?.SetTag("groups", groups.Count.ToString());
-        uploadSpan?.SetTag("total_items", counter.ToString());
-        try
-        {
-            foreach (var group in groups)
+            var startSpan = span.StartChild("batch.start");
+            try
             {
-                await UploadParallel(batchId, group, cancellationToken);
+                batchId = await _symbolClient.Start(friendlyName, type, cancellationToken);
+                startSpan.Finish(SpanStatus.Ok);
             }
-            uploadSpan?.Finish(SpanStatus.Ok);
-        }
-        catch (Exception e)
-        {
-            uploadSpan?.Finish(e);
-            _logger.LogError(e, "Failed processing files for {batchId}. Rethrowing and leaving the batch open.",
-                batchId);
-            throw;
+            catch (Exception e)
+            {
+                startSpan.Finish(e);
+                throw;
+            }
         }
 
-        var stopSpan = SentrySdk.GetSpan()?.StartChild("batch.close");
-        await _symbolClient.Close(batchId, cancellationToken);
-        stopSpan?.Finish(SpanStatus.Ok);
+        {
+            var uploadSpan = span.StartChild("batch.upload", "concurrent batch upload");
+            uploadSpan.SetData("groups", groups.Count.ToString());
+            uploadSpan.SetData("total_items", counter.ToString());
+
+            // use this as parent to all outgoing HTTP requests now:
+            SentrySdk.ConfigureScope(s => s.Span = uploadSpan);
+            int i = 0;
+            try
+            {
+                foreach (var group in groups)
+                {
+                    if (i++ == 3) break;
+                    await UploadParallel(batchId, group, cancellationToken);
+                }
+                uploadSpan.Finish(SpanStatus.Ok);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Failed processing files for {batchId}. Rethrowing and leaving the batch open.",
+                    batchId);
+                uploadSpan.Finish(e);
+                throw;
+            }
+        }
+
+        {
+            var stopSpan = span.StartChild("batch.close");
+            await _symbolClient.Close(batchId, cancellationToken);
+            stopSpan.Finish(SpanStatus.Ok);
+        }
+
+        return;
 
         IEnumerable<string> SafeGetDirectories(string path)
         {
@@ -122,6 +138,8 @@ public class Client : IDisposable
             {
                 tasks.Add(UploadFilesAsync(batchId, path, cancellationToken));
                 Metrics.JobsInFlightAdd(1);
+                // TODO: Remove me. Keeping it short to test e2e
+                // return;
             }
             else
             {
