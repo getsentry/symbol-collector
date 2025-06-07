@@ -78,7 +78,7 @@ public class Client : IDisposable
             {
                 foreach (var group in groups)
                 {
-                    if (i++ == 3) break;
+                    if (i++ == 2) break;
                     await UploadParallel(batchId, group, cancellationToken);
                 }
                 uploadSpan.Finish(SpanStatus.Ok);
