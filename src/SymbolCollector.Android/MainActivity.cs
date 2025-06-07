@@ -21,7 +21,7 @@ public class MainActivity : Activity
     private string _friendlyName = null!; // set on OnCreate
     private IHost _host = null!; // set on OnCreate
     private IServiceProvider _serviceProvider = null!; // set on OnCreate
-    private ITransactionTracer _startupTransaction  = null!; // set on OnCreate
+    private SentryTraceHeader _parentTraceHeader = null!;
 
     protected override void OnCreate(Bundle? savedInstanceState)
     {
@@ -35,10 +35,12 @@ public class MainActivity : Activity
         _serviceProvider = _host.Services;
 
         // It's set in Host.Init above
-        SentrySdk.ConfigureScope(s => _startupTransaction = s.Transaction!);
+        ITransactionTracer startupTransaction = null!;
+        SentrySdk.ConfigureScope(s => startupTransaction = s.Transaction!);
+        _parentTraceHeader = startupTransaction.GetTraceHeader();
         AddSentryContext();
 
-        var span = _startupTransaction.StartChild("OnCreate");
+        var onCreateSpan = startupTransaction.StartChild("OnCreate");
         try
         {
             base.OnCreate(savedInstanceState);
@@ -71,10 +73,23 @@ public class MainActivity : Activity
             uploadButton.Click += OnUploadButtonOnClick;
             cancelButton.Click += OnCancelButtonOnClick;
 
+            onCreateSpan.Finish(SpanStatus.Ok);
+            startupTransaction.Finish(SpanStatus.Ok);
+            return;
+
+            void OnCancelButtonOnClick(object? sender, EventArgs args)
+            {
+                SentrySdk.AddBreadcrumb("OnCancelButtonOnClick", category: "ui.event");
+                Unfocus();
+                source.Cancel();
+            }
+
             async void OnUploadButtonOnClick(object? sender, EventArgs args)
             {
                 // The scope tracks the overall app transaction while this is only batch uploading
-                var uploadTransaction = SentrySdk.StartTransaction("BatchUpload", "batch.upload", _startupTransaction.GetTraceHeader());
+                var uploadTransaction = SentrySdk.StartTransaction("BatchUpload", "batch.upload", _parentTraceHeader);
+                // startup transaction has completed at this point, this starts when the user pressed Upload so make this transaction global:
+                SentrySdk.ConfigureScope(s => s.Transaction = uploadTransaction);
 
                 try
                 {
@@ -89,10 +104,11 @@ public class MainActivity : Activity
                     uploadButton.Enabled = false;
                     source = new CancellationTokenSource();
 
-                    var uploadTask = uploader.StartUpload(_friendlyName, source.Token);
+                    var uploadTask = uploader.StartUpload(_friendlyName, uploadTransaction, source.Token);
                     var updateUiTask = StartUiUpdater(source.Token, metrics);
 
-                    await UploadAsync(uploadTask, updateUiTask, metrics, cancelButton, uploadButton, uploadTransaction, source);
+                    // Successful completion (or timeout) of the transaction is handled internally.
+                    await AwaitOnUploadAndCancellationTasks(uploadTask, updateUiTask, metrics, cancelButton, uploadButton, uploadTransaction, source);
                 }
                 catch (Exception e)
                 {
@@ -100,21 +116,11 @@ public class MainActivity : Activity
                     throw;
                 }
             }
-
-            void OnCancelButtonOnClick(object? sender, EventArgs args)
-            {
-                SentrySdk.AddBreadcrumb("OnCancelButtonOnClick", category: "ui.event");
-                Unfocus();
-                source.Cancel();
-            }
-
-            span.Finish(SpanStatus.Ok);
-            _startupTransaction.Finish(SpanStatus.Ok);
         }
         catch (Exception e)
         {
-            span.Finish(e);
-            _startupTransaction.Finish(e);
+            onCreateSpan.Finish(e);
+            startupTransaction.Finish(e);
             throw;
         }
     }
@@ -128,13 +134,13 @@ public class MainActivity : Activity
         }
     }
 
-    private async Task UploadAsync(
+    private async Task AwaitOnUploadAndCancellationTasks(
         Task uploadTask,
         Task updateUiTask,
         ClientMetrics metrics,
         View cancelButton,
         View uploadButton,
-        ISpan span,
+        ISpan uploadTransaction,
         CancellationTokenSource source)
     {
         var container = base.FindViewById(Resource.Id.metrics_container)!;
@@ -159,28 +165,28 @@ public class MainActivity : Activity
                 ranForContainer.Visibility = ViewStates.Visible;
 
                 ranForLabel.Text = metrics.RanFor.ToString();
-                span.Finish(SpanStatus.Ok);
+                uploadTransaction.Finish(SpanStatus.Ok);
             }
             else if (uploadTask.IsFaulted)
             {
                 await ShowError(uploadTask.Exception);
-                span.Finish(SpanStatus.InternalError);
+                uploadTransaction.Finish(SpanStatus.InternalError);
             }
             else
             {
                 cancelButton.Enabled = false;
                 uploadButton.Enabled = true;
-                span.Finish(SpanStatus.Cancelled);
+                uploadTransaction.Finish(SpanStatus.Cancelled);
             }
         }
         catch (Exception e)
         {
             await ShowError(e);
-            span.Finish(e);
+            uploadTransaction.Finish(e);
         }
         finally
         {
-            source.Cancel();
+            await source.CancelAsync();
         }
     }
 
@@ -278,8 +284,6 @@ public class MainActivity : Activity
 
         SentrySdk.ConfigureScope(s =>
         {
-            s.Transaction = _startupTransaction;
-
             if (uname is { })
             {
                 s.Contexts["uname"] = new

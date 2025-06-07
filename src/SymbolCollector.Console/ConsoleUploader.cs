@@ -59,7 +59,7 @@ internal class ConsoleUploader
             var type = batchType ?? DeviceBatchType();
             _logger.LogInformation("Uploading bundle {bundleId} of type {type} and paths: {paths}",
                 bundleId, type, paths);
-            await _client.UploadAllPathsAsync(bundleId, type, paths, token);
+            await _client.UploadAllPathsAsync(bundleId, type, paths, transaction, token);
             transaction.Finish(SpanStatus.Ok);
         }
         catch (Exception e)

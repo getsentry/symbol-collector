@@ -67,7 +67,7 @@ public class AutoUploader : Java.Lang.Object
                 s.Contexts.OperatingSystem.KernelVersion = uname.Release;
             }
         });
-        var uploadTask = uploader.StartUpload(friendlyName, source.Token);
+        var uploadTask = uploader.StartUpload(friendlyName, tran, source.Token);
         uploadTask.ContinueWith(t =>
         {
             tran.Finish(t.IsCompletedSuccessfully ? SpanStatus.Ok : SpanStatus.UnknownError);
