@@ -2,10 +2,8 @@ using System.Net;
 using Java.Net;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Maui.ApplicationModel;
 using Polly;
-using Sentry;
 using SymbolCollector.Core;
 using Xamarin.Android.Net;
 using Context = Android.Content.Context;
@@ -40,9 +38,6 @@ public class Host
     {
         SentrySdk.Init(o =>
         {
-            // TODO: ShouldCan be deleted once this PR is released: https://github.com/getsentry/sentry-dotnet/pull/1750/files#diff-c55d438dd1d5f3731c0d04d0f1213af4873645b1daa44c4c6e1b24192110d8f8R166-R167
-            // System.UnauthorizedAccessException: Access to the path '/proc/stat' is denied.
-            o.DetectStartupTime = StartupTimeDetectionMode.Fast;
             o.CaptureFailedRequests = true;
 
             // TODO: Should be added OOTB
@@ -90,11 +85,7 @@ public class Host
             ? SentrySdk.StartTransaction("AppStart", "activity.load", trace)
             : SentrySdk.StartTransaction("AppStart", "activity.load");
 
-        SentrySdk.ConfigureScope(s =>
-        {
-            s.Transaction = tran;
-            s.AddAttachment(new ScreenshotAttachment());
-        });
+        SentrySdk.ConfigureScope(s => s.Transaction = tran);
 
         var iocSpan = tran.StartChild("container.init", "Initializing the IoC container");
         var userAgent = Java.Lang.JavaSystem.GetProperty("http.agent") ?? "Android/" + typeof(Host).Assembly.GetName().Version;

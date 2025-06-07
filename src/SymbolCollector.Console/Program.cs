@@ -2,11 +2,9 @@ using System.Text.Json.Serialization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Logging;
 using Polly;
 using Sentry.Protocol;
-using Sentry.Profiling;
 using SymbolCollector.Core;
 using static System.Console;
 

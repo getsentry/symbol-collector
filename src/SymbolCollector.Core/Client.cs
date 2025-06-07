@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using Sentry;
 
 namespace SymbolCollector.Core;
 

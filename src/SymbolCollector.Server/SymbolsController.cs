@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Net.Http.Headers;
-using Sentry;
 using SymbolCollector.Server.Models;
 
 namespace SymbolCollector.Server;

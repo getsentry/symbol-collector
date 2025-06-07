@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Http.Resilience;
 using Polly;
-using Sentry;
 
 namespace SymbolCollector.Core;
 

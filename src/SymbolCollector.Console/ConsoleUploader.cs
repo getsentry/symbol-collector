@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Logging;
 using SymbolCollector.Core;
 using System.Runtime.InteropServices;
-using Sentry;
 using static System.Console;
 
 namespace SymbolCollector.Console;

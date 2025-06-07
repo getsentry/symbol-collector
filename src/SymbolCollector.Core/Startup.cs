@@ -5,8 +5,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Options;
-using Polly;
-using Polly.Retry;
 
 namespace SymbolCollector.Core;
 

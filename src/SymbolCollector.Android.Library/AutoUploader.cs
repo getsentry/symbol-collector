@@ -3,7 +3,6 @@ using Android.OS;
 using Android.Runtime;
 using Android.Systems;
 using Microsoft.Extensions.DependencyInjection;
-using Sentry;
 using SymbolCollector.Core;
 
 namespace SymbolCollector.Android.Library;

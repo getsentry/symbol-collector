@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Serilog;
-using Sentry;
-using Sentry.Profiling;
 using SystemEnvironment = System.Environment;
 
 namespace SymbolCollector.Server;

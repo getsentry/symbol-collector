@@ -2,7 +2,6 @@ using Google;
 using Google.Apis.Auth.OAuth2;
 using Google.Cloud.Storage.V1;
 using Microsoft.Extensions.Options;
-using Sentry;
 
 namespace SymbolCollector.Server;
 
