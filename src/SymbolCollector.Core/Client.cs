@@ -73,7 +73,6 @@ public class Client : IDisposable
 
             // use this as parent to all outgoing HTTP requests now:
             SentrySdk.ConfigureScope(s => s.Span = uploadSpan);
-            int i = 0;
             try
             {
                 foreach (var group in groups)
