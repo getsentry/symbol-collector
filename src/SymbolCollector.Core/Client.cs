@@ -137,8 +137,6 @@ public class Client : IDisposable
             {
                 tasks.Add(UploadFilesAsync(batchId, path, cancellationToken));
                 Metrics.JobsInFlightAdd(1);
-                // TODO: Remove me. Keeping it short to test e2e
-                // return;
             }
             else
             {
