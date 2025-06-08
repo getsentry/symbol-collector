@@ -45,9 +45,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .cache
-          key: cache-${{ github.workflow }}-
+          key: cache-dir-${{ github.workflow }}-${{ github.run_id }}
           restore-keys: |
-            cache-${{ github.workflow }}-
+            cache-dir-${{ github.workflow }}
 
       - name: Download the Android app if there's a new version
         env:
@@ -70,7 +70,7 @@ jobs:
         if: always()
         with:
           path: .cache
-          key: cache-${{ github.workflow }}-${{ github.run_id }}
+          key: cache-dir-${{ github.workflow }}-${{ github.run_id }}
 
       - name: Upload .cache as artifact
         uses: actions/upload-artifact@v4
