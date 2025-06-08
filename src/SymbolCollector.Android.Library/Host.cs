@@ -40,6 +40,20 @@ public class Host
         {
             o.CaptureFailedRequests = true;
 
+            o.SetBeforeSend(@event =>
+            {
+                // Polly sets these without a value, and Sentry shows a processing error
+                @event.UnsetTag("PipelineInstance");
+
+                // Don't capture Debug events
+                if (@event.Level == SentryLevel.Debug)
+                {
+                    return null;
+                }
+
+                return @event;
+            });
+
             // TODO: Should be added OOTB
             o.Release = $"{AppInfo.PackageName}@{AppInfo.VersionString}+{AppInfo.BuildString}";
 
@@ -77,10 +91,20 @@ public class Host
             o.SetBeforeBreadcrumb(breadcrumb
                 // This logger adds 3 crumbs for each HTTP request and we already have a Sentry integration for HTTP
                 // Which shows the right category, status code and a link
-                => string.Equals(breadcrumb.Category, "System.Net.Http.HttpClient.ISymbolClient.LogicalHandler")
-                   || string.Equals(breadcrumb.Category, "System.Net.Http.HttpClient.ISymbolClient.ClientHandler")
+                =>
+            {
+                // One of this for each HEAD request, spamming the logs
+                // info: Polly[3]
+                //       Execution attempt. Source: 'ISymbolClient-standard//Retry', Operation Key: '', Result: '208', Handled: 'False', Attempt: '0', Execution Time: 56.1457ms
+                if (breadcrumb.Message?.Contains("Handled: 'False', Attempt: '0'") == true)
+                {
+                    return null;
+                }
+                return string.Equals(breadcrumb.Category, "System.Net.Http.HttpClient.ISymbolClient.LogicalHandler")
+                       || string.Equals(breadcrumb.Category, "System.Net.Http.HttpClient.ISymbolClient.ClientHandler")
                     ? null
-                    : breadcrumb);
+                    : breadcrumb;
+            });
         });
 
         var tran = sentryTrace is not null
