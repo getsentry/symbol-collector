@@ -162,32 +162,6 @@
                 <View android:layout_width="match_parent"
                       android:layout_height="1dp"/>
 
-                <!-- Already existed-->
-                <LinearLayout android:layout_width="match_parent"
-                              android:layout_height="wrap_content"
-                              android:orientation="horizontal">
-
-                    <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:lines="1"
-                            android:text="Already known:"
-                            android:ellipsize="end"
-                            tools:text="left"/>
-
-                    <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:id="@+id/already_existed"
-                            android:layout_marginLeft="10dp"
-                            tools:text="right"/>
-
-                </LinearLayout>
-
-                <View android:layout_width="match_parent"
-                      android:layout_height="1dp"/>
-
                 <!-- Files Processed Count -->
                 <LinearLayout android:layout_width="match_parent"
                               android:layout_height="wrap_content"
@@ -214,32 +188,6 @@
                 <View android:layout_width="match_parent"
                       android:layout_height="1dp"/>
 
-                <!-- Successfully Upload Count -->
-                <LinearLayout android:layout_width="match_parent"
-                              android:layout_height="wrap_content"
-                              android:orientation="horizontal">
-
-                    <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:text="Successfully uploaded:"
-                            android:layout_weight="1"
-                            android:lines="1"
-                            android:ellipsize="end"
-                            tools:text="left"/>
-
-                    <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:id="@+id/successfully_upload"
-                            android:layout_marginLeft="10dp"
-                            tools:text="right"/>
-
-                </LinearLayout>
-
-                <View android:layout_width="match_parent"
-                      android:layout_height="1dp"/>
-
                 <!-- Elf File Found Count -->
                 <LinearLayout android:layout_width="match_parent"
                               android:layout_height="wrap_content"
@@ -258,6 +206,58 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:id="@+id/elf_files"
+                            android:layout_marginLeft="10dp"
+                            tools:text="right"/>
+
+                </LinearLayout>
+
+                <View android:layout_width="match_parent"
+                      android:layout_height="1dp"/>
+
+                <!-- Already existed-->
+                <LinearLayout android:layout_width="match_parent"
+                              android:layout_height="wrap_content"
+                              android:orientation="horizontal">
+
+                    <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:lines="1"
+                            android:text="Already known:"
+                            android:ellipsize="end"
+                            tools:text="left"/>
+
+                    <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:id="@+id/already_existed"
+                            android:layout_marginLeft="10dp"
+                            tools:text="right"/>
+
+                </LinearLayout>
+
+                <View android:layout_width="match_parent"
+                      android:layout_height="1dp"/>
+
+                <!-- Successfully Upload Count -->
+                <LinearLayout android:layout_width="match_parent"
+                              android:layout_height="wrap_content"
+                              android:orientation="horizontal">
+
+                    <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:text="Successfully uploaded:"
+                            android:layout_weight="1"
+                            android:lines="1"
+                            android:ellipsize="end"
+                            tools:text="left"/>
+
+                    <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:id="@+id/successfully_upload"
                             android:layout_marginLeft="10dp"
                             tools:text="right"/>
 
