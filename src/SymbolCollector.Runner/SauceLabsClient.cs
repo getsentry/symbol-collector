@@ -145,7 +145,7 @@ public class SauceLabsClient : IDisposable
             .Where(d => string.Equals(d.Os, "android", StringComparison.OrdinalIgnoreCase))
             .OrderByDescending(d => d.ApiLevel)
             .ToList();
-        Console.WriteLine("{0} Android devices", androidRealDevices.Count);
+        Console.WriteLine("Got a list of {0} Android devices", androidRealDevices.Count);
         return androidRealDevices;
     }
 
