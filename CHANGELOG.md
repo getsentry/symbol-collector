@@ -1,5 +1,28 @@
 # Changelog
 
+## 2.1.0
+
+### Various fixes & improvements
+
+- mobile replay (bd140d76) by @bruno-garcia
+- fix tracing client-server (#229) by @bruno-garcia
+- ref: usings and startup time redundant code (de46301b) by @bruno-garcia
+- use sentry cron jobid (1f3b6169) by @bruno-garcia
+- gha cache fix (25e8c22c) by @bruno-garcia
+- always save cache (62a85182) by @bruno-garcia
+- span desc (d1a68a25) by @bruno-garcia
+- cache result regardless of job outcome (36cca552) by @bruno-garcia
+- fix(cloudbuild): using proper repo name (#226) by @IanWoodard
+- fix cron error handling (2be12239) by @bruno-garcia
+- print cron job conditionally (c823f7f8) by @bruno-garcia
+- fix cron job (67dab14c) by @bruno-garcia
+- cron monitoring (#224) by @bruno-garcia
+- cron monitoring (103331c6) by @bruno-garcia
+- fix action caching (e6b059c9) by @bruno-garcia
+- fix action version (8374e8b6) by @bruno-garcia
+- fix action version (62f4f32c) by @bruno-garcia
+- keep cache as artifact (b01683e9) by @bruno-garcia
+
 ## 2.0.0
 
 ### Various fixes & improvements
