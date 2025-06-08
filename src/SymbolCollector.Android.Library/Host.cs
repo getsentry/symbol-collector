@@ -53,6 +53,10 @@ public class Host
             o.Native.AttachScreenshot = true;
             o.Native.EnableTracing = true; // Will double report transactions but to get profiler data
             o.Native.ProfilesSampleRate = 0.4;
+            // Enable Session Replay - All sessions, No PII scrubbing (no PII on this app)
+            o.Native.ExperimentalOptions.SessionReplay.MaskAllImages = false;
+            o.Native.ExperimentalOptions.SessionReplay.MaskAllText = false;
+            o.Native.ExperimentalOptions.SessionReplay.SessionSampleRate = 1.0;
 #endif
 
 #if DEBUG
