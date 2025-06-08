@@ -92,7 +92,8 @@ public class SauceLabsClient : IDisposable
                 cachedDevices = await JsonSerializer.DeserializeAsync<List<SauceLabsDevice>>(cacheFileStream);
                 // Should either throw or return an empty list
                 ArgumentNullException.ThrowIfNull(cachedDevices);
-                Console.WriteLine("{0} cached devices restored", cachedDevices.Count);
+                var processedDevicesCount = cachedDevices.Count(d => d.LastSymbolUploadRanTime is not null);
+                Console.WriteLine("{0} devices restored from cache. {1} of them have been processed", cachedDevices.Count, processedDevicesCount);
             }
             // got type System.Text.Json.JsonReaderException but not accessible?
             catch (Exception e)

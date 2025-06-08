@@ -18,6 +18,8 @@ jobs:
   run-symbol-upload:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      CACHE_PREFIX: cache-folder-${{ runner.os }}-${{ github.workflow }}
 
     steps:
       - name: Set Sentry Cronjob Slug - Sunday
@@ -45,9 +47,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .cache
-          key: cache-folder-${{ runner.os }}-${{ github.workflow }}
+          key: ${{ env.CACHE_PREFIX }}-
           restore-keys: |
-            cache-folder-${{ runner.os }}-${{ github.workflow }}-
+            ${{ env.CACHE_PREFIX }}-
 
       - name: Download the Android app if there's a new version
         env:
@@ -70,7 +72,7 @@ jobs:
         if: always()
         with:
           path: .cache
-          key: cache-folder-${{ runner.os }}-${{ github.workflow }}-${{ github.run_id }}
+          key: ${{ env.CACHE_PREFIX }}-${{ github.run_id }}
 
       - name: Upload .cache as artifact
         uses: actions/upload-artifact@v4

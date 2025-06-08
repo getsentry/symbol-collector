@@ -2,7 +2,7 @@
 // To skip, pass 'skipUpload:true' as the first argument
 var skipUpload = args.Any(a => a.Equals("skipUpload:true", StringComparison.OrdinalIgnoreCase));
 
-Console.WriteLine($"Starting runner (skipUpload:{skipUpload}...");
+Console.WriteLine($"Starting runner (skipUpload:{skipUpload})...");
 
 const string appName = "SymbolCollector.apk";
 const string appPackage = "io.sentry.symbolcollector.android";
@@ -50,6 +50,7 @@ try
     using var client = new SauceLabsClient();
     var getDevicesSpan = transaction.StartChild("appium.cache-results", "reading caching results");
     var devices = await client.GetDevices();
+
     getDevicesSpan.Finish();
     // Prioritize devices that don't have a timestamp saved in the cache yet
     if (devices.FirstOrDefault(p => p.LastSymbolUploadRanTime is null) is not { } deviceToRun)
