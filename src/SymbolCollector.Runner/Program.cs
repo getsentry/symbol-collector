@@ -97,7 +97,7 @@ try
     Console.WriteLine($"Marked {deviceToRun.Id} with LastSymbolUploadRanTime: {deviceToRun.LastSymbolUploadRanTime}");
     cacheSpan.Finish();
 
-    UploadSymbolsOnSauceLabs(app, deviceToRun, transaction, client);
+    await UploadSymbolsOnSauceLabs(app, deviceToRun, transaction, client);
 
     transaction.Finish();
     if (cronJobName is not null)
@@ -117,12 +117,12 @@ catch (Exception e)
 }
 finally
 {
-    await SentrySdk.FlushAsync(TimeSpan.FromSeconds(2));
+    await SentrySdk.FlushAsync(TimeSpan.FromSeconds(5));
 }
 
 return;
 
-void UploadSymbolsOnSauceLabs(string app, SauceLabsDevice deviceToRun, ISpan span, SauceLabsClient client)
+async Task UploadSymbolsOnSauceLabs(string app, SauceLabsDevice deviceToRun, ISpan span, SauceLabsClient client)
 {
     var uploadSymbolsSpan = span.StartChild("appium.symbol.upload", "instructing app to start uploading symbols");
     span.SetData("device", deviceToRun.Id);
@@ -260,6 +260,10 @@ void UploadSymbolsOnSauceLabs(string app, SauceLabsDevice deviceToRun, ISpan spa
     }
     finally
     {
+        // quitting the appium driver kills the app immediately
+        // before killing the app, give it 5 seconds to flush out the last frame of session replay
+        await Task.Delay(TimeSpan.FromSeconds(5));
+        await SentrySdk.FlushAsync();
         driver.Quit();
     }
 }
