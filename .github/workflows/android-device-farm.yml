@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      CACHE_PREFIX: cache-folder-${{ runner.os }}-${{ github.workflow }}
+      CACHE_PREFIX: cache-${{ github.workflow }}
 
     steps:
       - name: Set Sentry Cronjob Slug - Sunday
