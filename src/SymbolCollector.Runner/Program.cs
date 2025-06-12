@@ -48,22 +48,14 @@ if (cronJobName is not null)
 try
 {
     using var client = new SauceLabsClient();
-    var getDevicesSpan = transaction.StartChild("appium.cache-results", "reading caching results");
+    var getDevicesSpan = transaction.StartChild("appium.get-devices", "getting android devices");
     var devices = await client.GetDevices();
-
     getDevicesSpan.Finish();
-    // Prioritize devices that don't have a timestamp saved in the cache yet
-    if (devices.FirstOrDefault(p => p.LastSymbolUploadRanTime is null) is not { } deviceToRun)
-    {
-        Console.WriteLine("No new devices, running on the one we ran last.");
-        // TODO: Skip if ran last than 30 days ago
-        deviceToRun = devices.OrderBy(d => d.LastSymbolUploadRanTime).First();
-        Console.WriteLine("Running on device that ran last {0}: {1}", deviceToRun.LastSymbolUploadRanTime, deviceToRun);
-    }
-    else
-    {
-        Console.WriteLine("Brand new device detected: {0}", deviceToRun);
-    }
+    
+    // Simply pick a random device
+    var random = new Random();
+    var deviceToRun = devices[random.Next(devices.Count)];
+    Console.WriteLine("Randomly selected device: {0}", deviceToRun);
 
     var app = $"storage:filename={appName}";
 
@@ -87,15 +79,6 @@ try
     {
         Console.WriteLine("'skipUpload' is true, skipping apk upload.");
     }
-
-    // Saucelabs reports devices it actually doesn't have available ever. So we'll store in the cache whatever the result of the run, and skip to the next.
-    // "All devices busy: Your test could not be executed, because the device type you requested was in high demand, and after a 15-minute search in our US-West data center, we couldn't find an available device for you."
-    // Otherwise we stay retrying the same device day after day and going nowhere.
-    var cacheSpan = transaction.StartChild("appium.cache-results", "persisting updated device list to cache");
-    deviceToRun.LastSymbolUploadRanTime = DateTime.UtcNow;
-    await client.SaveResults(devices);
-    Console.WriteLine($"Marked {deviceToRun.Id} with LastSymbolUploadRanTime: {deviceToRun.LastSymbolUploadRanTime}");
-    cacheSpan.Finish();
 
     await UploadSymbolsOnSauceLabs(app, deviceToRun, transaction, client);
 
