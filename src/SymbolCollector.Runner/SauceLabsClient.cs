@@ -1,4 +1,3 @@
-using System.Text.Json;
 using OpenQA.Selenium.Remote;
 
 public class SauceLabsClient : IDisposable
@@ -68,65 +67,9 @@ public class SauceLabsClient : IDisposable
         return id;
     }
 
-    private const string CacheDirectory = ".cache";
-    private const string CacheFile = CacheDirectory + "/devices.json";
-
     public async Task<List<SauceLabsDevice>> GetDevices()
     {
-        // GitHub will remove any cache entries that have not been accessed in over 7 days. There is no limit on the number of caches you can store, but the total size of all caches in a repository is limited to 10 GB.
-        // https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/caching-dependencies-to-speed-up-workflows
-        var getDevicesTask = GetAndroidRealDevices();
-        var cacheDir = Directory.CreateDirectory(CacheDirectory);
-        var liveDevices = await getDevicesTask;
-        var cachedDevices = new List<SauceLabsDevice>();
-
-        if (!cacheDir.Exists)
-        {
-            throw new InvalidOperationException("Failed to create cache directory");
-        }
-        if (File.Exists(CacheFile))
-        {
-            await using var cacheFileStream = File.OpenRead(CacheFile);
-            try
-            {
-                cachedDevices = await JsonSerializer.DeserializeAsync<List<SauceLabsDevice>>(cacheFileStream);
-                // Should either throw or return an empty list
-                ArgumentNullException.ThrowIfNull(cachedDevices);
-                var processedDevicesCount = cachedDevices.Count(d => d.LastSymbolUploadRanTime is not null);
-                Console.WriteLine("{0} devices restored from cache. {1} of them have been processed", cachedDevices.Count, processedDevicesCount);
-            }
-            // got type System.Text.Json.JsonReaderException but not accessible?
-            catch (Exception e)
-            {
-                // System.Text.Json.JsonException: ']' is invalid after a single JSON value. Expected end of data. Path: $ | LineNumber: 0 | BytePositionInLine: 128242.
-                // If it gets into a broken state, it gets stuck. So we'll nuke the cache and start over.
-                File.Delete(CacheFile);
-                Console.WriteLine(e);
-                SentrySdk.CaptureException(e);
-            }
-        }
-        else
-        {
-            Console.WriteLine("No cache device info found.");
-        }
-
-        // hydrate the liveDevice list with the cached information. What's in the cache but no longer live will be removed
-        var newList = liveDevices.Select(cd =>
-            cachedDevices!.FirstOrDefault(d => d.Id == cd.Id) ?? cd).ToList();
-        return newList;
-    }
-
-    public async Task SaveResults(List<SauceLabsDevice> devices)
-    {
-        var cacheDir = Directory.CreateDirectory(CacheDirectory);
-        if (!cacheDir.Exists)
-        {
-            throw new InvalidOperationException("Failed to create cache directory");
-        }
-
-        await using var cacheFileStream = File.Create(CacheFile);
-        await JsonSerializer.SerializeAsync(cacheFileStream, devices);
-        Console.WriteLine("Cached {0} devices.", devices.Count);
+        return await GetAndroidRealDevices();
     }
 
     private async Task<List<SauceLabsDevice>> GetAndroidRealDevices()
@@ -185,9 +128,6 @@ static class AndroidDriverExtensions
 
 public class SauceLabsDevice
 {
-    // Not defined by the API, but we need it for the cache
-    public DateTimeOffset? LastSymbolUploadRanTime { get; set; }
-
     // Defined by the API
     public string? AbiType { get; set; }
     public int ApiLevel { get; set; }
