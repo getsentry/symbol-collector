@@ -53,8 +53,7 @@ try
     getDevicesSpan.Finish();
     
     // Simply pick a random device
-    var random = new Random();
-    var deviceToRun = devices[random.Next(devices.Count)];
+    var deviceToRun = devices[Random.Shared.Next(devices.Count)];
     Console.WriteLine("Randomly selected device: {0}", deviceToRun);
 
     var app = $"storage:filename={appName}";
