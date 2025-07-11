@@ -32,13 +32,13 @@ pipelines:
                           elastic_profile_id: symbol-collector
                           tasks:
                               - script: |
-                                    /devinfra/scripts/checks/githubactions/checkruns.py \
+                                    checks-githubactions-checkruns \
                                     getsentry/symbol-collector \
                                     ${GO_REVISION_SYMBOL_COLLECTOR_REPO} \
                                     macos-latest \
                                     windows-latest
                               - script: |
-                                    /devinfra/scripts/checks/googlecloud/check_cloudbuild.py \
+                                    checks-googlecloud-check-cloudbuild \
                                     sentryio \
                                     github_getsentry_symbol-collector \
                                     symbol-collector-push-to-any-branch \
@@ -53,7 +53,7 @@ pipelines:
                           tasks:
                               - script: |
                                     /devinfra/scripts/k8s/k8stunnel \
-                                    && /devinfra/scripts/k8s/k8s-deploy.py \
+                                    && k8s-deploy \
                                     --label-selector="service=symbol-collector" \
                                     --image="us-central1-docker.pkg.dev/sentryio/symbol-collector/image:${GO_REVISION_SYMBOL_COLLECTOR_REPO}" \
                                     --container-name="symbol-collector"
