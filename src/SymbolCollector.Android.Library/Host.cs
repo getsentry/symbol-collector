@@ -38,6 +38,11 @@ public class Host
     {
         SentrySdk.Init(o =>
         {
+
+#pragma warning disable SENTRY0001
+            o.Experimental.EnableLogs = true;
+#pragma warning restore SENTRY0001
+
             o.CaptureFailedRequests = true;
 
             o.SetBeforeSend(@event =>

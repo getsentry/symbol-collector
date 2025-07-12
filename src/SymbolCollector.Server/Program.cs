@@ -71,16 +71,14 @@ public class Program
                 {
                     o.Dsn = "https://2262a4fa0a6d409c848908ec90c3c5b4@sentry.io/1886021";
 
-                    o.AddIntegration(new ProfilingIntegration(
-                        // Block up to 2 seconds to get profiling started before running the app
-                        TimeSpan.FromSeconds(2)));
-
                     o.AddExceptionFilterForType<OperationCanceledException>();
                     o.MinimumBreadcrumbLevel = LogLevel.Debug;
                     o.CaptureFailedRequests = true;
 
                     // https://github.com/getsentry/symbol-collector/issues/205
                     // o.CaptureBlockingCalls = true;
+
+                    o.AddProfilingIntegration(TimeSpan.FromSeconds(2));
 
                     o.SetBeforeSend(@event =>
                     {
@@ -101,6 +99,7 @@ public class Program
                     });
 
 #pragma warning disable SENTRY0001
+                    o.Experimental.EnableLogs = true;
                     o.EnableHeapDumps(20, Debouncer.PerDay(3, TimeSpan.FromHours(3)));
 #pragma warning restore SENTRY0001
                 });
