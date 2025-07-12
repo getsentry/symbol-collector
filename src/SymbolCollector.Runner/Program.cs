@@ -1,8 +1,9 @@
 ﻿// Runner uploads the apk by default (on current directory or under the apps' bin).
 // To skip, pass 'skipUpload:true' as the first argument
+#pragma warning disable SENTRY0001
 var skipUpload = args.Any(a => a.Equals("skipUpload:true", StringComparison.OrdinalIgnoreCase));
 
-Console.WriteLine($"Starting runner (skipUpload:{skipUpload})...");
+IntrLog.Info($"Starting runner (skipUpload:{skipUpload})...");
 
 const string appName = "SymbolCollector.apk";
 const string appPackage = "io.sentry.symbolcollector.android";
@@ -13,7 +14,7 @@ const string solutionBuildApkPath = $"src/SymbolCollector.Android/bin/Release/ne
 var cronJobName = Environment.GetEnvironmentVariable("CRON_JOB_NAME");
 if (cronJobName is not null)
 {
-    Console.WriteLine("Running cron job: {0}", cronJobName);
+    IntrLog.Info("Running cron job: {0}", cronJobName);
 }
 
 string? filePath = null;
@@ -36,9 +37,7 @@ SentrySdk.Init(options =>
     options.AutoSessionTracking = true;
     options.TracesSampleRate = 1.0;
 
-#pragma warning disable SENTRY0001
     options.Experimental.EnableLogs = true;
-#pragma warning restore SENTRY0001
 });
 
 var transaction = SentrySdk.StartTransaction("appium.runner", "runner appium to upload apk to saucelabs and collect symbols real devices");
@@ -55,10 +54,10 @@ try
     var getDevicesSpan = transaction.StartChild("appium.get-devices", "getting android devices");
     var devices = await client.GetDevices();
     getDevicesSpan.Finish();
-    
+
     // Simply pick a random device
     var deviceToRun = devices[Random.Shared.Next(devices.Count)];
-    Console.WriteLine("Randomly selected device: {0}", deviceToRun);
+    IntrLog.Info("Randomly selected device: {0}", deviceToRun);
 
     var app = $"storage:filename={appName}";
 
@@ -66,11 +65,11 @@ try
     {
         if (filePath is null)
         {
-            Console.WriteLine("'filePath' is null, skipping apk upload.");
+            IntrLog.Info("'filePath' is null, skipping apk upload.");
         }
         else
         {
-            Console.WriteLine("Uploading apk: {0}", filePath);
+            IntrLog.Info("Uploading apk: {0}", filePath);
 
             var span = transaction.StartChild("appium.upload-apk", "uploading apk to saucelabs");
             var buildId = await client.UploadApkAsync(filePath, appName);
@@ -80,7 +79,7 @@ try
     }
     else
     {
-        Console.WriteLine("'skipUpload' is true, skipping apk upload.");
+        IntrLog.Info("'skipUpload' is true, skipping apk upload.");
     }
 
     await UploadSymbolsOnSauceLabs(app, deviceToRun, transaction, client);
@@ -145,7 +144,7 @@ async Task UploadSymbolsOnSauceLabs(string app, SauceLabsDevice deviceToRun, ISp
 
     try
     {
-        Console.WriteLine("Starting symbol upload...");
+        IntrLog.Info("Starting symbol upload...");
 
         var totalWaitTimeSeconds = 40 * 60;
         var retryCounter = 200;
@@ -169,7 +168,7 @@ async Task UploadSymbolsOnSauceLabs(string app, SauceLabsDevice deviceToRun, ISp
                 {
                     _ = wait.Until(d => d.FindElement(
                         By.Id($"{appPackage}:id/done_text")));
-                    Console.WriteLine("💯!");
+                    IntrLog.Info("💯!");
                     return;
                 }
                 catch (WebDriverTimeoutException)
@@ -189,7 +188,7 @@ async Task UploadSymbolsOnSauceLabs(string app, SauceLabsDevice deviceToRun, ISp
                             By.Id($"{appPackage}:id/dialog_error"));
                         if (dialogView is not null)
                         {
-                            Console.WriteLine("Failed collecting symbols:");
+                            IntrLog.Error("Failed collecting symbols:");
                             var dialogBody = driver.FindElement(
                                 By.Id($"{appPackage}:id/dialog_body"));
                             throw new Exception(dialogBody.Text);
@@ -199,7 +198,7 @@ async Task UploadSymbolsOnSauceLabs(string app, SauceLabsDevice deviceToRun, ISp
                     {
                     }
 
-                    Console.WriteLine($"Not done nor errored. Waiting {iterationTimeout}...");
+                    IntrLog.Info($"Not done nor errored. Waiting {iterationTimeout}...");
                 }
             } while (--retryCounter != 0);
 
@@ -207,7 +206,7 @@ async Task UploadSymbolsOnSauceLabs(string app, SauceLabsDevice deviceToRun, ISp
         }
         catch (WebDriverException e)
         {
-            Console.WriteLine("WebDriver error, terminating the app: {0}", e);
+            IntrLog.Error("WebDriver error, terminating the app: {0}", e);
             try
             {
                 driver.TerminateApp(appPackage);
@@ -222,13 +221,13 @@ async Task UploadSymbolsOnSauceLabs(string app, SauceLabsDevice deviceToRun, ISp
         }
         catch (Exception e) when (appTerminatedMessage.Equals(e.Message))
         {
-            Console.WriteLine("App was not running: {0}", e);
+            IntrLog.Warning("App was not running: {0}", e);
             RestartAppAndCrashRunner(e);
         }
 
         void RestartAppAndCrashRunner(Exception e)
         {
-            Console.WriteLine("Restarting the app");
+            IntrLog.Info("Restarting the app");
 
             // Relaunch so we can capture any crashes stored on disk on the previous run
             driver.ActivateApp(appPackage);
@@ -251,5 +250,35 @@ async Task UploadSymbolsOnSauceLabs(string app, SauceLabsDevice deviceToRun, ISp
         await Task.Delay(TimeSpan.FromSeconds(5));
         await SentrySdk.FlushAsync();
         driver.Quit();
+    }
+}
+
+static class IntrLog
+{
+    public static void Info(string message, params object[] args)
+    {
+        Console.WriteLine(message, args);
+        SentrySdk.Experimental.Logger.LogInfo(message, args);
+    }
+
+    public static void Warning(string message, params object[] args)
+    {
+        Console.WriteLine(message, args);
+        SentrySdk.Experimental.Logger.LogWarning(message, args);
+    }
+
+    public static void Error(string message, Exception? exception = null, params object[] args)
+    {
+        var formattedMessage = args.Length > 0 ? string.Format(message, args) : message;
+        Console.WriteLine(formattedMessage);
+        if (exception != null)
+        {
+            Console.WriteLine(exception);
+            SentrySdk.Experimental.Logger.LogError($"{message} - {exception.Message}", args);
+        }
+        else
+        {
+            SentrySdk.Experimental.Logger.LogError(message, args);
+        }
     }
 }
