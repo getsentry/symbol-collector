@@ -219,6 +219,11 @@ internal class Program
             o.Debug = true;
             o.IsGlobalModeEnabled = true;
             o.CaptureFailedRequests = true;
+
+#pragma warning disable SENTRY0001
+            o.Experimental.EnableLogs = true;
+#pragma warning restore SENTRY0001
+
 #if DEBUG
             o.Environment = "development";
 #else
@@ -231,9 +236,7 @@ internal class Program
             o.TracesSampleRate = 1.0;
             o.ProfilesSampleRate = 1.0;
 
-            o.AddIntegration(new ProfilingIntegration(
-                // Block up to 2 seconds to get profiling started before running the app
-                TimeSpan.FromSeconds(2)));
+            o.AddProfilingIntegration(TimeSpan.FromSeconds(2));
 
             o.AddExceptionFilterForType<OperationCanceledException>();
         });
