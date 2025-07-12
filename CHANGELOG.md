@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.2.0
+
+### Various fixes & improvements
+
+- add sentry logs alpha sdk (#236) by @bruno-garcia
+- caching on android-device-farm is for apk upload only (4be06002) by @bruno-garcia
+- Simplify device selection to use random selection instead of caching logic (#231) by @cursor
+- cache key (80ac0459) by @bruno-garcia
+- wait before killing appium server (885fff59) by @bruno-garcia
+- reoder android UI labels (e4ff3add) by @bruno-garcia
+- cache (d3fd2613) by @bruno-garcia
+- fix workflow env var (3f3d3c6e) by @bruno-garcia
+- fix device cache (b09815c4) by @bruno-garcia
+- fix apk version cache and skip spammy log (3a1c534a) by @bruno-garcia
+
 ## 2.1.0
 
 ### Various fixes & improvements
