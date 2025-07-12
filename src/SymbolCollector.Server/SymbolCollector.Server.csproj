@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <!-- For symbol uploading -->
-    <SentryProject>android-symbol-collector-server</SentryProject>
+    <SentryProject>symbol-collector-server</SentryProject>
   </PropertyGroup>
 
   <ItemGroup>

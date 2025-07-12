@@ -9,7 +9,7 @@
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <NoWarn>1591</NoWarn>
     <!-- For symbol uploading -->
-    <SentryProject>symbol-collector-console</SentryProject>
+    <SentryProject>symbol-collector-cli</SentryProject>
   </PropertyGroup>
 
   <ItemGroup>
