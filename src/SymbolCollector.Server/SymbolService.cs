@@ -151,8 +151,8 @@ internal class InMemorySymbolService : ISymbolService, IDisposable
         {
             throw new InvalidOperationException("Couldn't get the path from tempDestination: " + tempDestination);
         }
-
         Directory.CreateDirectory(path);
+        var anotherTempPath = tempDestination;
         await using (var file = File.OpenWrite(tempDestination))
         {
             await stream.CopyToAsync(file, token);
