@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.2.1
+
+### Various fixes & improvements
+
+- bump Sentry SDK for improvements and fixes in Logs (#242) by @Flash0ver
+- Updating gocd scripts to use console script entry points (#239) by @mchen-sentry
+- logs on the cli (31744ea3) by @bruno-garcia
+- fix sentry project name for symbol upload (ef8d4443) by @bruno-garcia
+- add sentry logs alpha sdk to runner (#238) by @bruno-garcia
+- Revert "update gocd script to use console script entry point (#235)" (#237) by @bruno-garcia
+- update gocd script to use console script entry point (#235) by @mchen-sentry
+
 ## 2.2.0
 
 ### Various fixes & improvements
