@@ -86,6 +86,50 @@ public class ObjectFileParser
         Metrics.FileProcessed();
         return parsed;
     }
+
+    public bool TryParse(Stream stream, string fileName, out ObjectFileResult? result)
+    {
+        var parsed = false;
+        try
+        {
+            parsed = RuntimeInformation.IsOSPlatform(OSPlatform.OSX)
+                ? TryMachO(stream, fileName, out result)
+                : TryElf(stream, fileName, out result);
+        }
+        catch (UnauthorizedAccessException ua)
+        {
+            // Too often to bother. Can't blocklist them all as it differs per device.
+            Metrics.FileOrDirectoryUnauthorizedAccess();
+            _logger.LogDebug(ua, "Unauthorized for {fileName}.", fileName);
+            result = null;
+        }
+        catch (FileNotFoundException dnf)
+        {
+            _logger.LogDebug(dnf, "File not found: {fileName}.", fileName);
+            Metrics.FileDoesNotExist();
+            result = null;
+        }
+        catch (Exception known)
+            when ("Unexpected name of the section's segment.".Equals(known.Message)
+                  || "The size defined on the header is smaller than the subsequent file size.".Equals(known.Message))
+        {
+            result = null;
+            Metrics.FailedToParse();
+            _logger.LogWarning(known, "Malformed Mach-O file: {fileName}", fileName);
+        }
+        catch (Exception e)
+        {
+            result = null;
+            Metrics.FailedToParse();
+            // You would expect TryLoad doesn't throw but that's not the case
+            e.Data["filename"] = fileName;
+            // Cannot attach stream to Sentry, just log the error
+            SentrySdk.CaptureException(e);
+        }
+
+        Metrics.FileProcessed();
+        return parsed;
+    }
     private bool TryElf(string file, out ObjectFileResult? result)
     {
         var parsed = false;
@@ -103,6 +147,32 @@ public class ObjectFileParser
                 parsed = true;
             }
             else if (TryParseFatMachO(file, out var fatMachO) && fatMachO is {})
+            {
+                result = fatMachO;
+                parsed = true;
+            }
+        }
+
+        return parsed;
+    }
+
+    private bool TryElf(Stream stream, string fileName, out ObjectFileResult? result)
+    {
+        var parsed = false;
+        result = null;
+        if (TryParseElfFile(stream, fileName, out var elf) && elf is {})
+        {
+            result = elf;
+            parsed = true;
+        }
+        else if (_options.UseFallbackObjectFileParser)
+        {
+            if (TryParseMachOFile(stream, fileName, out var machO) && machO is {})
+            {
+                result = machO;
+                parsed = true;
+            }
+            else if (TryParseFatMachO(stream, fileName, out var fatMachO) && fatMachO is {})
             {
                 result = fatMachO;
                 parsed = true;
@@ -137,6 +207,31 @@ public class ObjectFileParser
         return parsed;
     }
 
+    private bool TryMachO(Stream stream, string fileName, out ObjectFileResult? result)
+    {
+        result = null;
+        var parsed = false;
+        // On macOS look for Mach-O first
+        if (TryParseMachOFile(stream, fileName, out var machO) && machO is {})
+        {
+            result = machO;
+            parsed = true;
+        }
+        else if (TryParseFatMachO(stream, fileName, out var fatMachO) && fatMachO is {})
+        {
+            result = fatMachO;
+            parsed = true;
+        }
+        else if (_options.UseFallbackObjectFileParser
+                 && TryParseElfFile(stream, fileName, out var elf) && elf is {})
+        {
+            result = elf;
+            parsed = true;
+        }
+
+        return parsed;
+    }
+
     private bool TryParseFatMachO(string file, out FatMachOFileResult? result)
     {
         if (TryGetMachOFilesFromFatFile(file, out var files))
@@ -150,6 +245,14 @@ public class ObjectFileParser
             return true;
         }
 
+        result = null;
+        return false;
+    }
+
+    private bool TryParseFatMachO(Stream stream, string fileName, out FatMachOFileResult? result)
+    {
+        // Fat MachO parsing from stream would require implementing stream support
+        // For now, we only support ELF from streams
         result = null;
         return false;
     }
@@ -309,6 +412,114 @@ public class ObjectFileParser
         return false;
     }
 
+    private bool TryParseElfFile(Stream stream, string fileName, out ObjectFileResult? result)
+    {
+        IELF? elf = null;
+        try
+        {
+            if (ELFReader.TryLoad(stream, out elf))
+            {
+                Metrics.ElfFileFound();
+                var hasUnwindingInfo = elf.TryGetSection(".eh_frame", out _);
+                var hasDwarfDebugInfo = elf.TryGetSection(".debug_frame", out _);
+
+                var objectKind = GetObjectKind(elf);
+
+                _logger.LogDebug("Contains unwinding info: {hasUnwindingInfo}", hasUnwindingInfo);
+                _logger.LogDebug("Contains DWARF debug info: {hasDwarfDebugInfo}", hasDwarfDebugInfo);
+                var arch = GetArchitecture(elf);
+
+                var hasBuildId = elf.TryGetSection(".note.gnu.build-id", out var buildId);
+                if (hasBuildId)
+                {
+                    var desc = buildId switch
+                    {
+                        NoteSection<uint> noteUint => noteUint.Description,
+                        NoteSection<ulong> noteUlong => noteUlong.Description,
+                        _ => null
+                    };
+                    if (desc == null)
+                    {
+                        _logger.LogError("build-id exists but bytes (desc) are null.");
+                    }
+                    else
+                    {
+                        // TODO ns2.1: get a slice
+                        var desc16bytes = desc.Take(16).ToArray();
+                        if (desc16bytes.Length != 16)
+                        {
+                            _logger.LogWarning("build-id exists but bytes (desc) length is unexpected {bytes}.",
+                                desc16bytes.Length);
+                        }
+                        else
+                        {
+                            var debugId = new Guid(desc16bytes).ToString();
+                            result = new ObjectFileResult(
+                                debugId,
+                                BitConverter.ToString(desc).Replace("-", "").ToLower(),
+                                fileName,
+                                GetSha256HashFromStream(stream),
+                                BuildIdType.GnuBuildId,
+                                objectKind,
+                                FileFormat.Elf,
+                                arch);
+                            return true;
+                        }
+                    }
+                }
+                else
+                {
+                    if (elf.TryGetSection(".text", out var textSection))
+                    {
+                        try
+                        {
+                            var fallbackDebugId = GetFallbackDebugId(textSection.GetContents());
+                            if (fallbackDebugId is { })
+                            {
+                                result = new ObjectFileResult(
+                                    fallbackDebugId,
+                                    fallbackDebugId.Replace("-", string.Empty)
+                                        .ToLower(), // TODO: prob needs NT_GNU_BUILD_ID here
+                                    fileName,
+                                    GetSha256HashFromStream(stream),
+                                    BuildIdType.TextSectionHash,
+                                    objectKind,
+                                    FileFormat.Elf,
+                                    arch);
+                                return true;
+                            }
+
+                            _logger.LogDebug(
+                                "Could not compute fallback id with textSection {textSection} from file {fileName}",
+                                textSection, fileName);
+                        }
+                        catch (Exception e)
+                        {
+                            _logger.LogError(e,
+                                "Failed to compute fallback id with textSection {textSection} from file {fileName}",
+                                textSection, fileName);
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogWarning("No Debug Id and no .text section for fallback in {fileName}", fileName);
+                    }
+                }
+            }
+            else
+            {
+                _logger.LogDebug("Couldn't load': {fileName} with ELF reader.", fileName);
+            }
+        }
+        finally
+        {
+            elf?.Dispose();
+        }
+
+        result = null;
+        return false;
+    }
+
     private bool TryParseMachOFile(string file, out ObjectFileResult? result)
     {
         // TODO: find an async API if this is used by the server
@@ -350,6 +561,14 @@ public class ObjectFileParser
         }
 
         _logger.LogDebug("Couldn't load': {file} with mach-O reader.", file);
+        result = null;
+        return false;
+    }
+
+    private bool TryParseMachOFile(Stream stream, string fileName, out ObjectFileResult? result)
+    {
+        // MachO parsing from stream would require implementing stream support for MachOReader
+        // For now, we only support ELF from streams
         result = null;
         return false;
     }
@@ -484,6 +703,29 @@ public class ObjectFileParser
         {
             using var algorithm = SHA256.Create();
             var hashingAlgo = algorithm.ComputeHash(File.ReadAllBytes(file));
+            var builder = new StringBuilder();
+            foreach (var b in hashingAlgo)
+            {
+                builder.Append(b.ToString("x2"));
+            }
+
+            hash = builder.ToString();
+        }
+
+        return hash;
+    }
+
+    private string GetSha256HashFromStream(Stream stream)
+    {
+        var hash = string.Empty;
+        if (_options.IncludeHash)
+        {
+            var originalPosition = stream.Position;
+            stream.Position = 0;
+            using var algorithm = SHA256.Create();
+            var hashingAlgo = algorithm.ComputeHash(stream);
+            stream.Position = originalPosition;
+            
             var builder = new StringBuilder();
             foreach (var b in hashingAlgo)
             {

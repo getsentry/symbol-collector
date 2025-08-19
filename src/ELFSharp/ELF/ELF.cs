@@ -25,6 +25,35 @@ namespace ELFSharp.ELF
             ReadSegmentHeaders();
         }
 
+        internal ELF(Stream inputStream)
+        {
+            this.fileName = ""; // Empty fileName for stream-based ELF
+            // Create a temporary file to work with stream content
+            if (inputStream is FileStream fs)
+            {
+                this.stream = fs;
+            }
+            else
+            {
+                // For non-FileStreams, we need to copy to a temp file
+                var tempFile = Path.GetTempFileName();
+                this.fileName = tempFile;
+                using (var fileStream = File.Create(tempFile))
+                {
+                    inputStream.CopyTo(fileStream);
+                }
+                this.stream = new FileStream(tempFile, FileMode.Open, FileAccess.Read, FileShare.Read);
+            }
+			if(ELFReader.CheckELFType(inputStream) == Class.NotELF)
+			{
+				throw new ArgumentException("Given stream is not proper ELF file.");
+			}
+            ReadHeader();            
+            ReadStringTable();
+            ReadSections();
+            ReadSegmentHeaders();
+        }
+
         public Endianess Endianess { get; private set; }
 
         public Class Class { get; private set; }
@@ -154,6 +183,18 @@ namespace ELFSharp.ELF
         public void Dispose()
         {
             stream.Close();
+            // Clean up temporary file if it was created for stream-based constructor
+            if (string.IsNullOrEmpty(fileName) == false && fileName.StartsWith(Path.GetTempPath()))
+            {
+                try
+                {
+                    File.Delete(fileName);
+                }
+                catch
+                {
+                    // Ignore cleanup errors
+                }
+            }
         }
 
         bool IELF.TryGetSection(int index, out ISection section)
@@ -326,7 +367,16 @@ namespace ELFSharp.ELF
         private void ReadHeader()
         {
             ReadIdentificator();
-            readerSource = () => new SimpleEndianessAwareReader(GetNewStream(), Endianess);
+            if (string.IsNullOrEmpty(fileName))
+            {
+                // Stream-based constructor
+                readerSource = () => new SimpleEndianessAwareReader(stream, Endianess);
+            }
+            else
+            {
+                // File-based constructor
+                readerSource = () => new SimpleEndianessAwareReader(GetNewStream(), Endianess);
+            }
             localReaderSource = () => new SimpleEndianessAwareReader(stream, Endianess, true);
             ReadFields();
         }

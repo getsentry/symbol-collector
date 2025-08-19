@@ -136,7 +136,6 @@ internal class InMemorySymbolService : ISymbolService, IDisposable
     {
         var batch = await GetOpenBatch(batchId, token);
 
-        // TODO: Until parser supports Stream instead of file path, we write the file to TMP before we can validate it.
         var destination = Path.Combine(
             _processingPath,
             batch.BatchType.ToSymsorterPrefix(),
@@ -145,21 +144,14 @@ internal class InMemorySymbolService : ISymbolService, IDisposable
             _random.Next().ToString(CultureInfo.InvariantCulture),
             fileName);
 
-        var tempDestination = Path.Combine(Path.GetTempPath(), destination);
-        var path = Path.GetDirectoryName(tempDestination);
-        if (string.IsNullOrEmpty(path))
+        // Directly parse from the stream
+        if (!_parser.TryParse(stream, fileName, out var fileResult) || fileResult is null)
         {
-            throw new InvalidOperationException("Couldn't get the path from tempDestination: " + tempDestination);
+            _logger.LogDebug("Failed parsing {file}.", fileName);
+            return StoreResult.Invalid;
         }
 
-        Directory.CreateDirectory(path);
-        await using (var file = File.OpenWrite(tempDestination))
-        {
-            await stream.CopyToAsync(file, token);
-            _logger.LogDebug("Temp file {bytes} copied {file}.", file.Length, Path.GetFileName(tempDestination));
-        }
-
-        return await StoreIsolated(batchId, batch, fileName, tempDestination, destination, token);
+        return await StoreIsolatedFromStream(batchId, batch, fileName, destination, stream, fileResult, token);
     }
 
     private async Task<StoreResult> StoreIsolated(
@@ -269,6 +261,120 @@ internal class InMemorySymbolService : ISymbolService, IDisposable
 
         Directory.CreateDirectory(path);
         File.Move(tempDestination, destination);
+
+        _logger.LogDebug("File {fileName} created.", metadata.Name);
+
+        return StoreResult.Created;
+    }
+
+    private async Task<StoreResult> StoreIsolatedFromStream(
+        Guid batchId,
+        SymbolUploadBatch batch,
+        string fileName,
+        string destination,
+        Stream stream,
+        ObjectFileResult fileResult,
+        CancellationToken token)
+    {
+        _logger.LogInformation("Parsed file with {UnifiedId}", fileResult.UnifiedId);
+        var symbol = await GetSymbol(fileResult.UnifiedId, token);
+        if (symbol is { })
+        {
+            if (fileResult.Hash is { }
+                && symbol.Hash is { }
+                && string.CompareOrdinal(fileResult.Hash, symbol.Hash) != 0)
+            {
+                var conflictDestination = Path.Combine(
+                    _conflictPath,
+                    fileResult.UnifiedId);
+                if (_options.CopyBaseFileToConflictFolder)
+                {
+                    Directory.CreateDirectory(conflictDestination);
+                    await using (var conflictingFile = File.OpenRead(symbol.Path))
+                    {
+                        await using var file = File.OpenWrite(Path.Combine(conflictDestination, symbol.Name));
+                        await conflictingFile.CopyToAsync(file, token);
+                    }
+                }
+
+                conflictDestination = Path.Combine(conflictDestination, batchId.ToString(),
+                    // To avoid files with conflicting name from the same batch
+                    _random.Next().ToString(CultureInfo.InvariantCulture),
+                    fileName);
+
+                using (_logger.BeginScope(new Dictionary<string, string>()
+                       {
+                           { "existing-file-hash", symbol.Hash },
+                           { "existing-file-name", symbol.Name },
+                           { "staging-location", conflictDestination },
+                           { "new-file-hash", fileResult.Hash },
+                           { "new-file-name", fileName }
+                       }))
+                {
+                    var path = Path.GetDirectoryName(conflictDestination);
+                    if (path is null)
+                    {
+                        throw new InvalidOperationException("Couldn't get the path from conflictDestination: " +
+                                                            conflictDestination);
+                    }
+
+                    Directory.CreateDirectory(path);
+                    _logger.LogInformation(
+                        "File with the same debug id and un-matching hashes. File stored at: {path}",
+                        conflictDestination);
+                    
+                    // Write stream to conflict destination
+                    stream.Position = 0;
+                    await using var conflictFile = File.OpenWrite(conflictDestination);
+                    await stream.CopyToAsync(conflictFile, token);
+                }
+            }
+            else
+            {
+                if (symbol.BatchIds.TryGetValue(batchId, out _))
+                {
+                    _logger.LogDebug(
+                        "Client uploading the same file {fileName} as part of the same batch {batchId}",
+                        fileName, batchId);
+                }
+                else
+                {
+                    await Relate(batchId, symbol, token);
+                }
+            }
+
+            _logger.LogDebug("Symbol {debugId} already exists.", symbol.UnifiedId);
+
+            return StoreResult.AlreadyExisted;
+        }
+
+        var map = new ConcurrentDictionary<Guid, object?>();
+        map.TryAdd(batchId, null);
+
+        var metadata = new SymbolMetadata(
+            fileResult.UnifiedId,
+            fileResult.Hash,
+            destination,
+            fileResult.ObjectKind,
+            fileName,
+            fileResult.Architecture,
+            fileResult.FileFormat,
+            map);
+
+        batch.Symbols[metadata.UnifiedId] = metadata;
+
+        var path = Path.GetDirectoryName(destination);
+        if (path is null)
+        {
+            throw new InvalidOperationException("Couldn't get the path from destination: " + destination);
+        }
+
+        Directory.CreateDirectory(path);
+        
+        // Write stream to final destination
+        stream.Position = 0;
+        await using var finalFile = File.OpenWrite(destination);
+        await stream.CopyToAsync(finalFile, token);
 
         _logger.LogDebug("File {fileName} created.", metadata.Name);
 
