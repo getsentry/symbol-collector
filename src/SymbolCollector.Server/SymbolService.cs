@@ -77,7 +77,6 @@ internal class InMemorySymbolService : ISymbolService, IDisposable
     private readonly IBatchFinalizer _batchFinalizer;
     private readonly SymbolServiceOptions _options;
     private readonly ILogger<InMemorySymbolService> _logger;
-    private readonly Random _random = new Random();
 
     private readonly ConcurrentDictionary<Guid, SymbolUploadBatch> _batches = new();
 
@@ -142,7 +141,7 @@ internal class InMemorySymbolService : ISymbolService, IDisposable
             batch.BatchType.ToSymsorterPrefix(),
             batchId.ToString(),
             // To avoid files with conflicting name from the same batch
-            _random.Next().ToString(CultureInfo.InvariantCulture),
+            Random.Shared.Next().ToString(CultureInfo.InvariantCulture),
             fileName);
 
         var tempDestination = Path.Combine(Path.GetTempPath(), destination);
@@ -201,7 +200,7 @@ internal class InMemorySymbolService : ISymbolService, IDisposable
 
                 conflictDestination = Path.Combine(conflictDestination, batchId.ToString(),
                     // To avoid files with conflicting name from the same batch
-                    _random.Next().ToString(CultureInfo.InvariantCulture),
+                    Random.Shared.Next().ToString(CultureInfo.InvariantCulture),
                     fileName);
 
                 using (_logger.BeginScope(new Dictionary<string, string>()
