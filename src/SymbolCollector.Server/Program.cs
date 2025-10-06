@@ -74,6 +74,7 @@ public class Program
                     o.AddExceptionFilterForType<OperationCanceledException>();
                     o.MinimumBreadcrumbLevel = LogLevel.Debug;
                     o.CaptureFailedRequests = true;
+                    o.Experimental.EnableLogs = true;
 
                     // https://github.com/getsentry/symbol-collector/issues/205
                     // o.CaptureBlockingCalls = true;
@@ -99,7 +100,6 @@ public class Program
                     });
 
 #pragma warning disable SENTRY0001
-                    o.Experimental.EnableLogs = true;
                     o.EnableHeapDumps(20, Debouncer.PerDay(3, TimeSpan.FromHours(3)));
 #pragma warning restore SENTRY0001
                 });

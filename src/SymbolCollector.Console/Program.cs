@@ -219,10 +219,7 @@ internal class Program
             o.Debug = true;
             o.IsGlobalModeEnabled = true;
             o.CaptureFailedRequests = true;
-
-#pragma warning disable SENTRY0001
             o.Experimental.EnableLogs = true;
-#pragma warning restore SENTRY0001
 
 #if DEBUG
             o.Environment = "development";
