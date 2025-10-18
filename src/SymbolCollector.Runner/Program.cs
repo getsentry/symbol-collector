@@ -1,6 +1,5 @@
 ﻿// Runner uploads the apk by default (on current directory or under the apps' bin).
 // To skip, pass 'skipUpload:true' as the first argument
-#pragma warning disable SENTRY0001
 var skipUpload = args.Any(a => a.Equals("skipUpload:true", StringComparison.OrdinalIgnoreCase));
 
 IntrLog.Info($"Starting runner (skipUpload:{skipUpload})...");
@@ -36,7 +35,6 @@ SentrySdk.Init(options =>
     options.Debug = false;
     options.AutoSessionTracking = true;
     options.TracesSampleRate = 1.0;
-
     options.Experimental.EnableLogs = true;
 });
 
@@ -258,13 +256,13 @@ static class IntrLog
     public static void Info(string message, params object[] args)
     {
         Console.WriteLine(message, args);
-        SentrySdk.Experimental.Logger.LogInfo(message, args);
+        SentrySdk.Logger.LogInfo(message, args);
     }
 
     public static void Warning(string message, params object[] args)
     {
         Console.WriteLine(message, args);
-        SentrySdk.Experimental.Logger.LogWarning(message, args);
+        SentrySdk.Logger.LogWarning(message, args);
     }
 
     public static void Error(string message, Exception? exception = null, params object[] args)
@@ -274,11 +272,11 @@ static class IntrLog
         if (exception != null)
         {
             Console.WriteLine(exception);
-            SentrySdk.Experimental.Logger.LogError($"{message} - {exception.Message}", args);
+            SentrySdk.Logger.LogError($"{message} - {exception.Message}", args);
         }
         else
         {
-            SentrySdk.Experimental.Logger.LogError(message, args);
+            SentrySdk.Logger.LogError(message, args);
         }
     }
 }
