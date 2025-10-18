@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.2.2
+
+### Various fixes & improvements
+
+- add Serilog integration for Structured Logs (#244) by @Flash0ver
+- Use `Random.Shared` instead of instantiating `Random` (#243) by @seer-by-sentry
+
 ## 2.2.1
 
 ### Various fixes & improvements
