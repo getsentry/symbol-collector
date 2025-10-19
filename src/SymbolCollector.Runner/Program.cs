@@ -57,27 +57,28 @@ try
     var deviceToRun = devices[Random.Shared.Next(devices.Count)];
     IntrLog.Info("Randomly selected device: {0}", deviceToRun);
 
-    var app = $"storage:filename={appName}";
+    string app;
 
     if (!skipUpload)
     {
         if (filePath is null)
         {
-            IntrLog.Info("'filePath' is null, skipping apk upload.");
+            throw new InvalidOperationException(
+                $"No APK file found. Expected to find '{fullApkName}' in current directory or '{solutionBuildApkPath}'. " +
+                "The APK must be downloaded or built before running the symbol collector.");
         }
-        else
-        {
-            IntrLog.Info("Uploading apk: {0}", filePath);
+        
+        IntrLog.Info("Uploading apk: {0}", filePath);
 
-            var span = transaction.StartChild("appium.upload-apk", "uploading apk to saucelabs");
-            var buildId = await client.UploadApkAsync(filePath, appName);
-            span.Finish();
-            app = $"storage:{buildId}";
-        }
+        var span = transaction.StartChild("appium.upload-apk", "uploading apk to saucelabs");
+        var buildId = await client.UploadApkAsync(filePath, appName);
+        span.Finish();
+        app = $"storage:{buildId}";
     }
     else
     {
-        IntrLog.Info("'skipUpload' is true, skipping apk upload.");
+        IntrLog.Info("'skipUpload' is true, using storage:filename reference.");
+        app = $"storage:filename={appName}";
     }
 
     await UploadSymbolsOnSauceLabs(app, deviceToRun, transaction, client);
