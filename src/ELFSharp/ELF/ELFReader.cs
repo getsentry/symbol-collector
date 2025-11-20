@@ -30,6 +30,22 @@ namespace ELFSharp.ELF
 			}
 		}
 
+		public static bool TryLoad(Stream stream, out IELF elf)
+		{
+			switch(CheckELFType(stream))
+			{
+			case Class.Bit32:
+				elf = new ELF<uint>(stream);
+				return true;
+			case Class.Bit64:
+				elf = new ELF<ulong>(stream);
+				return true;
+			default:
+				elf = null;
+				return false;
+			}
+		}
+
 		public static Class CheckELFType(string fileName)
 		{
 			var size = new FileInfo(fileName).Length;
@@ -38,6 +54,32 @@ namespace ELFSharp.ELF
 				return Class.NotELF;
 			}
 			using(var reader = new BinaryReader(File.OpenRead(fileName)))
+            {
+                const int magicBytesLength = 4;
+				var magic = reader.ReadBytes(magicBytesLength);
+                if (magic.Length != magicBytesLength)
+                {
+                    return Class.NotELF;
+                }
+				for(var i = 0; i < magicBytesLength; i++)
+				{
+					if(magic[i] != Magic[i])
+					{
+						return Class.NotELF;
+					}
+				}
+				var value = reader.ReadByte();
+				return value == 1 ? Class.Bit32 : Class.Bit64;
+			}
+		}
+
+		public static Class CheckELFType(Stream stream)
+		{
+			if(stream.Length < Consts.MinimalELFSize)
+			{
+				return Class.NotELF;
+			}
+			using(var reader = new BinaryReader(stream, System.Text.Encoding.UTF8, true))
             {
                 const int magicBytesLength = 4;
 				var magic = reader.ReadBytes(magicBytesLength);
