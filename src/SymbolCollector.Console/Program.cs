@@ -219,7 +219,7 @@ internal class Program
             o.Debug = true;
             o.IsGlobalModeEnabled = true;
             o.CaptureFailedRequests = true;
-            o.Experimental.EnableLogs = true;
+            o.EnableLogs = true;
 
 #if DEBUG
             o.Environment = "development";

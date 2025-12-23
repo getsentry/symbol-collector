@@ -35,7 +35,7 @@ SentrySdk.Init(options =>
     options.Debug = false;
     options.AutoSessionTracking = true;
     options.TracesSampleRate = 1.0;
-    options.Experimental.EnableLogs = true;
+    options.EnableLogs = true;
 });
 
 var transaction = SentrySdk.StartTransaction("appium.runner", "runner appium to upload apk to saucelabs and collect symbols real devices");
