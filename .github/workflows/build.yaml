@@ -43,7 +43,10 @@ jobs:
 
       - name: Install Workloads (macOS)
         if: matrix.os == 'macos-latest'
-        run: sudo dotnet workload restore
+        run: |
+          sudo dotnet workload restore
+          sudo chown -R $USER ~/.local/share/NuGet || true
+          sudo chown -R $USER ~/.nuget || true
 
       - name: Install Workloads (Windows/Linux)
         if: matrix.os != 'macos-latest'
