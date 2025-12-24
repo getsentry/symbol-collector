@@ -63,13 +63,13 @@ public class Symsorter
                 {
                     foreach (var innerFile in fatMachOFileResult.InnerFiles)
                     {
-                        await SortFileAsync(parameters, innerFile, token);
+                        await SortFile(parameters, innerFile, token);
                         sortedFilesCount++;
                     }
                 }
                 else
                 {
-                    await SortFileAsync(parameters, result, token);
+                    await SortFile(parameters, result, token);
                     sortedFilesCount++;
                 }
             }
@@ -87,7 +87,7 @@ public class Symsorter
             SystemConsole.ForegroundColor = originalColor;
         }
     }
-    public async Task SortFileAsync(
+    public async Task SortFile(
         SymsorterParameters parameters,
         ObjectFileResult result,
         CancellationToken token)
