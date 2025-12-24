@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.3.0
+
+- bump .NET 10 and Sentry SDK 6.0 by @bruno-garcia in [#248](https://github.com/getsentry/symbol-collector/pull/248)
+
 ## 2.2.3
 
 - No documented changes.
