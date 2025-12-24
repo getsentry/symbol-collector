@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.3.1
+
+- upload apk if last upload was over 30 days ago by @bruno-garcia in [#249](https://github.com/getsentry/symbol-collector/pull/249)
+- bump .NET 10 and Sentry SDK 6.0 by @bruno-garcia in [#248](https://github.com/getsentry/symbol-collector/pull/248)
+
 ## 2.2.3
 
 - No documented changes.
