@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.3
+
+- No documented changes.
+
 ## 2.2.2
 
 ### Various fixes & improvements
