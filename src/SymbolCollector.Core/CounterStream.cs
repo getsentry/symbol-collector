@@ -21,8 +21,8 @@ public class CounterStream : Stream
 
     public override void Write(byte[] buffer, int offset, int count)
     {
-        _streamImplementation.Write(buffer, offset, count);
         _metrics.UploadedBytesAdd(count);
+        _streamImplementation.Write(buffer, offset, count);
     }
 
     public override bool CanRead => _streamImplementation.CanRead;
@@ -106,6 +106,7 @@ public class CounterStream : Stream
 
     public override void Write(ReadOnlySpan<byte> buffer)
     {
+        _metrics.UploadedBytesAdd(buffer.Length);
         _streamImplementation.Write(buffer);
     }
 
