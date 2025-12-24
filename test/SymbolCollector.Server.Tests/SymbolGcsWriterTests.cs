@@ -26,6 +26,9 @@ public class SymbolGcsWriterTests
     [Fact]
     public async Task Write_FirstCall_CreatesStorageClient()
     {
+        var mockClient = For<StorageClient>();
+        _fixture.StorageClientFactory.Create().Returns(Task.FromResult(mockClient));
+
         var target = _fixture.GetSut();
 
         await target.WriteAsync("name", new MemoryStream(), None);

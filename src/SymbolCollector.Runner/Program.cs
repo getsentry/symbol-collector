@@ -1,4 +1,4 @@
-﻿// Runner uploads the apk by default (on current directory or under the apps' bin).
+// Runner uploads the apk by default (on current directory or under the apps' bin).
 // To skip, pass 'skipUpload:true' as the first argument
 var skipUpload = args.Any(a => a.Equals("skipUpload:true", StringComparison.OrdinalIgnoreCase));
 
@@ -7,7 +7,7 @@ IntrLog.Info($"Starting runner (skipUpload:{skipUpload})...");
 const string appName = "SymbolCollector.apk";
 const string appPackage = "io.sentry.symbolcollector.android";
 const string fullApkName = $"{appPackage}-Signed.apk";
-const string solutionBuildApkPath = $"src/SymbolCollector.Android/bin/Release/net9.0-android/{fullApkName}";
+const string solutionBuildApkPath = $"src/SymbolCollector.Android/bin/Release/net10.0-android/{fullApkName}";
 
 // If running on demand, no job name is passed via env var
 var cronJobName = Environment.GetEnvironmentVariable("CRON_JOB_NAME");
@@ -35,7 +35,7 @@ SentrySdk.Init(options =>
     options.Debug = false;
     options.AutoSessionTracking = true;
     options.TracesSampleRate = 1.0;
-    options.Experimental.EnableLogs = true;
+    options.EnableLogs = true;
 });
 
 var transaction = SentrySdk.StartTransaction("appium.runner", "runner appium to upload apk to saucelabs and collect symbols real devices");
