@@ -49,7 +49,7 @@ jobs:
           restore-keys: |
             cache-dir-${{ github.workflow }}
 
-      - name: Download the Android app if there's a new version
+      - name: Download the Android app if needed
         env:
           GITHUB_SHA: ${{ github.sha }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
