@@ -74,7 +74,7 @@ public class Program
                     o.AddExceptionFilterForType<OperationCanceledException>();
                     o.MinimumBreadcrumbLevel = LogLevel.Debug;
                     o.CaptureFailedRequests = true;
-                    o.Experimental.EnableLogs = true;
+                    o.EnableLogs = true;
 
                     // https://github.com/getsentry/symbol-collector/issues/205
                     // o.CaptureBlockingCalls = true;

@@ -39,7 +39,7 @@ public class Host
         SentrySdk.Init(o =>
         {
             o.CaptureFailedRequests = true;
-            o.Experimental.EnableLogs = true;
+            o.EnableLogs = true;
 
             o.SetBeforeSend(@event =>
             {

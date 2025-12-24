@@ -34,7 +34,7 @@ public class Startup
                 // TODO: Should also be added via IHostBuilder extension
                 l.AddSentry(o =>
                 {
-                    o.Experimental.EnableLogs = true;
+                    o.EnableLogs = true;
                     o.InitializeSdk = false;
                 });
                 l.AddSimpleConsole(o => o.ColorBehavior = LoggerColorBehavior.Disabled);
