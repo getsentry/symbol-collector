@@ -34,7 +34,7 @@ jobs:
           echo "CRON_JOB_NAME=device-farm-symbol-collection-weekday-night" >> $GITHUB_ENV
 
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v2
 
       - name: Install .NET SDK
         uses: actions/setup-dotnet@v4
