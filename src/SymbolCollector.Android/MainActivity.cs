@@ -155,6 +155,22 @@ public class MainActivity : Activity
         {
             cancelButton.Enabled = true;
             await Task.WhenAny(uploadTask, updateUiTask);
+            
+            // Ensure the UI updater task is fully stopped before modifying view hierarchy
+            // to prevent race conditions with Android's Accessibility Service
+            if (!updateUiTask.IsCompleted)
+            {
+                source.Cancel();
+                try
+                {
+                    await updateUiTask;
+                }
+                catch (OperationCanceledException)
+                {
+                    // Expected when cancelling
+                }
+            }
+            
             if (uploadTask.IsCompletedSuccessfully)
             {
                 cancelButton.Enabled = false;
