@@ -13,7 +13,7 @@ namespace SymbolCollector.Console;
 
 internal class Program
 {
-    private static readonly ClientMetrics Metrics = new ClientMetrics();
+    private static readonly SentryClientMetrics Metrics = new SentryClientMetrics();
 
     static async Task<int> Main(
         string? upload = null,
@@ -221,6 +221,7 @@ internal class Program
             o.IsGlobalModeEnabled = true;
             o.CaptureFailedRequests = true;
             o.EnableLogs = true;
+            o.Experimental.EnableMetrics = true;
 
 #if DEBUG
             o.Environment = "development";

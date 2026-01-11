@@ -24,7 +24,8 @@ public class Startup
 
         services.AddSingleton<ObjectFileParser>();
         services.AddSingleton<FatBinaryReader>();
-        services.AddSingleton<ClientMetrics>();
+        services.AddSingleton<SentryClientMetrics>();
+        services.AddSingleton<ClientMetrics>(sp => sp.GetRequiredService<SentryClientMetrics>());
         services.AddSingleton<IBatchFinalizer, SymsorterBatchFinalizer>();
         services.AddSingleton<ISymbolGcsWriter, SymbolGcsWriter>();
         services.AddSingleton<IStorageClientFactory, StorageClientFactory>();

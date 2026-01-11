@@ -40,72 +40,72 @@ public class ClientMetrics : IClientMetrics
     public int DirectoryDoesNotExistCount => _directoryDoesNotExistCount;
     public int FileDoesNotExistCount => _fileDoesNotExistCount;
 
-    public void FileProcessed()
+    public virtual void FileProcessed()
     {
         Interlocked.Increment(ref _filesProcessedCount);
     }
 
-    public void MachOFileFound()
+    public virtual void MachOFileFound()
     {
         Interlocked.Increment(ref _machOFileFoundCount);
     }
 
-    public void ElfFileFound()
+    public virtual void ElfFileFound()
     {
         Interlocked.Increment(ref _elfFileFoundCount);
     }
 
-    public void FatMachOFileFound()
+    public virtual void FatMachOFileFound()
     {
         Interlocked.Increment(ref _fatMachOFileFoundCount);
     }
 
-    public void FailedToUpload()
+    public virtual void FailedToUpload()
     {
         Interlocked.Increment(ref _failedToUploadCount);
     }
 
-    public void FailedToParse()
+    public virtual void FailedToParse()
     {
         Interlocked.Increment(ref _failedToParse);
     }
 
-    public void SuccessfulUpload()
+    public virtual void SuccessfulUpload()
     {
         Interlocked.Increment(ref _successfullyUploadCount);
     }
 
-    public void AlreadyExisted()
+    public virtual void AlreadyExisted()
     {
         Interlocked.Increment(ref _alreadyExistedCount);
     }
 
-    public void JobsInFlightRemove(int tasksCount)
+    public virtual void JobsInFlightRemove(int tasksCount)
     {
         Interlocked.Add(ref _jobsInFlightCount, -tasksCount);
     }
 
-    public void JobsInFlightAdd(int tasksCount)
+    public virtual void JobsInFlightAdd(int tasksCount)
     {
         Interlocked.Add(ref _jobsInFlightCount, tasksCount);
     }
 
-    public void UploadedBytesAdd(long bytes)
+    public virtual void UploadedBytesAdd(long bytes)
     {
         Interlocked.Add(ref _uploadedBytesCount, bytes);
     }
 
-    public void FileOrDirectoryUnauthorizedAccess()
+    public virtual void FileOrDirectoryUnauthorizedAccess()
     {
         Interlocked.Increment(ref _fileOrDirectoryUnauthorizedAccessCount);
     }
 
-    public void DirectoryDoesNotExist()
+    public virtual void DirectoryDoesNotExist()
     {
         Interlocked.Increment(ref _directoryDoesNotExistCount);
     }
 
-    public void FileDoesNotExist()
+    public virtual void FileDoesNotExist()
     {
         Interlocked.Increment(ref _fileDoesNotExistCount);
     }
