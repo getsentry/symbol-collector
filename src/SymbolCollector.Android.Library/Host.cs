@@ -40,6 +40,7 @@ public class Host
         {
             o.CaptureFailedRequests = true;
             o.EnableLogs = true;
+            o.Experimental.EnableMetrics = true;
 
             o.SetBeforeSend(@event =>
             {

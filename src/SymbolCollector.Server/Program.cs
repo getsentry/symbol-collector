@@ -75,6 +75,7 @@ public class Program
                     o.MinimumBreadcrumbLevel = LogLevel.Debug;
                     o.CaptureFailedRequests = true;
                     o.EnableLogs = true;
+                    o.Experimental.EnableMetrics = true;
 
                     // https://github.com/getsentry/symbol-collector/issues/205
                     // o.CaptureBlockingCalls = true;

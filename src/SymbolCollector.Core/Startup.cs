@@ -48,9 +48,9 @@ public class Startup
     {
         services.AddSingleton<Client>();
         services.AddSingleton<ObjectFileParser>();
-        services.AddSingleton<ClientMetrics>();
+        services.AddSingleton<SentryClientMetrics>();
+        services.AddSingleton<ClientMetrics>(sp => sp.GetRequiredService<SentryClientMetrics>());
         services.AddSingleton<FatBinaryReader>();
-        services.AddSingleton<ClientMetrics>();
 
         services.AddOptions<SymbolClientOptions>()
             .Configure<IConfiguration>((o, f) => f.Bind("SymbolClient", o))
