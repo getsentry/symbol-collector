@@ -1,3 +1,7 @@
+#pragma warning disable SENTRYTRACECONNECTEDMETRICS // IHub.Metrics is experimental
+using Sentry;
+using Sentry.Extensibility;
+
 namespace SymbolCollector.Core;
 
 /// <summary>
@@ -6,17 +10,37 @@ namespace SymbolCollector.Core;
 /// <remarks>
 /// This integrates with Sentry SDK 6.1.0's new experimental trace-connected metrics feature.
 /// Metrics are attached to the current trace/span for correlation in Sentry's UI.
-/// Access via <c>SentrySdk.Experimental.Metrics</c> after enabling with <c>options.Experimental.EnableMetrics = true</c>.
+/// Enable with <c>options.Experimental.EnableMetrics = true</c>.
 /// </remarks>
 public class SentryClientMetrics : ClientMetrics
 {
+    private readonly IHub _hub;
+
+    /// <summary>
+    /// Creates a new instance using the default <see cref="HubAdapter.Instance"/>.
+    /// </summary>
+    public SentryClientMetrics() : this(HubAdapter.Instance)
+    {
+    }
+
+    /// <summary>
+    /// Creates a new instance with the specified hub for metrics emission.
+    /// </summary>
+    /// <param name="hub">The Sentry hub to use for emitting metrics.</param>
+    public SentryClientMetrics(IHub hub)
+    {
+        _hub = hub;
+    }
+
+    private SentryTraceMetrics Metrics => _hub.Metrics;
+
     /// <summary>
     /// Records a file processed event, incrementing both local and Sentry counters.
     /// </summary>
     public override void FileProcessed()
     {
         base.FileProcessed();
-        SentrySdk.Experimental.Metrics.AddCounter("symbol_collector.files_processed", 1);
+        Metrics.AddCounter("symbol_collector.files_processed", 1);
     }
 
     /// <summary>
@@ -25,7 +49,7 @@ public class SentryClientMetrics : ClientMetrics
     public override void MachOFileFound()
     {
         base.MachOFileFound();
-        SentrySdk.Experimental.Metrics.AddCounter("symbol_collector.debug_images_found", 1,
+        Metrics.AddCounter("symbol_collector.debug_images_found", 1,
             [new KeyValuePair<string, object>("format", "macho")]);
     }
 
@@ -35,7 +59,7 @@ public class SentryClientMetrics : ClientMetrics
     public override void ElfFileFound()
     {
         base.ElfFileFound();
-        SentrySdk.Experimental.Metrics.AddCounter("symbol_collector.debug_images_found", 1,
+        Metrics.AddCounter("symbol_collector.debug_images_found", 1,
             [new KeyValuePair<string, object>("format", "elf")]);
     }
 
@@ -45,7 +69,7 @@ public class SentryClientMetrics : ClientMetrics
     public override void FatMachOFileFound()
     {
         base.FatMachOFileFound();
-        SentrySdk.Experimental.Metrics.AddCounter("symbol_collector.debug_images_found", 1,
+        Metrics.AddCounter("symbol_collector.debug_images_found", 1,
             [new KeyValuePair<string, object>("format", "fat_macho")]);
     }
 
@@ -55,7 +79,7 @@ public class SentryClientMetrics : ClientMetrics
     public override void FailedToUpload()
     {
         base.FailedToUpload();
-        SentrySdk.Experimental.Metrics.AddCounter("symbol_collector.uploads", 1,
+        Metrics.AddCounter("symbol_collector.uploads", 1,
             [new KeyValuePair<string, object>("status", "failed")]);
     }
 
@@ -65,7 +89,7 @@ public class SentryClientMetrics : ClientMetrics
     public override void FailedToParse()
     {
         base.FailedToParse();
-        SentrySdk.Experimental.Metrics.AddCounter("symbol_collector.parse_failures", 1);
+        Metrics.AddCounter("symbol_collector.parse_failures", 1);
     }
 
     /// <summary>
@@ -74,7 +98,7 @@ public class SentryClientMetrics : ClientMetrics
     public override void SuccessfulUpload()
     {
         base.SuccessfulUpload();
-        SentrySdk.Experimental.Metrics.AddCounter("symbol_collector.uploads", 1,
+        Metrics.AddCounter("symbol_collector.uploads", 1,
             [new KeyValuePair<string, object>("status", "success")]);
     }
 
@@ -84,7 +108,7 @@ public class SentryClientMetrics : ClientMetrics
     public override void AlreadyExisted()
     {
         base.AlreadyExisted();
-        SentrySdk.Experimental.Metrics.AddCounter("symbol_collector.uploads", 1,
+        Metrics.AddCounter("symbol_collector.uploads", 1,
             [new KeyValuePair<string, object>("status", "already_exists")]);
     }
 
@@ -94,7 +118,7 @@ public class SentryClientMetrics : ClientMetrics
     public override void JobsInFlightRemove(int tasksCount)
     {
         base.JobsInFlightRemove(tasksCount);
-        SentrySdk.Experimental.Metrics.RecordGauge("symbol_collector.jobs_in_flight", JobsInFlightCount);
+        Metrics.RecordGauge("symbol_collector.jobs_in_flight", JobsInFlightCount);
     }
 
     /// <summary>
@@ -103,7 +127,7 @@ public class SentryClientMetrics : ClientMetrics
     public override void JobsInFlightAdd(int tasksCount)
     {
         base.JobsInFlightAdd(tasksCount);
-        SentrySdk.Experimental.Metrics.RecordGauge("symbol_collector.jobs_in_flight", JobsInFlightCount);
+        Metrics.RecordGauge("symbol_collector.jobs_in_flight", JobsInFlightCount);
     }
 
     /// <summary>
@@ -112,8 +136,7 @@ public class SentryClientMetrics : ClientMetrics
     public override void UploadedBytesAdd(long bytes)
     {
         base.UploadedBytesAdd(bytes);
-        // Use distribution for uploaded bytes to capture percentiles and histograms
-        SentrySdk.Experimental.Metrics.RecordDistribution("symbol_collector.uploaded_bytes", bytes, "byte");
+        Metrics.RecordDistribution("symbol_collector.uploaded_bytes", bytes, "byte");
     }
 
     /// <summary>
@@ -122,7 +145,7 @@ public class SentryClientMetrics : ClientMetrics
     public override void FileOrDirectoryUnauthorizedAccess()
     {
         base.FileOrDirectoryUnauthorizedAccess();
-        SentrySdk.Experimental.Metrics.AddCounter("symbol_collector.access_errors", 1,
+        Metrics.AddCounter("symbol_collector.access_errors", 1,
             [new KeyValuePair<string, object>("type", "unauthorized")]);
     }
 
@@ -132,7 +155,7 @@ public class SentryClientMetrics : ClientMetrics
     public override void DirectoryDoesNotExist()
     {
         base.DirectoryDoesNotExist();
-        SentrySdk.Experimental.Metrics.AddCounter("symbol_collector.access_errors", 1,
+        Metrics.AddCounter("symbol_collector.access_errors", 1,
             [new KeyValuePair<string, object>("type", "directory_not_found")]);
     }
 
@@ -142,7 +165,7 @@ public class SentryClientMetrics : ClientMetrics
     public override void FileDoesNotExist()
     {
         base.FileDoesNotExist();
-        SentrySdk.Experimental.Metrics.AddCounter("symbol_collector.access_errors", 1,
+        Metrics.AddCounter("symbol_collector.access_errors", 1,
             [new KeyValuePair<string, object>("type", "file_not_found")]);
     }
 }

@@ -1,3 +1,4 @@
+#pragma warning disable SENTRYTRACECONNECTEDMETRICS // IHub.Metrics is experimental
 using System.Collections.Concurrent;
 using Sentry;
 using Sentry.Extensibility;
@@ -8,130 +9,107 @@ namespace SymbolCollector.Core.Tests;
 
 /// <summary>
 /// Tests that verify SentryClientMetrics emits metrics to Sentry.
+/// Each test initializes an isolated Sentry SDK instance with a recording transport.
 /// </summary>
 public class SentryClientMetricsTests : IDisposable
 {
-    private readonly RecordingTransport _recordingTransport;
-    private readonly IDisposable _sentryDisposable;
+    private readonly RecordingTransport _transport;
+    private readonly IDisposable _sentry;
+    private readonly IHub _hub;
+    private readonly SentryClientMetrics _metrics;
 
     public SentryClientMetricsTests()
     {
-        _recordingTransport = new RecordingTransport();
+        _transport = new RecordingTransport();
 
-        _sentryDisposable = SentrySdk.Init(o =>
+        // Initialize an isolated Sentry SDK instance
+        _sentry = SentrySdk.Init(o =>
         {
             o.Dsn = "https://key@sentry.io/123";
-            o.Transport = _recordingTransport;
+            o.Transport = _transport;
             o.Experimental.EnableMetrics = true;
             o.AutoSessionTracking = false;
         });
+
+        // Get the hub from the initialized SDK via HubAdapter
+        _hub = HubAdapter.Instance;
+        _metrics = new SentryClientMetrics(_hub);
     }
 
     public void Dispose()
     {
-        _sentryDisposable.Dispose();
+        // Dispose SDK to ensure isolation (flush happens automatically)
+        _sentry.Dispose();
     }
 
     [Fact]
-    public async Task FileProcessed_EmitsCounter()
+    public async Task FileProcessed_EmitsTraceMetric()
     {
-        // Arrange
-        var metrics = new SentryClientMetrics();
+        _metrics.FileProcessed();
+        await SentrySdk.FlushAsync(TimeSpan.FromSeconds(1));
 
-        // Act
-        metrics.FileProcessed();
-        await SentrySdk.FlushAsync(TimeSpan.FromSeconds(2));
-
-        // Assert
-        Assert.Contains("trace_metric", _recordingTransport.GetAllItemTypes());
+        Assert.Contains("trace_metric", _transport.GetAllItemTypes());
     }
 
     [Fact]
-    public async Task ElfFileFound_EmitsCounterWithFormatAttribute()
+    public async Task ElfFileFound_EmitsTraceMetric()
     {
-        // Arrange
-        var metrics = new SentryClientMetrics();
+        _metrics.ElfFileFound();
+        await SentrySdk.FlushAsync(TimeSpan.FromSeconds(1));
 
-        // Act
-        metrics.ElfFileFound();
-        await SentrySdk.FlushAsync(TimeSpan.FromSeconds(2));
-
-        // Assert
-        Assert.Contains("trace_metric", _recordingTransport.GetAllItemTypes());
+        Assert.Contains("trace_metric", _transport.GetAllItemTypes());
     }
 
     [Fact]
-    public async Task SuccessfulUpload_EmitsCounterWithStatusAttribute()
+    public async Task SuccessfulUpload_EmitsTraceMetric()
     {
-        // Arrange
-        var metrics = new SentryClientMetrics();
+        _metrics.SuccessfulUpload();
+        await SentrySdk.FlushAsync(TimeSpan.FromSeconds(1));
 
-        // Act
-        metrics.SuccessfulUpload();
-        await SentrySdk.FlushAsync(TimeSpan.FromSeconds(2));
-
-        // Assert
-        Assert.Contains("trace_metric", _recordingTransport.GetAllItemTypes());
+        Assert.Contains("trace_metric", _transport.GetAllItemTypes());
     }
 
     [Fact]
-    public async Task UploadedBytesAdd_EmitsDistribution()
+    public async Task UploadedBytesAdd_EmitsTraceMetric()
     {
-        // Arrange
-        var metrics = new SentryClientMetrics();
+        _metrics.UploadedBytesAdd(1024);
+        await SentrySdk.FlushAsync(TimeSpan.FromSeconds(1));
 
-        // Act
-        metrics.UploadedBytesAdd(1024);
-        await SentrySdk.FlushAsync(TimeSpan.FromSeconds(2));
-
-        // Assert
-        Assert.Contains("trace_metric", _recordingTransport.GetAllItemTypes());
+        Assert.Contains("trace_metric", _transport.GetAllItemTypes());
     }
 
     [Fact]
-    public async Task JobsInFlightAdd_EmitsGauge()
+    public async Task JobsInFlightAdd_EmitsTraceMetric()
     {
-        // Arrange
-        var metrics = new SentryClientMetrics();
+        _metrics.JobsInFlightAdd(5);
+        await SentrySdk.FlushAsync(TimeSpan.FromSeconds(1));
 
-        // Act
-        metrics.JobsInFlightAdd(5);
-        await SentrySdk.FlushAsync(TimeSpan.FromSeconds(2));
-
-        // Assert
-        Assert.Contains("trace_metric", _recordingTransport.GetAllItemTypes());
+        Assert.Contains("trace_metric", _transport.GetAllItemTypes());
     }
 
     [Fact]
     public void FileProcessed_AlsoIncrementsBaseCounter()
     {
-        // Arrange
-        var metrics = new SentryClientMetrics();
+        _metrics.FileProcessed();
+        _metrics.FileProcessed();
 
-        // Act
-        metrics.FileProcessed();
-        metrics.FileProcessed();
-
-        // Assert - base class counter should also be incremented
-        Assert.Equal(2, metrics.FilesProcessedCount);
+        Assert.Equal(2, _metrics.FilesProcessedCount);
     }
 
     [Fact]
     public void VirtualMethodsAreOverridden_PolymorphismWorks()
     {
-        // This test verifies that when SentryClientMetrics is used via
-        // the ClientMetrics base class reference, the overridden methods are called.
-        ClientMetrics metrics = new SentryClientMetrics();
+        // Use SentryClientMetrics via ClientMetrics reference
+        ClientMetrics baseRef = _metrics;
 
-        // These calls should invoke SentryClientMetrics methods, not ClientMetrics
-        metrics.FileProcessed();
-        metrics.ElfFileFound();
-        metrics.SuccessfulUpload();
+        baseRef.FileProcessed();
+        baseRef.ElfFileFound();
+        baseRef.SuccessfulUpload();
 
-        // If polymorphism works, the counters should be incremented
-        Assert.Equal(1, metrics.FilesProcessedCount);
-        Assert.Equal(1, metrics.ElfFileFoundCount);
-        Assert.Equal(1, metrics.SuccessfullyUploadCount);
+        // Base class counters should be incremented
+        Assert.Equal(1, baseRef.FilesProcessedCount);
+        Assert.Equal(1, baseRef.ElfFileFoundCount);
+        Assert.Equal(1, baseRef.SuccessfullyUploadCount);
     }
 
     private class RecordingTransport : ITransport
