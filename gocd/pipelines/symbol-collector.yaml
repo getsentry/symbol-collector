@@ -40,7 +40,7 @@ pipelines:
                               - script: |
                                     checks-googlecloud-check-cloudbuild \
                                     sentryio \
-                                    github_getsentry_symbol-collector \
+                                    symbol-collector \
                                     symbol-collector-push-to-any-branch \
                                     ${GO_REVISION_SYMBOL_COLLECTOR_REPO} \
                                     main
