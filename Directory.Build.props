@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <Authors>Sentry Team and Contributors</Authors>
-    <Version>2.3.1</Version>
+    <Version>2.4.0</Version>
     <Company>Sentry.io</Company>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>

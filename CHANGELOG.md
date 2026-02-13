@@ -1,5 +1,29 @@
 # Changelog
 
+## 2.4.0
+
+### New Features ✨
+
+- Upgrade Sentry SDK to 6.1.0-alpha.1 and add trace-connected met… by @bruno-garcia in [#252](https://github.com/getsentry/symbol-collector/pull/252)
+
+### Bug Fixes 🐛
+
+- (cloudbuild) Use actual repo name parameter by @Flash0ver in [#256](https://github.com/getsentry/symbol-collector/pull/256)
+- Clean up action version comments by @BYK in [#253](https://github.com/getsentry/symbol-collector/pull/253)
+
+### Internal Changes 🔧
+
+#### Release
+
+- Fix changelog-preview permissions by @BYK in [#257](https://github.com/getsentry/symbol-collector/pull/257)
+- Bump Craft version to fix issues by @BYK in [#254](https://github.com/getsentry/symbol-collector/pull/254)
+- Switch from action-prepare-release to Craft by @BYK in [#251](https://github.com/getsentry/symbol-collector/pull/251)
+
+#### Other
+
+- (deps) Upgrade Sentry SDK to 6.1.0 by @Flash0ver in [#258](https://github.com/getsentry/symbol-collector/pull/258)
+- Use pull_request_target for changelog preview by @BYK in [#255](https://github.com/getsentry/symbol-collector/pull/255)
+
 ## 2.3.1
 
 - upload apk if last upload was over 30 days ago by @bruno-garcia in [#249](https://github.com/getsentry/symbol-collector/pull/249)
