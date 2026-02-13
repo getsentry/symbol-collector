@@ -32,7 +32,7 @@ public class SentryClientMetrics : ClientMetrics
         _hub = hub;
     }
 
-    private SentryTraceMetrics Metrics => _hub.Metrics;
+    private SentryMetricEmitter Metrics => _hub.Metrics;
 
     /// <summary>
     /// Records a file processed event, incrementing both local and Sentry counters.
@@ -40,7 +40,7 @@ public class SentryClientMetrics : ClientMetrics
     public override void FileProcessed()
     {
         base.FileProcessed();
-        Metrics.AddCounter("symbol_collector.files_processed", 1);
+        Metrics.EmitCounter("symbol_collector.files_processed", 1);
     }
 
     /// <summary>
@@ -49,7 +49,7 @@ public class SentryClientMetrics : ClientMetrics
     public override void MachOFileFound()
     {
         base.MachOFileFound();
-        Metrics.AddCounter("symbol_collector.debug_images_found", 1,
+        Metrics.EmitCounter("symbol_collector.debug_images_found", 1,
             [new KeyValuePair<string, object>("format", "macho")]);
     }
 
@@ -59,7 +59,7 @@ public class SentryClientMetrics : ClientMetrics
     public override void ElfFileFound()
     {
         base.ElfFileFound();
-        Metrics.AddCounter("symbol_collector.debug_images_found", 1,
+        Metrics.EmitCounter("symbol_collector.debug_images_found", 1,
             [new KeyValuePair<string, object>("format", "elf")]);
     }
 
@@ -69,7 +69,7 @@ public class SentryClientMetrics : ClientMetrics
     public override void FatMachOFileFound()
     {
         base.FatMachOFileFound();
-        Metrics.AddCounter("symbol_collector.debug_images_found", 1,
+        Metrics.EmitCounter("symbol_collector.debug_images_found", 1,
             [new KeyValuePair<string, object>("format", "fat_macho")]);
     }
 
@@ -79,7 +79,7 @@ public class SentryClientMetrics : ClientMetrics
     public override void FailedToUpload()
     {
         base.FailedToUpload();
-        Metrics.AddCounter("symbol_collector.uploads", 1,
+        Metrics.EmitCounter("symbol_collector.uploads", 1,
             [new KeyValuePair<string, object>("status", "failed")]);
     }
 
@@ -89,7 +89,7 @@ public class SentryClientMetrics : ClientMetrics
     public override void FailedToParse()
     {
         base.FailedToParse();
-        Metrics.AddCounter("symbol_collector.parse_failures", 1);
+        Metrics.EmitCounter("symbol_collector.parse_failures", 1);
     }
 
     /// <summary>
@@ -98,7 +98,7 @@ public class SentryClientMetrics : ClientMetrics
     public override void SuccessfulUpload()
     {
         base.SuccessfulUpload();
-        Metrics.AddCounter("symbol_collector.uploads", 1,
+        Metrics.EmitCounter("symbol_collector.uploads", 1,
             [new KeyValuePair<string, object>("status", "success")]);
     }
 
@@ -108,7 +108,7 @@ public class SentryClientMetrics : ClientMetrics
     public override void AlreadyExisted()
     {
         base.AlreadyExisted();
-        Metrics.AddCounter("symbol_collector.uploads", 1,
+        Metrics.EmitCounter("symbol_collector.uploads", 1,
             [new KeyValuePair<string, object>("status", "already_exists")]);
     }
 
@@ -118,7 +118,7 @@ public class SentryClientMetrics : ClientMetrics
     public override void JobsInFlightRemove(int tasksCount)
     {
         base.JobsInFlightRemove(tasksCount);
-        Metrics.RecordGauge("symbol_collector.jobs_in_flight", JobsInFlightCount);
+        Metrics.EmitGauge("symbol_collector.jobs_in_flight", JobsInFlightCount);
     }
 
     /// <summary>
@@ -127,7 +127,7 @@ public class SentryClientMetrics : ClientMetrics
     public override void JobsInFlightAdd(int tasksCount)
     {
         base.JobsInFlightAdd(tasksCount);
-        Metrics.RecordGauge("symbol_collector.jobs_in_flight", JobsInFlightCount);
+        Metrics.EmitGauge("symbol_collector.jobs_in_flight", JobsInFlightCount);
     }
 
     /// <summary>
@@ -136,7 +136,7 @@ public class SentryClientMetrics : ClientMetrics
     public override void UploadedBytesAdd(long bytes)
     {
         base.UploadedBytesAdd(bytes);
-        Metrics.RecordDistribution("symbol_collector.uploaded_bytes", bytes, "byte");
+        Metrics.EmitDistribution("symbol_collector.uploaded_bytes", bytes, MeasurementUnit.Information.Byte);
     }
 
     /// <summary>
@@ -145,7 +145,7 @@ public class SentryClientMetrics : ClientMetrics
     public override void FileOrDirectoryUnauthorizedAccess()
     {
         base.FileOrDirectoryUnauthorizedAccess();
-        Metrics.AddCounter("symbol_collector.access_errors", 1,
+        Metrics.EmitCounter("symbol_collector.access_errors", 1,
             [new KeyValuePair<string, object>("type", "unauthorized")]);
     }
 
@@ -155,7 +155,7 @@ public class SentryClientMetrics : ClientMetrics
     public override void DirectoryDoesNotExist()
     {
         base.DirectoryDoesNotExist();
-        Metrics.AddCounter("symbol_collector.access_errors", 1,
+        Metrics.EmitCounter("symbol_collector.access_errors", 1,
             [new KeyValuePair<string, object>("type", "directory_not_found")]);
     }
 
@@ -165,7 +165,7 @@ public class SentryClientMetrics : ClientMetrics
     public override void FileDoesNotExist()
     {
         base.FileDoesNotExist();
-        Metrics.AddCounter("symbol_collector.access_errors", 1,
+        Metrics.EmitCounter("symbol_collector.access_errors", 1,
             [new KeyValuePair<string, object>("type", "file_not_found")]);
     }
 }
