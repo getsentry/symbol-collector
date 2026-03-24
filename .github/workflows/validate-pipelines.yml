@@ -40,14 +40,14 @@ jobs:
         steps:
             - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v3
             - id: 'auth'
-              uses: google-github-actions/auth@v1
+              uses: google-github-actions/auth@955352c3b43196640b567e4646256d2fbb4aa1c7 # v1
               with:
                 workload_identity_provider: 'projects/868781662168/locations/global/workloadIdentityPools/prod-github/providers/github-oidc-pool'
                 service_account: 'gha-gocd-api@sac-prod-sa.iam.gserviceaccount.com'
                 token_format: 'id_token'
                 id_token_audience: '610575311308-9bsjtgqg4jm01mt058rncpopujgk3627.apps.googleusercontent.com'
                 id_token_include_email: true
-            - uses: getsentry/action-validate-gocd-pipelines@v1
+            - uses: getsentry/action-validate-gocd-pipelines@80fde540c1403d52e17783368930fa28bd93447f # v1
               with:
                 configrepo: symbol-collector__main
                 gocd_access_token: ${{ secrets.GOCD_ACCESS_TOKEN }}
