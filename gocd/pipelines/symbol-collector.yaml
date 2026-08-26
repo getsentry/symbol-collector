@@ -27,7 +27,8 @@ pipelines:
                       checks:
                           environment_variables:
                               # Required for checkruns.
-                              GITHUB_TOKEN: "{{SECRET:[devinfra-github][token]}}"
+                              GITHUB_APP_ID: "{{SECRET:[devinfra-github][app_id]}}"
+                              GITHUB_APP_PRIVATE_KEY: "{{SECRET:[devinfra-github][private_key]}}"
                           timeout: 1200
                           elastic_profile_id: symbol-collector
                           tasks:
