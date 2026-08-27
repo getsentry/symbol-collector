@@ -33,7 +33,7 @@ pipelines:
                           elastic_profile_id: symbol-collector
                           tasks:
                               - script: |
-                                    checks-githubactions-checkruns \
+                                    checks-githubactions-checkruns2 \
                                     getsentry/symbol-collector \
                                     ${GO_REVISION_SYMBOL_COLLECTOR_REPO} \
                                     macos-latest \
