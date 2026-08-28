@@ -162,11 +162,6 @@ public class Client : IDisposable
             {
                 _logger.LogWarning("No upload process will be performed.");
             }
-        }
-        catch (OperationCanceledException)
-        {
-            _logger.LogInformation("Operation cancelled successfully.");
-        }
     }
 
     private async Task UploadFilesAsync(Guid batchId, string path, CancellationToken cancellationToken)
@@ -208,6 +203,10 @@ public class Client : IDisposable
                 {
                     _logger.LogDebug("File {file} could not be parsed.", file);
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch (Exception e)
             {
