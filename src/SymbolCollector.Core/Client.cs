@@ -144,24 +144,22 @@ public class Client : IDisposable
             }
         }
 
-        try
+        if (tasks.Any())
         {
-            if (tasks.Any())
+            try
             {
-                try
-                {
-                    _logger.LogInformation("Awaiting {count} upload tasks to finish.", tasks.Count);
-                    await Task.WhenAll(tasks);
-                }
-                finally
-                {
-                    Metrics.JobsInFlightRemove(tasks.Count);
-                }
+                _logger.LogInformation("Awaiting {count} upload tasks to finish.", tasks.Count);
+                await Task.WhenAll(tasks);
             }
-            else
+            finally
             {
-                _logger.LogWarning("No upload process will be performed.");
+                Metrics.JobsInFlightRemove(tasks.Count);
             }
+        }
+        else
+        {
+            _logger.LogWarning("No upload process will be performed.");
+        }
     }
 
     private async Task UploadFilesAsync(Guid batchId, string path, CancellationToken cancellationToken)
