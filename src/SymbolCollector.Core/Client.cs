@@ -202,12 +202,13 @@ public class Client : IDisposable
                     _logger.LogDebug("File {file} could not be parsed.", file);
                 }
             }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
             catch (Exception e)
             {
+                if (e is OperationCanceledException && cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+
                 if (++failures > 10)
                 {
                     throw;
