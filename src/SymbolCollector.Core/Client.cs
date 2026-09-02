@@ -144,28 +144,21 @@ public class Client : IDisposable
             }
         }
 
-        try
+        if (tasks.Any())
         {
-            if (tasks.Any())
+            try
             {
-                try
-                {
-                    _logger.LogInformation("Awaiting {count} upload tasks to finish.", tasks.Count);
-                    await Task.WhenAll(tasks);
-                }
-                finally
-                {
-                    Metrics.JobsInFlightRemove(tasks.Count);
-                }
+                _logger.LogInformation("Awaiting {count} upload tasks to finish.", tasks.Count);
+                await Task.WhenAll(tasks);
             }
-            else
+            finally
             {
-                _logger.LogWarning("No upload process will be performed.");
+                Metrics.JobsInFlightRemove(tasks.Count);
             }
         }
-        catch (OperationCanceledException)
+        else
         {
-            _logger.LogInformation("Operation cancelled successfully.");
+            _logger.LogWarning("No upload process will be performed.");
         }
     }
 
@@ -211,6 +204,11 @@ public class Client : IDisposable
             }
             catch (Exception e)
             {
+                if (e is OperationCanceledException && cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+
                 if (++failures > 10)
                 {
                     throw;
