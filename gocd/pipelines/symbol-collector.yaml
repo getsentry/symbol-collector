@@ -26,13 +26,14 @@ pipelines:
                   jobs:
                       checks:
                           environment_variables:
-                              # Required for checkruns.
-                              GITHUB_TOKEN: "{{SECRET:[devinfra-github][token]}}"
+                              # Required for checkruns2.
+                              GITHUB_APP_ID: "{{SECRET:[devinfra-github][app_id]}}"
+                              GITHUB_APP_PRIVATE_KEY: "{{SECRET:[devinfra-github][private_key]}}"
                           timeout: 1200
                           elastic_profile_id: symbol-collector
                           tasks:
                               - script: |
-                                    checks-githubactions-checkruns \
+                                    checks-githubactions-checkruns2 \
                                     getsentry/symbol-collector \
                                     ${GO_REVISION_SYMBOL_COLLECTOR_REPO} \
                                     macos-latest \
