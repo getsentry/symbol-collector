@@ -1,12 +1,20 @@
 using Microsoft.Extensions.Options;
 using NSubstitute;
 using Sentry;
+using Sentry.Extensibility;
 using SymbolCollector.Core;
 using SymbolCollector.Server.Models;
 using Xunit;
 
 namespace SymbolCollector.Server.Tests;
 
+[CollectionDefinition(Name, DisableParallelization = true)]
+public class SentrySdkCollectionDefinition
+{
+    public const string Name = "Sentry SDK";
+}
+
+[Collection(SentrySdkCollectionDefinition.Name)]
 public class BatchFinalizerTests : IDisposable
 {
     private readonly string _workingDirectory = Path.Combine(
@@ -23,33 +31,53 @@ public class BatchFinalizerTests : IDisposable
     {
         var symsorterPath = CreateSymsorterStub();
         var batchLocation = Directory.CreateDirectory(Path.Combine(_workingDirectory, "batch")).FullName;
+        var batch = new SymbolUploadBatch(Guid.NewGuid(), "test", BatchType.IOS);
         var options = Options.Create(new SymbolServiceOptions
         {
             BaseWorkingPath = _workingDirectory,
             SymsorterPath = symsorterPath
         });
         var gcsWriter = Substitute.For<ISymbolGcsWriter>();
-        var hub = Substitute.For<IHub>();
-        var transaction = Substitute.For<ITransactionTracer>();
-        transaction.StartChild(Arg.Any<string>()).Returns(Substitute.For<ISpan>());
-        hub.StartTransaction(
-                Arg.Any<ITransactionContext>(),
-                Arg.Any<IReadOnlyDictionary<string, object?>>())
-            .Returns(transaction);
-
         SentryEvent? capturedEvent = null;
-        Action<Scope>? configureEventScope = null;
-        hub.CaptureEvent(
-            Arg.Do<SentryEvent>(value => capturedEvent = value),
-            Arg.Do<Action<Scope>>(value => configureEventScope = value));
+        SentryTransaction? closeBatchTransaction = null;
+        var sentryOptions = new SentryOptions
+        {
+            DisableFileWrite = true,
+            Dsn = "https://public@example.com/1",
+            ShutdownTimeout = TimeSpan.Zero,
+            TracesSampleRate = 1
+        };
+        sentryOptions.DisableAppDomainProcessExitFlush();
+        sentryOptions.DisableAppDomainUnhandledExceptionCapture();
+        sentryOptions.SetBeforeSend(@event =>
+        {
+            if (@event.Message?.Message?.StartsWith($"Batch {batch.BatchId}", StringComparison.Ordinal) == true)
+            {
+                capturedEvent = @event;
+            }
+
+            return null;
+        });
+        sentryOptions.SetBeforeSendTransaction(transaction =>
+        {
+            if (transaction.Name == "CloseBatch")
+            {
+                closeBatchTransaction = transaction;
+            }
+
+            return null;
+        });
+
+        using var sentry = SentrySdk.Init(sentryOptions);
+        var requestTransaction = SentrySdk.StartTransaction("request", "http.request");
+        SentrySdk.ConfigureScope(scope => scope.Transaction = requestTransaction);
 
         var target = new SymsorterBatchFinalizer(
             options,
             gcsWriter,
             new BundleIdGenerator(new SuffixGenerator()),
-            hub,
+            HubAdapter.Instance,
             Substitute.For<ILogger<SymsorterBatchFinalizer>>());
-        var batch = new SymbolUploadBatch(Guid.NewGuid(), "test", BatchType.IOS);
         var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         await target.CloseBatch(
@@ -58,14 +86,11 @@ public class BatchFinalizerTests : IDisposable
             () => completion.TrySetResult(true),
             CancellationToken.None);
         await completion.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        requestTransaction.Finish();
 
         Assert.NotNull(capturedEvent);
-        Assert.StartsWith($"Batch {batch.BatchId}", capturedEvent.Message?.Message);
-        Assert.NotNull(configureEventScope);
-
-        var eventScope = new Scope(new SentryOptions());
-        configureEventScope(eventScope);
-        Assert.Same(transaction, eventScope.Transaction);
+        Assert.NotNull(closeBatchTransaction);
+        Assert.Equal(closeBatchTransaction.SpanId, capturedEvent.Contexts.Trace.SpanId);
     }
 
     public void Dispose()
