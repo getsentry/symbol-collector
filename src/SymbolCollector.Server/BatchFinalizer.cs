@@ -96,7 +96,8 @@ public class SymsorterBatchFinalizer : IBatchFinalizer
 
                     Directory.CreateDirectory(symsorterOutput);
 
-                    if (SortSymbols(batchLocation, batch, symsorterOutput, symsorterSpan))
+                    var sortedFilesCount = SortSymbols(batchLocation, batch, symsorterOutput, symsorterSpan);
+                    if (sortedFilesCount is null)
                     {
                         symsorterSpan.Finish(SpanStatus.UnknownError);
                         return;
@@ -106,6 +107,15 @@ public class SymsorterBatchFinalizer : IBatchFinalizer
                     if (_options.DeleteDoneDirectory)
                     {
                         Directory.Delete(batchLocation, true);
+                    }
+
+                    if (sortedFilesCount == 0)
+                    {
+                        _logger.LogInformation(
+                            "Skipping GCS upload for batch {batchId} because symsorter processed no debug files.",
+                            batch.BatchId);
+                        SentrySdk.CaptureMessage($"Batch {batch.BatchId} with name {batch.FriendlyName} completed in {stopwatch.Elapsed}");
+                        return;
                     }
 
                     var trimDown = symsorterOutput + "/";
@@ -208,7 +218,7 @@ public class SymsorterBatchFinalizer : IBatchFinalizer
         return Task.CompletedTask;
     }
 
-    private bool SortSymbols(string batchLocation, SymbolUploadBatch batch, string symsorterOutput, ISpan symsorterSpan)
+    private int? SortSymbols(string batchLocation, SymbolUploadBatch batch, string symsorterOutput, ISpan symsorterSpan)
     {
         var bundleId = _bundleIdGenerator.CreateBundleId(batch.FriendlyName);
         var symsorterPrefix = batch.BatchType.ToSymsorterPrefix();
@@ -276,14 +286,22 @@ public class SymsorterBatchFinalizer : IBatchFinalizer
         _logger.LogInformation("Symsorter finished in {timespan} and logged last: {lastLine}",
             sw.Elapsed, lastLine);
 
-        var match = Regex.Match(lastLine, "Sorted (?<count>\\d+) debug files");
-        if (!match.Success)
+        var sortedFilesCount = ParseSortedFilesCount(lastLine);
+        if (sortedFilesCount is null)
         {
             _logger.LogError("Last line didn't match success: {lastLine}", lastLine);
-            return true;
+            return null;
         }
 
-        _logger.LogInformation("Symsorter processed: {count}", match.Groups["count"].Value);
-        return false;
+        _logger.LogInformation("Symsorter processed: {count}", sortedFilesCount);
+        return sortedFilesCount;
+    }
+
+    internal static int? ParseSortedFilesCount(string outputLine)
+    {
+        var match = Regex.Match(outputLine, "Sorted (?<count>\\d+) debug files");
+        return match.Success && int.TryParse(match.Groups["count"].Value, out var count)
+            ? count
+            : null;
     }
 }
