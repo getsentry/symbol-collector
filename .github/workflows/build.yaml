@@ -35,11 +35,16 @@ jobs:
         uses: android-actions/setup-android@07976c6290703d34c16d382cb36445f98bb43b1f # v3.2.0
         with:
           log-accepted-android-sdk-licenses: false
+          # The action defaults to "tools platform-tools", but the obsolete "tools"
+          # package was removed from Google's repository and now fails the step.
+          packages: platform-tools
 
       - name: Install .NET SDK
         uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
-          dotnet-version: 10.0.100
+          # .NET 11 is not preinstalled on the runners, so this installs the
+          # prerelease SDK pinned in global.json (single source of truth).
+          global-json-file: global.json
 
       - name: Install Workloads (macOS)
         if: matrix.os == 'macos-latest'
@@ -51,6 +56,13 @@ jobs:
       - name: Install Workloads (Windows/Linux)
         if: matrix.os != 'macos-latest'
         run: dotnet workload restore
+
+      # .NET 11's Android workload requires API 37, which the runners don't preinstall.
+      - name: Install Android SDK platform (API 37)
+        run: >
+          dotnet build src/SymbolCollector.Android/SymbolCollector.Android.csproj
+          -t:InstallAndroidDependencies
+          -p:AcceptAndroidSDKLicenses=true
 
       - name: Run batch build script
         if: matrix.os == 'windows-latest'

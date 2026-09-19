@@ -39,7 +39,9 @@ jobs:
       - name: Install .NET SDK
         uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
-          dotnet-version: 9.0.200
+          # .NET 11 is not preinstalled on the runners, so this installs the
+          # prerelease SDK pinned in global.json (single source of truth).
+          global-json-file: global.json
 
       - name: Restore .cache folder
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
