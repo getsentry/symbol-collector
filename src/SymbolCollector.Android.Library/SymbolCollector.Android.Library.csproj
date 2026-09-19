@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0-android</TargetFramework>
+    <TargetFramework>net11.0-android</TargetFramework>
     <UseSentryCLI>false</UseSentryCLI>
   </PropertyGroup>
 
@@ -12,6 +12,11 @@
     <PackageReference Include="Microsoft.Extensions.Logging" />
     <!-- To get access to Microsoft.Maui.Media (screenshots)-->
     <PackageReference Include="Microsoft.Maui.Essentials" />
+    <!-- Aligns the AndroidX Lifecycle versions pulled by Sentry and Maui.Essentials (NU1608) -->
+    <PackageReference Include="Xamarin.AndroidX.Lifecycle.Common.Java8" />
+    <PackageReference Include="Xamarin.AndroidX.Lifecycle.Process" />
+    <PackageReference Include="Xamarin.AndroidX.Lifecycle.Runtime" />
+    <PackageReference Include="Xamarin.AndroidX.Lifecycle.Runtime.Android" />
   </ItemGroup>
 
 </Project>

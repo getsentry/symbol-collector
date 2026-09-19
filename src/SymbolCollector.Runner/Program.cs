@@ -7,7 +7,7 @@ IntrLog.Info($"Starting runner (skipUpload:{skipUpload})...");
 const string appName = "SymbolCollector.apk";
 const string appPackage = "io.sentry.symbolcollector.android";
 const string fullApkName = $"{appPackage}-Signed.apk";
-const string solutionBuildApkPath = $"src/SymbolCollector.Android/bin/Release/net10.0-android/{fullApkName}";
+const string solutionBuildApkPath = $"src/SymbolCollector.Android/bin/Release/net11.0-android/{fullApkName}";
 
 // If running on demand, no job name is passed via env var
 var cronJobName = Environment.GetEnvironmentVariable("CRON_JOB_NAME");
