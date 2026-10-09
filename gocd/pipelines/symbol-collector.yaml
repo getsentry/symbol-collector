@@ -49,6 +49,10 @@ pipelines:
                   fetch_materials: true
                   jobs:
                       deploy:
+                          environment_variables:
+                              # k8s-deploy dispatches GitHub workflows using these App credentials.
+                              GITHUB_APP_ID: "{{SECRET:[devinfra-github][app_id]}}"
+                              GITHUB_APP_PRIVATE_KEY: "{{SECRET:[devinfra-github][private_key]}}"
                           timeout: 1200
                           elastic_profile_id: symbol-collector
                           tasks:
