@@ -158,7 +158,9 @@ public class SymsorterBatchFinalizer : IBatchFinalizer
                         throw;
                     }
 
-                    SentrySdk.CaptureMessage($"Batch {batch.BatchId} with name {batch.FriendlyName} completed in {stopwatch.Elapsed}");
+                    _hub.CaptureMessage(
+                        $"Batch {batch.BatchId} with name {batch.FriendlyName} completed in {stopwatch.Elapsed}",
+                        scope => scope.Transaction = closeBatchTransaction);
                 }
                 catch (Exception e)
                 {
