@@ -32,7 +32,7 @@ jobs:
           java-version: '17'
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@07976c6290703d34c16d382cb36445f98bb43b1f # v3.2.0
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
         with:
           log-accepted-android-sdk-licenses: false
 
@@ -41,15 +41,7 @@ jobs:
         with:
           dotnet-version: 10.0.100
 
-      - name: Install Workloads (macOS)
-        if: matrix.os == 'macos-latest'
-        run: |
-          sudo dotnet workload restore
-          sudo chown -R $USER ~/.local/share/NuGet || true
-          sudo chown -R $USER ~/.nuget || true
-
-      - name: Install Workloads (Windows/Linux)
-        if: matrix.os != 'macos-latest'
+      - name: Install Workloads
         run: dotnet workload restore
 
       - name: Run batch build script
