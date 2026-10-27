@@ -41,15 +41,7 @@ jobs:
         with:
           dotnet-version: 10.0.100
 
-      - name: Install Workloads (macOS)
-        if: matrix.os == 'macos-latest'
-        run: |
-          sudo dotnet workload restore
-          sudo chown -R $USER ~/.local/share/NuGet || true
-          sudo chown -R $USER ~/.nuget || true
-
-      - name: Install Workloads (Windows/Linux)
-        if: matrix.os != 'macos-latest'
+      - name: Install Workloads
         run: dotnet workload restore
 
       - name: Run batch build script
