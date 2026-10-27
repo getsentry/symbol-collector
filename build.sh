@@ -55,7 +55,15 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     ./$cli --version -h
     echo "Run symsorter"
     ./$cli --symsorter ../../test/TestFiles/ --bundle-id smoke_test --batch-type macos --path obj/
+    echo "Start a local server to upload to"
+    server=http://localhost:5000
+    pushd ../SymbolCollector.Server/
+    ASPNETCORE_ENVIRONMENT=Development dotnet run -c Release --no-build &
+    server_pid=$!
+    trap 'kill $server_pid' EXIT
+    popd
+    curl --silent --fail --retry 30 --retry-delay 1 --retry-connrefused $server/health
     echo "Upload some files"
-    ./$cli --upload directory --path ../../test/TestFiles/ --batch-type macos --bundle-id test --server-endpoint https://symbol-collector.services.sentry.io
+    ./$cli --upload directory --path ../../test/TestFiles/ --batch-type macos --bundle-id test --server-endpoint $server
 fi
 popd
