@@ -17,6 +17,11 @@ WORKDIR /app/server/src/SymbolCollector.Server/
 RUN dotnet publish -c Release -o ../../out
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS runtime
+# .NET on Linux trusts the OS CA store. Pull the latest ca-certificates so CA
+# distrust updates ship even when the base image lags behind Ubuntu security.
+RUN apt-get update \
+    && apt-get install -y --only-upgrade --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 # GCB changes the path to /workspace. If changing the path here, accuont for GCB
 WORKDIR /app
 COPY --from=builder /app/server/out ./
