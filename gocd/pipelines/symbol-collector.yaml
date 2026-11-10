@@ -20,8 +20,6 @@ pipelines:
                 destination: symbol-collector
         stages:
             - checks:
-                  approval:
-                      type: manual
                   fetch_materials: true
                   jobs:
                       checks:
