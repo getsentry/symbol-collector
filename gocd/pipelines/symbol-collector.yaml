@@ -18,17 +18,6 @@ pipelines:
                 shallow_clone: true
                 branch: main
                 destination: symbol-collector
-                # Deploy automatically, but only for changes that affect the server image.
-                includes:
-                    - Dockerfile
-                    - .dockerignore
-                    - global.json
-                    - Directory.Build.props
-                    - src/Directory.Build.props
-                    - src/Directory.Packages.props
-                    - src/ELFSharp/**/*
-                    - src/SymbolCollector.Core/**/*
-                    - src/SymbolCollector.Server/**/*
         stages:
             - checks:
                   fetch_materials: true
