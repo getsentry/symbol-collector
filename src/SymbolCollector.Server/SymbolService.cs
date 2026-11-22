@@ -135,6 +135,13 @@ internal class InMemorySymbolService : ISymbolService, IDisposable
     {
         var batch = await GetOpenBatch(batchId, token);
 
+        // Sanitize fileName to prevent path traversal attacks
+        var sanitizedFileName = Path.GetFileName(fileName);
+        if (string.IsNullOrEmpty(sanitizedFileName))
+        {
+            throw new ArgumentException("Invalid file name.", nameof(fileName));
+        }
+
         // TODO: Until parser supports Stream instead of file path, we write the file to TMP before we can validate it.
         var destination = Path.Combine(
             _processingPath,
@@ -142,7 +149,7 @@ internal class InMemorySymbolService : ISymbolService, IDisposable
             batchId.ToString(),
             // To avoid files with conflicting name from the same batch
             Random.Shared.Next().ToString(CultureInfo.InvariantCulture),
-            fileName);
+            sanitizedFileName);
 
         var tempDestination = Path.Combine(Path.GetTempPath(), destination);
         var path = Path.GetDirectoryName(tempDestination);
@@ -158,7 +165,7 @@ internal class InMemorySymbolService : ISymbolService, IDisposable
             _logger.LogDebug("Temp file {bytes} copied {file}.", file.Length, Path.GetFileName(tempDestination));
         }
 
-        return await StoreIsolated(batchId, batch, fileName, tempDestination, destination, token);
+        return await StoreIsolated(batchId, batch, sanitizedFileName, tempDestination, destination, token);
     }
 
     private async Task<StoreResult> StoreIsolated(
@@ -198,10 +205,17 @@ internal class InMemorySymbolService : ISymbolService, IDisposable
                     }
                 }
 
+                // Sanitize fileName to prevent path traversal attacks
+                var sanitizedConflictFileName = Path.GetFileName(fileName);
+                if (string.IsNullOrEmpty(sanitizedConflictFileName))
+                {
+                    throw new ArgumentException("Invalid file name.", nameof(fileName));
+                }
+
                 conflictDestination = Path.Combine(conflictDestination, batchId.ToString(),
                     // To avoid files with conflicting name from the same batch
                     Random.Shared.Next().ToString(CultureInfo.InvariantCulture),
-                    fileName);
+                    sanitizedConflictFileName);
 
                 using (_logger.BeginScope(new Dictionary<string, string>()
                        {
